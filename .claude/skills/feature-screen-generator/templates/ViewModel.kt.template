@@ -1,0 +1,178 @@
+// Template: {FeatureName}ViewModel.kt
+// Location: presentation/feature/{feature_group}/{feature_path}/{FeatureName}ViewModel.kt
+
+package com.extra.marketplace.presentation.feature.{feature_group}.{feature_path}
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.extra.marketplace.core.domain.DataError
+import com.extra.marketplace.presentation.common.handleRemoteError
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+class {FeatureName}ViewModel(
+    // ==========================================================================
+    // Constructor injection - add your dependencies here
+    // ==========================================================================
+    // Route object (if screen has navigation parameters):
+    // private val route: Route.{FeatureName},
+
+    // Use cases and repositories:
+    // private val someUseCase: SomeUseCase,
+    // private val someRepository: SomeRepository,
+) : ViewModel() {
+
+    // ==========================================================================
+    // State Management
+    // ==========================================================================
+    private val _state = MutableStateFlow({FeatureName}State())
+
+    val state = _state
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000L),
+            _state.value
+        )
+
+    // ==========================================================================
+    // Initialization (optional)
+    // ==========================================================================
+    init {
+        // loadInitialData()
+    }
+
+    // private fun loadInitialData() {
+    //     viewModelScope.launch {
+    //         when (val result = someUseCase()) {
+    //             is SomeResult.Success -> {
+    //                 _state.update {
+    //                     it.copy(
+    //                         isLoading = false,
+    //                         data = result.data
+    //                     )
+    //                 }
+    //             }
+    //             is SomeResult.Error -> {
+    //                 _state.update { it.copy(isLoading = false) }
+    //                 onError(result.error)
+    //             }
+    //         }
+    //     }
+    // }
+
+    // ==========================================================================
+    // Action Handler - All actions dispatch through here
+    // ==========================================================================
+    fun onAction(action: {FeatureName}Action) {
+        when (action) {
+            is {FeatureName}Action.BackClick -> onBackClick()
+            is {FeatureName}Action.SaveClick -> onSaveClick()
+            // Add more action handlers as needed:
+            // is {FeatureName}Action.InputChanged -> onInputChanged(action.value)
+            // is {FeatureName}Action.ItemClick -> onItemClick(action.id)
+        }
+    }
+
+    // ==========================================================================
+    // Action Handlers (private)
+    // ==========================================================================
+    private fun onBackClick() {
+        navigate({FeatureName}Destination.Back)
+    }
+
+    private fun onSaveClick() {
+        // viewModelScope.launch {
+        //     _state.update { it.copy(buttonLoading = true) }
+        //
+        //     when (val result = someUseCase.save(...)) {
+        //         is SomeResult.Success -> {
+        //             _state.update { it.copy(buttonLoading = false) }
+        //             navigate({FeatureName}Destination.Back)
+        //         }
+        //         is SomeResult.Error -> {
+        //             _state.update { it.copy(buttonLoading = false) }
+        //             onError(result.error)
+        //         }
+        //     }
+        // }
+    }
+
+    // private fun onInputChanged(value: String) {
+    //     _state.update {
+    //         it.copy(
+    //             inputValue = value,
+    //             inputError = false,
+    //             buttonEnabled = value.isNotBlank()
+    //         )
+    //     }
+    // }
+
+    // ==========================================================================
+    // Navigation Helpers (REQUIRED)
+    // ==========================================================================
+    fun clearDestination() {
+        navigate(null)
+    }
+
+    private fun navigate(destination: {FeatureName}Destination?) {
+        _state.update {
+            it.copy(destination = destination)
+        }
+    }
+
+    // ==========================================================================
+    // Error Handling
+    // ==========================================================================
+    private fun onError(error: DataError) {
+        _state.handleRemoteError(
+            error = error,
+            pointerHandlers = mapOf(
+                // Map API field errors to state fields:
+                // "/field_name" to { state, detail ->
+                //     state.copy(
+                //         inputHint = detail,
+                //         inputError = true
+                //     )
+                // }
+            ),
+            detailedErrorHandler = { state ->
+                // Handle detailed errors:
+                // state.copy(
+                //     inputHint = (error as? DataError.DetailedError)?.detail,
+                //     inputError = true
+                // )
+                state
+            },
+            fallbackHandler = { it.copy(screenError = error) }
+        )
+    }
+}
+
+// =============================================================================
+// GUIDELINES:
+// =============================================================================
+// 1. Constructor injection for ALL dependencies
+// 2. _state is private MutableStateFlow, state is public StateFlow
+// 3. ALWAYS use SharingStarted.WhileSubscribed(5000L)
+// 4. Single onAction() function dispatches to private handlers
+// 5. REQUIRED: clearDestination() and navigate() helper methods
+// 6. Use _state.update { it.copy(...) } for state updates
+// 7. Use viewModelScope.launch for coroutines
+// 8. Error handling with handleRemoteError extension
+//
+// KOIN REGISTRATION (add to ViewModelsModule.kt):
+//
+// Simple ViewModel (no route params):
+//   viewModelOf(::{FeatureName}ViewModel)
+//
+// With route params (pass Route object, not individual params):
+//   viewModel { (route: Route.{FeatureName}) ->
+//       {FeatureName}ViewModel(
+//           route = route,
+//           someUseCase = get()
+//       )
+//   }
+// =============================================================================

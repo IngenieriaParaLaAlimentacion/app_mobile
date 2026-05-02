@@ -1,0 +1,67 @@
+// Template: {FeatureName}State.kt
+// Location: presentation/feature/{feature_group}/{feature_path}/{FeatureName}State.kt
+
+package com.extra.marketplace.presentation.feature.{feature_group}.{feature_path}
+
+import com.extra.marketplace.core.domain.DataError
+import com.extra.marketplace.core.design_system.bottom_sheet.ExBottomSheetState
+
+data class {FeatureName}State(
+    // ==========================================================================
+    // REQUIRED: Navigation & Error Handling
+    // ==========================================================================
+    val destination: {FeatureName}Destination? = null,
+    val screenError: DataError? = null,
+
+    // ==========================================================================
+    // Loading States
+    // ==========================================================================
+    val isLoading: Boolean = true,
+    // val isRefreshing: Boolean = false,  // For pull-to-refresh
+    // val buttonLoading: Boolean = false,  // For action buttons
+
+    // ==========================================================================
+    // Form Fields (customize based on feature)
+    // ==========================================================================
+    // val inputValue: String = "",
+    // val inputError: Boolean = false,
+    // val inputHint: String? = null,
+
+    // ==========================================================================
+    // UI State
+    // ==========================================================================
+    // val buttonEnabled: Boolean = false,
+    // val items: List<ItemModel> = emptyList(),
+
+    // ==========================================================================
+    // Bottom Sheet (if applicable)
+    // ==========================================================================
+    // val bottomSheetType: {FeatureName}BottomSheetType? = null,
+    // val exBottomSheetState: ExBottomSheetState? = null,
+
+    // ==========================================================================
+    // Dialogs (if applicable)
+    // ==========================================================================
+    // val showConfirmationDialog: Boolean = false,
+)
+
+// Optional: Bottom sheet type enum (if using bottom sheets)
+// enum class {FeatureName}BottomSheetType {
+//     OPTIONS,
+//     CONFIRMATION,
+// }
+
+// =============================================================================
+// GUIDELINES:
+// =============================================================================
+// 1. Always a `data class` with default values
+// 2. REQUIRED: `destination: {Destination}? = null`
+// 3. REQUIRED for API screens: `screenError: DataError? = null`
+// 4. Use meaningful defaults (false, null, empty strings/lists)
+// 5. Group related fields with comments
+// 6. Loading states:
+//    - isLoading: Initial data load
+//    - isRefreshing: Pull-to-refresh
+//    - buttonLoading: Action in progress
+// 7. For forms, include field + error + hint for each input
+// =============================================================================

@@ -1,0 +1,40 @@
+// Template: {FeatureName}Action.kt
+// Location: presentation/feature/{feature_group}/{feature_path}/{FeatureName}Action.kt
+
+package com.extra.marketplace.presentation.feature.{feature_group}.{feature_path}
+
+sealed interface {FeatureName}Action {
+    // Navigation actions
+    data object BackClick : {FeatureName}Action
+
+    // Primary actions (customize based on feature)
+    data object SaveClick : {FeatureName}Action
+
+    // Input change actions (for forms)
+    // data class InputChanged(val value: String) : {FeatureName}Action
+
+    // Item interactions (for lists)
+    // data class ItemClick(val id: String) : {FeatureName}Action
+
+    // Bottom sheet actions (if applicable)
+    // data object BottomSheetDismissed : {FeatureName}Action
+
+    // Confirmation dialog actions (if applicable)
+    // data object ConfirmClick : {FeatureName}Action
+    // data object CancelClick : {FeatureName}Action
+}
+
+// =============================================================================
+// GUIDELINES:
+// =============================================================================
+// 1. Use `sealed interface` (not sealed class)
+// 2. Use `data object` for actions without parameters
+// 3. Use `data class` for actions with parameters
+// 4. Naming convention: {Verb}{Subject} (e.g., BackClick, SaveClick, NameChanged)
+// 5. Common actions to include:
+//    - BackClick (almost always needed)
+//    - {Primary}Click (main action like Save, Submit, Confirm)
+//    - {Field}Changed for form inputs
+//    - ItemClick for list items
+//    - BottomSheetDismissed if using bottom sheets
+// =============================================================================

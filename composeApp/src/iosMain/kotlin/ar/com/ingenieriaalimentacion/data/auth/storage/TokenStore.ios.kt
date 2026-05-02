@@ -6,6 +6,8 @@ import kotlinx.cinterop.convert
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.value
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import platform.CoreFoundation.CFAutorelease
 import platform.CoreFoundation.CFDictionaryAddValue
 import platform.CoreFoundation.CFDictionaryCreateMutable
@@ -37,6 +39,7 @@ import platform.Security.kSecClassGenericPassword
 import platform.Security.kSecMatchLimit
 import platform.Security.kSecMatchLimitOne
 import platform.Security.kSecReturnData
+import platform.Security.kSecUseDataProtectionKeychain
 import platform.Security.kSecValueData
 
 /**
@@ -56,7 +59,7 @@ import platform.Security.kSecValueData
 @OptIn(ExperimentalForeignApi::class)
 actual class TokenStore {
 
-    actual suspend fun get(): String? {
+    actual suspend fun get(): String? = withContext(Dispatchers.Default) {
         val service = CFBridgingRetain(SERVICE)
         val account = CFBridgingRetain(ACCOUNT)
         try {
@@ -64,10 +67,11 @@ actual class TokenStore {
                 kSecClass to kSecClassGenericPassword,
                 kSecAttrService to service,
                 kSecAttrAccount to account,
+                kSecUseDataProtectionKeychain to kCFBooleanTrue,
                 kSecReturnData to kCFBooleanTrue,
                 kSecMatchLimit to kSecMatchLimitOne,
             )
-            return memScoped {
+            memScoped {
                 val result = alloc<CFTypeRefVar>()
                 val status = SecItemCopyMatching(query, result.ptr)
                 when (status) {
@@ -77,7 +81,10 @@ actual class TokenStore {
                         }
                     }
                     errSecItemNotFound -> null
-                    else -> null
+                    else -> {
+                        println("TokenStore: SecItemCopyMatching returned unexpected OSStatus=$status")
+                        null
+                    }
                 }
             }
         } finally {
@@ -86,7 +93,7 @@ actual class TokenStore {
         }
     }
 
-    actual suspend fun set(value: String) {
+    actual suspend fun set(value: String): Unit = withContext(Dispatchers.Default) {
         val service = CFBridgingRetain(SERVICE)
         val account = CFBridgingRetain(ACCOUNT)
         val data = CFBridgingRetain(
@@ -97,20 +104,29 @@ actual class TokenStore {
                 kSecClass to kSecClassGenericPassword,
                 kSecAttrService to service,
                 kSecAttrAccount to account,
+                kSecUseDataProtectionKeychain to kCFBooleanTrue,
                 kSecValueData to data,
                 kSecAttrAccessible to kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
             )
             val addStatus = SecItemAdd(addQuery, null)
-            if (addStatus == errSecDuplicateItem) {
-                val matchQuery = createDict(
-                    kSecClass to kSecClassGenericPassword,
-                    kSecAttrService to service,
-                    kSecAttrAccount to account,
-                )
-                val attributesToUpdate = createDict(
-                    kSecValueData to data,
-                )
-                SecItemUpdate(matchQuery, attributesToUpdate)
+            when (addStatus) {
+                errSecSuccess -> Unit
+                errSecDuplicateItem -> {
+                    val matchQuery = createDict(
+                        kSecClass to kSecClassGenericPassword,
+                        kSecAttrService to service,
+                        kSecAttrAccount to account,
+                        kSecUseDataProtectionKeychain to kCFBooleanTrue,
+                    )
+                    val attributesToUpdate = createDict(
+                        kSecValueData to data,
+                    )
+                    val updateStatus = SecItemUpdate(matchQuery, attributesToUpdate)
+                    if (updateStatus != errSecSuccess) {
+                        println("TokenStore: SecItemUpdate failed with OSStatus=$updateStatus")
+                    }
+                }
+                else -> println("TokenStore: SecItemAdd failed with OSStatus=$addStatus")
             }
         } finally {
             CFBridgingRelease(service)
@@ -119,7 +135,7 @@ actual class TokenStore {
         }
     }
 
-    actual suspend fun clear() {
+    actual suspend fun clear(): Unit = withContext(Dispatchers.Default) {
         val service = CFBridgingRetain(SERVICE)
         val account = CFBridgingRetain(ACCOUNT)
         try {
@@ -127,6 +143,7 @@ actual class TokenStore {
                 kSecClass to kSecClassGenericPassword,
                 kSecAttrService to service,
                 kSecAttrAccount to account,
+                kSecUseDataProtectionKeychain to kCFBooleanTrue,
             )
             SecItemDelete(query)
         } finally {

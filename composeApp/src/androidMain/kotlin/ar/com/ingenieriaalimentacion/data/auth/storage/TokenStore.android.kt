@@ -1,11 +1,15 @@
 package ar.com.ingenieriaalimentacion.data.auth.storage
 
 import android.content.Context
+import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import android.security.keystore.StrongBoxUnavailableException
 import android.util.Base64
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.security.GeneralSecurityException
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -29,17 +33,30 @@ actual class TokenStore(context: Context) {
 
     actual suspend fun get(): String? = withContext(Dispatchers.IO) {
         val combined = prefs.getString(PREF_KEY, null) ?: return@withContext null
-        val bytes = runCatching { Base64.decode(combined, Base64.NO_WRAP) }.getOrNull()
-            ?: return@withContext null
-        if (bytes.size < IV_BYTES + 1) return@withContext null
+        val bytes = try {
+            Base64.decode(combined, Base64.NO_WRAP)
+        } catch (e: IllegalArgumentException) {
+            Log.w(TAG, "Stored session blob is not valid Base64 — clearing", e)
+            prefs.edit().remove(PREF_KEY).apply()
+            return@withContext null
+        }
+        if (bytes.size < IV_BYTES + 1) {
+            Log.w(TAG, "Stored session blob too short — clearing")
+            prefs.edit().remove(PREF_KEY).apply()
+            return@withContext null
+        }
         val iv = bytes.copyOfRange(0, IV_BYTES)
         val ciphertext = bytes.copyOfRange(IV_BYTES, bytes.size)
-        runCatching {
+        try {
             val cipher = Cipher.getInstance(TRANSFORMATION).apply {
                 init(Cipher.DECRYPT_MODE, loadKey(), GCMParameterSpec(GCM_TAG_BITS, iv))
             }
             cipher.doFinal(ciphertext).decodeToString()
-        }.getOrNull()
+        } catch (e: GeneralSecurityException) {
+            Log.w(TAG, "Stored session blob failed AES/GCM decryption — clearing", e)
+            prefs.edit().remove(PREF_KEY).apply()
+            null
+        }
     }
 
     actual suspend fun set(value: String): Unit = withContext(Dispatchers.IO) {
@@ -66,17 +83,34 @@ actual class TokenStore(context: Context) {
     private fun loadOrCreateKey(): SecretKey {
         val ks = KeyStore.getInstance(KEYSTORE_PROVIDER).apply { load(null) }
         ks.getKey(KEY_ALIAS, null)?.let { return it as SecretKey }
+
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            try {
+                generateAesKey(strongBoxBacked = true)
+            } catch (_: StrongBoxUnavailableException) {
+                generateAesKey(strongBoxBacked = false)
+            }
+        } else {
+            generateAesKey(strongBoxBacked = false)
+        }
+    }
+
+    private fun generateAesKey(strongBoxBacked: Boolean): SecretKey {
         val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, KEYSTORE_PROVIDER)
-        generator.init(
-            KeyGenParameterSpec.Builder(
-                KEY_ALIAS,
-                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
-            )
-                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                .setKeySize(256)
-                .build(),
+        val spec = KeyGenParameterSpec.Builder(
+            KEY_ALIAS,
+            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
         )
+            .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+            .setKeySize(256)
+            .apply {
+                if (strongBoxBacked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    setIsStrongBoxBacked(true)
+                }
+            }
+            .build()
+        generator.init(spec)
         return generator.generateKey()
     }
 
@@ -88,5 +122,6 @@ actual class TokenStore(context: Context) {
         const val TRANSFORMATION = "AES/GCM/NoPadding"
         const val IV_BYTES = 12
         const val GCM_TAG_BITS = 128
+        const val TAG = "TokenStore"
     }
 }

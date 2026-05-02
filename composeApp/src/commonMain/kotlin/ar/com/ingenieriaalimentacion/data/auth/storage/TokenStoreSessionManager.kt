@@ -2,6 +2,7 @@ package ar.com.ingenieriaalimentacion.data.auth.storage
 
 import ar.com.ingenieriaalimentacion.domain.model.auth.UserSession
 import ar.com.ingenieriaalimentacion.domain.repository.SessionManager
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 
 /**
@@ -21,7 +22,12 @@ class TokenStoreSessionManager(
 
     override suspend fun loadSessionOrNull(): UserSession? {
         val raw = tokenStore.get() ?: return null
-        return runCatching { json.decodeFromString(UserSession.serializer(), raw) }.getOrNull()
+        return try {
+            json.decodeFromString(UserSession.serializer(), raw)
+        } catch (_: SerializationException) {
+            tokenStore.clear()
+            null
+        }
     }
 
     override suspend fun deleteSession() {

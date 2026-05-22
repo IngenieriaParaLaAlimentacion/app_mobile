@@ -2,18 +2,22 @@ package ar.com.ingenieriaalimentacion.presentation.feature.register
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -31,17 +36,20 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import ar.com.ingenieriaalimentacion.presentation.feature.register.component.EstablishmentMultiSelect
+import ar.com.ingenieriaalimentacion.domain.model.establishment.Establishment
 import com.komoui.components.Button
 import com.komoui.components.Input
-import com.komoui.components.Spinner
 import com.komoui.themes.styles
+import kotlinx.serialization.json.Json
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun RegisterScreenRoot(
+    establishmentsResult: String?,
+    onResultConsumed: () -> Unit,
     viewModel: RegisterViewModel = koinViewModel(),
     navigate: (RegisterDestination) -> Unit,
 ) {
@@ -51,6 +59,14 @@ fun RegisterScreenRoot(
         state.destination?.let {
             navigate(it)
             viewModel.clearDestination()
+        }
+    }
+
+    LaunchedEffect(establishmentsResult) {
+        establishmentsResult?.let { json ->
+            runCatching { Json.decodeFromString<List<Establishment>>(json) }
+                .onSuccess { viewModel.onAction(RegisterAction.EstablishmentsSelected(it)) }
+            onResultConsumed()
         }
     }
 
@@ -142,15 +158,37 @@ fun RegisterScreen(
             style = MaterialTheme.typography.labelLarge,
             color = styles.foreground,
         )
-        if (state.isLoadingEstablishments) {
-            Spinner(size = 28.dp)
-        } else {
-            EstablishmentMultiSelect(
-                options = state.establishments,
-                selectedIds = state.selectedEstablishmentIds,
-                onToggle = { onAction(RegisterAction.EstablishmentToggled(it)) },
-                isError = state.fieldErrors.establishments != null,
-                enabled = !state.isSubmitting,
+        val selectedNames = state.selectedEstablishments.map { it.name }
+        val triggerLabel = when {
+            selectedNames.isEmpty() -> "Seleccionar establecimiento"
+            selectedNames.size == 1 -> selectedNames.first()
+            else -> "${selectedNames.size} establecimientos seleccionados"
+        }
+        val triggerColor = if (selectedNames.isEmpty()) styles.mutedForeground else styles.foreground
+        val triggerBorder = if (state.fieldErrors.establishments != null) styles.destructive else styles.border
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, triggerBorder, RoundedCornerShape(8.dp))
+                .clickable(enabled = !state.isSubmitting) {
+                    onAction(RegisterAction.OpenEstablishmentSelector)
+                }
+                .padding(horizontal = 12.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = triggerLabel,
+                color = triggerColor,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = "›",
+                color = styles.mutedForeground,
+                style = MaterialTheme.typography.bodyMedium,
             )
         }
         state.fieldErrors.establishments?.let { error ->

@@ -5,9 +5,7 @@ import app.cash.turbine.test
 import ar.com.ingenieriaalimentacion.data.registration.RegistrationFailure
 import ar.com.ingenieriaalimentacion.domain.model.establishment.Establishment
 import ar.com.ingenieriaalimentacion.domain.model.registration.RegistrationError
-import ar.com.ingenieriaalimentacion.domain.usecase.establishment.GetEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.registration.RegisterManagerUseCase
-import ar.com.ingenieriaalimentacion.fake.FakeEstablishmentRepository
 import ar.com.ingenieriaalimentacion.fake.FakeRegistrationRepository
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -16,6 +14,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.serialization.json.Json
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -46,12 +45,8 @@ class RegisterViewModelTest {
     }
 
     private fun viewModel(
-        establishmentRepo: FakeEstablishmentRepository = FakeEstablishmentRepository().apply {
-            result = Result.success(establishments)
-        },
         registrationRepo: FakeRegistrationRepository = FakeRegistrationRepository(),
     ) = RegisterViewModel(
-        getEstablishments = GetEstablishmentsUseCase(establishmentRepo),
         registerManager = RegisterManagerUseCase(registrationRepo),
     )
 
@@ -70,19 +65,7 @@ class RegisterViewModelTest {
         vm.onAction(RegisterAction.PasswordChanged("password123"))
         vm.onAction(RegisterAction.NameChanged("Ana"))
         vm.onAction(RegisterAction.LastNameChanged("García"))
-        vm.onAction(RegisterAction.EstablishmentToggled("1"))
-    }
-
-    @Test
-    fun `loads establishments into state on init`() = runTest(dispatcher) {
-        val vm = viewModel()
-
-        vm.state.test {
-            val loaded = awaitState { it.establishments.isNotEmpty() }
-            assertEquals(establishments, loaded.establishments)
-            assertFalse(loaded.isLoadingEstablishments)
-            cancelAndIgnoreRemainingEvents()
-        }
+        vm.onAction(RegisterAction.EstablishmentsSelected(listOf(establishments[0])))
     }
 
     @Test
@@ -90,7 +73,7 @@ class RegisterViewModelTest {
         val vm = viewModel()
 
         vm.state.test {
-            awaitState { it.establishments.isNotEmpty() }
+            awaitItem() // initial
             vm.onAction(RegisterAction.EmailChanged("a@b.com"))
             vm.onAction(RegisterAction.NameChanged("Ana"))
             val state = awaitState { it.email == "a@b.com" && it.name == "Ana" }
@@ -101,18 +84,40 @@ class RegisterViewModelTest {
     }
 
     @Test
-    fun `toggling selection adds and removes ids`() = runTest(dispatcher) {
+    fun `EstablishmentsSelected updates selection and clears field error`() = runTest(dispatcher) {
         val vm = viewModel()
 
         vm.state.test {
-            awaitState { it.establishments.isNotEmpty() }
+            awaitItem() // initial
+            // Force the establishment field error via an empty-selection submit.
+            vm.onAction(RegisterAction.Submit)
+            awaitState { it.fieldErrors.establishments != null }
 
-            vm.onAction(RegisterAction.EstablishmentToggled("1"))
-            vm.onAction(RegisterAction.EstablishmentToggled("2"))
-            assertEquals(setOf("1", "2"), awaitState { it.selectedEstablishmentIds.size == 2 }.selectedEstablishmentIds)
+            vm.onAction(RegisterAction.EstablishmentsSelected(establishments))
+            val state = awaitState { it.selectedEstablishments.size == 2 }
+            assertEquals(establishments, state.selectedEstablishments)
+            assertNull(state.fieldErrors.establishments)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
 
-            vm.onAction(RegisterAction.EstablishmentToggled("1"))
-            assertEquals(setOf("2"), awaitState { it.selectedEstablishmentIds == setOf("2") }.selectedEstablishmentIds)
+    @Test
+    fun `OpenEstablishmentSelector emits destination with current selection JSON`() = runTest(dispatcher) {
+        val vm = viewModel()
+
+        vm.state.test {
+            awaitItem() // initial
+            vm.onAction(RegisterAction.EstablishmentsSelected(listOf(establishments[0])))
+            awaitState { it.selectedEstablishments.isNotEmpty() }
+
+            vm.onAction(RegisterAction.OpenEstablishmentSelector)
+            val state = awaitState { it.destination != null }
+            val destination = state.destination
+            assertTrue(destination is RegisterDestination.SelectEstablishment)
+            assertEquals(
+                listOf(establishments[0]),
+                Json.decodeFromString<List<Establishment>>(destination.preselectedJson),
+            )
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -122,7 +127,7 @@ class RegisterViewModelTest {
         val vm = viewModel()
 
         vm.state.test {
-            val initial = awaitState { it.establishments.isNotEmpty() }
+            val initial = awaitItem()
             assertFalse(initial.canSubmit)
 
             vm.onAction(RegisterAction.EmailChanged("manager@example.com"))
@@ -133,8 +138,8 @@ class RegisterViewModelTest {
             val withoutEstablishment = awaitState { it.lastName == "García" }
             assertFalse(withoutEstablishment.canSubmit)
 
-            vm.onAction(RegisterAction.EstablishmentToggled("1"))
-            val ready = awaitState { it.selectedEstablishmentIds.isNotEmpty() }
+            vm.onAction(RegisterAction.EstablishmentsSelected(listOf(establishments[0])))
+            val ready = awaitState { it.selectedEstablishments.isNotEmpty() }
             assertTrue(ready.canSubmit)
             cancelAndIgnoreRemainingEvents()
         }
@@ -145,12 +150,12 @@ class RegisterViewModelTest {
         val vm = viewModel()
 
         vm.state.test {
-            awaitState { it.establishments.isNotEmpty() }
+            awaitItem() // initial
             vm.onAction(RegisterAction.EmailChanged("not-an-email"))
             vm.onAction(RegisterAction.PasswordChanged("password123"))
             vm.onAction(RegisterAction.NameChanged("Ana"))
             vm.onAction(RegisterAction.LastNameChanged("García"))
-            vm.onAction(RegisterAction.EstablishmentToggled("1"))
+            vm.onAction(RegisterAction.EstablishmentsSelected(listOf(establishments[0])))
             vm.onAction(RegisterAction.Submit)
 
             val state = awaitState { it.fieldErrors.email != null }
@@ -161,11 +166,31 @@ class RegisterViewModelTest {
     }
 
     @Test
+    fun `submit maps selected establishment ids`() = runTest(dispatcher) {
+        val registrationRepo = FakeRegistrationRepository()
+        val vm = viewModel(registrationRepo = registrationRepo)
+
+        vm.state.test {
+            awaitItem() // initial
+            vm.onAction(RegisterAction.EmailChanged("manager@example.com"))
+            vm.onAction(RegisterAction.PasswordChanged("password123"))
+            vm.onAction(RegisterAction.NameChanged("Ana"))
+            vm.onAction(RegisterAction.LastNameChanged("García"))
+            vm.onAction(RegisterAction.EstablishmentsSelected(establishments))
+            vm.onAction(RegisterAction.Submit)
+
+            awaitState { it.destination != null }
+            assertEquals(listOf("1", "2"), registrationRepo.lastRegistration?.establishmentIds)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun `submit success sets destination to Success`() = runTest(dispatcher) {
         val vm = viewModel()
 
         vm.state.test {
-            awaitState { it.establishments.isNotEmpty() }
+            awaitItem() // initial
             fillValidForm(vm)
             vm.onAction(RegisterAction.Submit)
 
@@ -203,7 +228,7 @@ class RegisterViewModelTest {
         val vm = viewModel(registrationRepo = registrationRepo)
 
         vm.state.test {
-            awaitState { it.establishments.isNotEmpty() }
+            awaitItem() // initial
             fillValidForm(vm)
             vm.onAction(RegisterAction.Submit)
 
@@ -224,7 +249,7 @@ class RegisterViewModelTest {
         val vm = viewModel(registrationRepo = registrationRepo)
 
         vm.state.test {
-            awaitState { it.establishments.isNotEmpty() }
+            awaitItem() // initial
             fillValidForm(vm)
             vm.onAction(RegisterAction.Submit)
 

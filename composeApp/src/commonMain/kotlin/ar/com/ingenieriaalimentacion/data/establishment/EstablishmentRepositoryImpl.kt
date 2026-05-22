@@ -5,7 +5,7 @@ import ar.com.ingenieriaalimentacion.domain.model.establishment.Establishment
 import ar.com.ingenieriaalimentacion.domain.repository.EstablishmentRepository
 
 class EstablishmentRepositoryImpl(private val api: EstablishmentApi) : EstablishmentRepository {
-    override suspend fun getEstablishments(): Result<List<Establishment>> = runCatching {
-        api.getEstablishments().items.map { it.toDomain() }
+    override suspend fun getEstablishments(search: String?): Result<List<Establishment>> = runCatching {
+        api.getEstablishments(search = search).items.map { it.toDomain() }
     }
 }

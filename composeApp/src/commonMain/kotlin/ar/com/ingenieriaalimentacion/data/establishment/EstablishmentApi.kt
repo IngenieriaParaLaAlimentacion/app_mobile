@@ -12,10 +12,14 @@ import io.ktor.client.request.parameter
  */
 class EstablishmentApi(private val refreshClient: HttpClient) {
 
-    suspend fun getEstablishments(pageSize: Int = DEFAULT_PAGE_SIZE): PaginatedEstablishmentsResponse =
+    suspend fun getEstablishments(
+        search: String? = null,
+        pageSize: Int = DEFAULT_PAGE_SIZE,
+    ): PaginatedEstablishmentsResponse =
         refreshClient.get("api/v1/establishments") {
             parameter("page", 1)
             parameter("page_size", pageSize)
+            search?.takeIf { it.isNotBlank() }?.let { parameter("search", it) }
         }.body()
 
     private companion object {

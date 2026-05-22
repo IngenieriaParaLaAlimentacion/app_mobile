@@ -8,16 +8,14 @@ data class RegisterState(
     val password: String = "",
     val name: String = "",
     val lastName: String = "",
-    val establishments: List<Establishment> = emptyList(),
-    val selectedEstablishmentIds: Set<String> = emptySet(),
-    val isLoadingEstablishments: Boolean = false,
+    val selectedEstablishments: List<Establishment> = emptyList(),
     val isSubmitting: Boolean = false,
     val fieldErrors: RegisterFieldErrors = RegisterFieldErrors(),
     val submitError: String? = null,
 ) {
     val canSubmit: Boolean
         get() = email.isNotBlank() && password.isNotBlank() && name.isNotBlank() &&
-            lastName.isNotBlank() && selectedEstablishmentIds.isNotEmpty() && !isSubmitting
+            lastName.isNotBlank() && selectedEstablishments.isNotEmpty() && !isSubmitting
 }
 
 data class RegisterFieldErrors(

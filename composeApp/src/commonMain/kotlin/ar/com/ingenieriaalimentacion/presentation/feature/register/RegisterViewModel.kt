@@ -5,16 +5,16 @@ import androidx.lifecycle.viewModelScope
 import ar.com.ingenieriaalimentacion.data.registration.RegistrationFailure
 import ar.com.ingenieriaalimentacion.domain.model.registration.ManagerRegistration
 import ar.com.ingenieriaalimentacion.domain.model.registration.RegistrationError
-import ar.com.ingenieriaalimentacion.domain.usecase.establishment.GetEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.registration.RegisterManagerUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 class RegisterViewModel(
-    private val getEstablishments: GetEstablishmentsUseCase,
     private val registerManager: RegisterManagerUseCase,
 ) : ViewModel() {
 
@@ -24,10 +24,6 @@ class RegisterViewModel(
         SharingStarted.WhileSubscribed(5_000L),
         _state.value,
     )
-
-    init {
-        loadEstablishments()
-    }
 
     fun onAction(action: RegisterAction) {
         when (action) {
@@ -43,7 +39,23 @@ class RegisterViewModel(
             is RegisterAction.LastNameChanged ->
                 _state.update { it.copy(lastName = action.value, fieldErrors = it.fieldErrors.copy(lastName = null)) }
 
-            is RegisterAction.EstablishmentToggled -> toggleEstablishment(action.id)
+            RegisterAction.OpenEstablishmentSelector ->
+                _state.update {
+                    it.copy(
+                        destination = RegisterDestination.SelectEstablishment(
+                            Json.encodeToString(it.selectedEstablishments),
+                        ),
+                    )
+                }
+
+            is RegisterAction.EstablishmentsSelected ->
+                _state.update {
+                    it.copy(
+                        selectedEstablishments = action.establishments,
+                        fieldErrors = it.fieldErrors.copy(establishments = null),
+                    )
+                }
+
             RegisterAction.Submit -> submit()
             RegisterAction.DismissError -> _state.update { it.copy(submitError = null) }
         }
@@ -51,39 +63,6 @@ class RegisterViewModel(
 
     fun clearDestination() {
         _state.update { it.copy(destination = null) }
-    }
-
-    private fun loadEstablishments() {
-        _state.update { it.copy(isLoadingEstablishments = true) }
-        viewModelScope.launch {
-            getEstablishments().fold(
-                onSuccess = { list ->
-                    _state.update { it.copy(establishments = list, isLoadingEstablishments = false) }
-                },
-                onFailure = {
-                    _state.update {
-                        it.copy(
-                            isLoadingEstablishments = false,
-                            submitError = "No se pudieron cargar los establecimientos. Intentá nuevamente.",
-                        )
-                    }
-                },
-            )
-        }
-    }
-
-    private fun toggleEstablishment(id: String) {
-        _state.update { current ->
-            val selected = if (id in current.selectedEstablishmentIds) {
-                current.selectedEstablishmentIds - id
-            } else {
-                current.selectedEstablishmentIds + id
-            }
-            current.copy(
-                selectedEstablishmentIds = selected,
-                fieldErrors = current.fieldErrors.copy(establishments = null),
-            )
-        }
     }
 
     private fun submit() {
@@ -101,7 +80,7 @@ class RegisterViewModel(
                 password = current.password,
                 name = current.name.trim(),
                 lastName = current.lastName.trim(),
-                establishmentIds = current.selectedEstablishmentIds.toList(),
+                establishmentIds = current.selectedEstablishments.map { it.id },
             )
             registerManager(registration).fold(
                 onSuccess = {
@@ -129,7 +108,7 @@ class RegisterViewModel(
         },
         name = if (state.name.isBlank()) "Ingresá tu nombre." else null,
         lastName = if (state.lastName.isBlank()) "Ingresá tu apellido." else null,
-        establishments = if (state.selectedEstablishmentIds.isEmpty()) "Seleccioná al menos un establecimiento." else null,
+        establishments = if (state.selectedEstablishments.isEmpty()) "Seleccioná al menos un establecimiento." else null,
     )
 
     private fun Throwable.toUserMessage(): String {

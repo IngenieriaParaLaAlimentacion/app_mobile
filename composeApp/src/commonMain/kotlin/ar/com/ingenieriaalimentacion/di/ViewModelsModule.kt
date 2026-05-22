@@ -1,8 +1,11 @@
 package ar.com.ingenieriaalimentacion.di
 
 import ar.com.ingenieriaalimentacion.app.AppViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.establishment.select_establishment.SelectEstablishmentViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.home.HomeViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.register.RegisterViewModel
+import ar.com.ingenieriaalimentacion.presentation.navigation.Route
+import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
@@ -10,4 +13,7 @@ val viewModelsModule = module {
     viewModelOf(::AppViewModel)
     viewModelOf(::HomeViewModel)
     viewModelOf(::RegisterViewModel)
+    viewModel { (route: Route.SelectEstablishment) ->
+        SelectEstablishmentViewModel(route = route, getEstablishments = get())
+    }
 }

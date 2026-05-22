@@ -16,4 +16,8 @@ sealed class Route {
     @Serializable
     @SerialName("register_success")
     data object RegisterSuccess : Route()
+
+    @Serializable
+    @SerialName("select_establishment")
+    data class SelectEstablishment(val preselectedJson: String = "[]") : Route()
 }

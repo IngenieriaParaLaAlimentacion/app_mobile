@@ -8,4 +8,12 @@ sealed class Route {
     @Serializable
     @SerialName("home")
     data object Home : Route()
+
+    @Serializable
+    @SerialName("register")
+    data object Register : Route()
+
+    @Serializable
+    @SerialName("register_success")
+    data object RegisterSuccess : Route()
 }

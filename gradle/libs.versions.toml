@@ -14,6 +14,8 @@ kotlinx-coroutines = "1.10.2"
 kotlinx-serialization = "1.11.0"
 kotlinx-datetime = "0.7.1"
 navigationCompose = "2.9.2"
+komoui = "0.3.0"
+turbine = "1.2.1"
 
 [libraries]
 compose-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "compose-multiplatform" }
@@ -49,6 +51,14 @@ koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", ver
 # Navigation
 navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose-foundation" }
+
+# KomoUI (shadcn-inspired Compose Multiplatform design system)
+komoui = { module = "io.github.derangga:komoui", version.ref = "komoui" }
+
+# Testing
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

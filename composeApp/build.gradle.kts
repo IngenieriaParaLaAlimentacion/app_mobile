@@ -60,11 +60,19 @@ kotlin {
             implementation(libs.navigation.compose)
             implementation(libs.compose.foundation)
 
+            implementation(libs.komoui)
+
             implementation(libs.kotlinx.datetime)
             implementation(libs.kotlinx.serialization)
         }
         nativeMain.dependencies {
             implementation(libs.ktor.client.darwin)
+        }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.turbine)
+            implementation(libs.ktor.client.mock)
         }
     }
 }

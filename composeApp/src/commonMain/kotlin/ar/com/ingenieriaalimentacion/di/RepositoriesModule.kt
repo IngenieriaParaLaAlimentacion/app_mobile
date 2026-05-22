@@ -2,7 +2,11 @@ package ar.com.ingenieriaalimentacion.di
 
 import ar.com.ingenieriaalimentacion.data.auth.AuthRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.auth.storage.TokenStoreSessionManager
+import ar.com.ingenieriaalimentacion.data.establishment.EstablishmentRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.registration.RegistrationRepositoryImpl
 import ar.com.ingenieriaalimentacion.domain.repository.AuthRepository
+import ar.com.ingenieriaalimentacion.domain.repository.EstablishmentRepository
+import ar.com.ingenieriaalimentacion.domain.repository.RegistrationRepository
 import ar.com.ingenieriaalimentacion.domain.repository.SessionManager
 import kotlinx.serialization.json.Json
 import org.koin.core.qualifier.named
@@ -21,4 +25,6 @@ val repositoriesModule = module {
             statusSink = get(),
         )
     }
+    single<EstablishmentRepository> { EstablishmentRepositoryImpl(api = get()) }
+    single<RegistrationRepository> { RegistrationRepositoryImpl(api = get()) }
 }

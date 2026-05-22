@@ -1,7 +1,9 @@
 package ar.com.ingenieriaalimentacion.di
 
 import ar.com.ingenieriaalimentacion.data.auth.AuthApi
+import ar.com.ingenieriaalimentacion.data.establishment.EstablishmentApi
 import ar.com.ingenieriaalimentacion.data.network.HttpClientFactory
+import ar.com.ingenieriaalimentacion.data.registration.RegistrationApi
 import ar.com.ingenieriaalimentacion.domain.model.auth.SessionStatus
 import ar.com.ingenieriaalimentacion.domain.repository.SessionManager
 import io.ktor.client.HttpClient
@@ -23,6 +25,8 @@ val clientsModule = module {
     }
 
     single { AuthApi(refreshClient = get(named("refresh"))) }
+    single { EstablishmentApi(refreshClient = get(named("refresh"))) }
+    single { RegistrationApi(refreshClient = get(named("refresh"))) }
 
     // Main authed client.
     single<HttpClient> {

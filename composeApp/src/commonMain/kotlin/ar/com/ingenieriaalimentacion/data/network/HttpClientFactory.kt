@@ -31,6 +31,10 @@ object HttpClientFactory {
     /** No `Auth` plugin — used by `AuthApi` for /auth/login and /auth/refresh. */
     fun createRefreshClient(engine: HttpClientEngine, json: Json): HttpClient =
         HttpClient(engine) {
+            // Throw ClientRequestException/ServerResponseException on non-2xx so repositories
+            // can map typed errors (e.g. 409 -> UserAlreadyExists). Without this, Ktor returns
+            // the error body and `.body()` would fail deserializing it into the success DTO.
+            expectSuccess = true
             install(ContentNegotiation) { json(json) }
             install(Logging) {
                 logger = object : Logger { override fun log(message: String) = println(message) }

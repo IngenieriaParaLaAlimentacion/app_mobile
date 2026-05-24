@@ -6,6 +6,7 @@ import ar.com.ingenieriaalimentacion.domain.usecase.auth.SignInUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.SignOutUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.establishment.GetEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.registration.RegisterManagerUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.subject.CreateSubjectUseCase
 import org.koin.dsl.module
 
 val useCasesModule = module {
@@ -15,4 +16,5 @@ val useCasesModule = module {
     factory { ObserveSessionStatusUseCase(get()) }
     factory { GetEstablishmentsUseCase(get()) }
     factory { RegisterManagerUseCase(get()) }
+    factory { CreateSubjectUseCase(get()) }
 }

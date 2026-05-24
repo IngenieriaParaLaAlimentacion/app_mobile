@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import ar.com.ingenieriaalimentacion.presentation.feature.establishment.select_establishment.selectEstablishmentScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.home.homeScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.register.registerScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.subject.create_subject.createSubjectScreen
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 
 @Composable
@@ -20,5 +21,6 @@ fun AppNavHost(
         homeScreen(navController)
         registerScreen(navController)
         selectEstablishmentScreen(navController)
+        createSubjectScreen(navController)
     }
 }

@@ -2,7 +2,9 @@ package ar.com.ingenieriaalimentacion.presentation.feature.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -10,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import org.koin.compose.viewmodel.koinViewModel
@@ -54,6 +57,11 @@ fun HomeScreen(
                 text = state.subtitle,
                 style = AlTheme.typography.body,
                 color = AlTheme.colors.textMuted,
+            )
+            Spacer(modifier = Modifier.height(AlTheme.spacing.md))
+            AlButton(
+                text = "Cargar sujeto",
+                onClick = { onAction(HomeAction.CreateSubjectClick) },
             )
         }
     }

@@ -19,6 +19,8 @@ class HomeViewModel : ViewModel() {
     fun onAction(action: HomeAction) {
         when (action) {
             HomeAction.PrimaryClick -> Unit
+            HomeAction.CreateSubjectClick ->
+                _state.update { it.copy(destination = HomeDestination.NavigateToCreateSubject) }
         }
     }
 

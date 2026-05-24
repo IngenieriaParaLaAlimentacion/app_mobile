@@ -4,6 +4,7 @@ import ar.com.ingenieriaalimentacion.data.auth.AuthApi
 import ar.com.ingenieriaalimentacion.data.establishment.EstablishmentApi
 import ar.com.ingenieriaalimentacion.data.network.HttpClientFactory
 import ar.com.ingenieriaalimentacion.data.registration.RegistrationApi
+import ar.com.ingenieriaalimentacion.data.subject.SubjectApi
 import ar.com.ingenieriaalimentacion.domain.model.auth.SessionStatus
 import ar.com.ingenieriaalimentacion.domain.repository.SessionManager
 import io.ktor.client.HttpClient
@@ -38,4 +39,6 @@ val clientsModule = module {
             statusSink = get(),
         )
     }
+
+    single { SubjectApi(client = get()) }
 }

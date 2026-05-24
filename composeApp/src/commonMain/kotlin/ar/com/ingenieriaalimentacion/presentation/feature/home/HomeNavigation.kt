@@ -4,6 +4,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.composable
+import ar.com.ingenieriaalimentacion.presentation.feature.subject.create_subject.navigateToCreateSubject
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 
 fun NavController.navigateToHome(navOptions: NavOptions? = null) =
@@ -25,5 +26,6 @@ internal fun navigate(
 ) {
     when (destination) {
         HomeDestination.Back -> navController.popBackStack()
+        HomeDestination.NavigateToCreateSubject -> navController.navigateToCreateSubject()
     }
 }

@@ -443,6 +443,83 @@
           }
         }
       }
+    },
+    "/api/v1/subjects": {
+      "post": {
+        "tags": [
+          "Subjects"
+        ],
+        "summary": "Register a new subject",
+        "description": "Creates a new subject. Accessible by establishment managers only.",
+        "operationId": "create_subject_api_v1_subjects_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubjectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubjectResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid data",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Subject already exists",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -649,6 +726,115 @@
           "establishments"
         ],
         "title": "RegistrationResponse"
+      },
+      "Sex": {
+        "type": "string",
+        "enum": [
+          "male",
+          "female"
+        ],
+        "title": "Sex",
+        "description": "Biological sex of a subject."
+      },
+      "SubjectRequest": {
+        "properties": {
+          "dni": {
+            "type": "integer",
+            "maximum": 99999999.0,
+            "minimum": 1.0,
+            "title": "Dni"
+          },
+          "sex": {
+            "$ref": "#/components/schemas/Sex"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "last_name": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Last Name"
+          },
+          "birth_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Birth Date"
+          },
+          "is_rural": {
+            "type": "boolean",
+            "title": "Is Rural",
+            "description": "Bool indicating if the subject belongs to a rural population"
+          },
+          "is_indigenous": {
+            "type": "boolean",
+            "title": "Is Indigenous",
+            "description": "Bool indicating if the subject belongs to an indigenous population"
+          }
+        },
+        "type": "object",
+        "required": [
+          "dni",
+          "sex",
+          "name",
+          "last_name",
+          "birth_date",
+          "is_rural",
+          "is_indigenous"
+        ],
+        "title": "SubjectRequest"
+      },
+      "SubjectResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "dni": {
+            "type": "integer",
+            "title": "Dni"
+          },
+          "sex": {
+            "$ref": "#/components/schemas/Sex"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "last_name": {
+            "type": "string",
+            "title": "Last Name"
+          },
+          "birth_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Birth Date"
+          },
+          "is_rural": {
+            "type": "boolean",
+            "title": "Is Rural"
+          },
+          "is_indigenous": {
+            "type": "boolean",
+            "title": "Is Indigenous"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "dni",
+          "sex",
+          "name",
+          "last_name",
+          "birth_date",
+          "is_rural",
+          "is_indigenous"
+        ],
+        "title": "SubjectResponse"
       },
       "UserAdminView": {
         "properties": {

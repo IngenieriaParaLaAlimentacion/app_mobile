@@ -11,7 +11,7 @@
           "Establishments"
         ],
         "summary": "List all establishments",
-        "description": "Returns all establishments available for a manager to register with.",
+        "description": "Returns all establishments available for a manager to register with.Supports optional search filtering by establishment name or address.",
         "operationId": "get_establishments_api_v1_establishments_get",
         "parameters": [
           {
@@ -40,6 +40,23 @@
               "title": "Page Size"
             },
             "description": "Number of establishments per page (max 100)."
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
           }
         ],
         "responses": {
@@ -134,7 +151,7 @@
           "Admin"
         ],
         "summary": "List registered users",
-        "description": "Returns a paginated list of users, optionally filtered by role or status. Accessible by admins only.",
+        "description": "Returns a paginated list of users, optionally filtered by role or status, or searching by name, last name or email. Accessible by admins only.",
         "operationId": "list_users_api_v1_admin_users_get",
         "security": [
           {
@@ -200,6 +217,23 @@
               "title": "Status"
             },
             "description": "Filter by status."
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
           }
         ],
         "responses": {
@@ -246,14 +280,14 @@
         }
       }
     },
-    "/api/v1/admin/managers/{user_id}/approve": {
-      "post": {
+    "/api/v1/admin/managers/{user_id}/establishments/approve": {
+      "patch": {
         "tags": [
           "Admin"
         ],
-        "summary": "Approve a manager",
-        "description": "Approves a manager and sets the status of each of their establishments. Establishments not included in the request are rejected. Accessible by admins only.",
-        "operationId": "approve_manager_api_v1_admin_managers__user_id__approve_post",
+        "summary": "Approve establishment access for a manager",
+        "description": "Approves the given establishments for the manager and activates the manager's account. Accessible by admins only.",
+        "operationId": "approve_establishments_api_v1_admin_managers__user_id__establishments_approve_patch",
         "security": [
           {
             "OAuth2PasswordBearer": []
@@ -276,21 +310,96 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ApproveManagerRequest"
+                "$ref": "#/components/schemas/EstablishmentAccessRequest"
               }
             }
           }
         },
         "responses": {
-          "200": {
-            "description": "Successful Response",
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Missing or invalid authentication token",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApproveManagerResponse"
+                  "$ref": "#/components/schemas/ProblemDetail"
                 }
               }
             }
+          },
+          "403": {
+            "description": "Authenticated user does not have admin privileges",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Manager or establishment not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/managers/{user_id}/establishments/reject": {
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Reject establishment access for a manager",
+        "description": "Rejects the given establishments for the manager. Does not affect the manager's account status. Accessible by admins only.",
+        "operationId": "reject_establishments_api_v1_admin_managers__user_id__establishments_reject_patch",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EstablishmentAccessRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
           },
           "401": {
             "description": "Missing or invalid authentication token",
@@ -338,70 +447,23 @@
   },
   "components": {
     "schemas": {
-      "ApproveManagerRequest": {
+      "EstablishmentAccessRequest": {
         "properties": {
-          "approved_establishment_ids": {
+          "establishment_ids": {
             "items": {
               "type": "string",
               "format": "uuid"
             },
             "type": "array",
             "minItems": 1,
-            "title": "Approved Establishment Ids"
+            "title": "Establishment Ids"
           }
         },
         "type": "object",
         "required": [
-          "approved_establishment_ids"
+          "establishment_ids"
         ],
-        "title": "ApproveManagerRequest"
-      },
-      "ApproveManagerResponse": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Id"
-          },
-          "email": {
-            "type": "string",
-            "title": "Email"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "last_name": {
-            "type": "string",
-            "title": "Last Name"
-          },
-          "role": {
-            "type": "string",
-            "title": "Role"
-          },
-          "status": {
-            "type": "string",
-            "title": "Status"
-          },
-          "establishments": {
-            "items": {
-              "$ref": "#/components/schemas/EstablishmentWithStatusResponse"
-            },
-            "type": "array",
-            "title": "Establishments"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "email",
-          "name",
-          "last_name",
-          "role",
-          "status",
-          "establishments"
-        ],
-        "title": "ApproveManagerResponse"
+        "title": "EstablishmentAccessRequest"
       },
       "EstablishmentResponse": {
         "properties": {
@@ -426,35 +488,6 @@
           "address"
         ],
         "title": "EstablishmentResponse"
-      },
-      "EstablishmentWithStatusResponse": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Id"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "address": {
-            "type": "string",
-            "title": "Address"
-          },
-          "status": {
-            "type": "string",
-            "title": "Status"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "name",
-          "address",
-          "status"
-        ],
-        "title": "EstablishmentWithStatusResponse"
       },
       "PaginatedEstablishmentsResponse": {
         "properties": {

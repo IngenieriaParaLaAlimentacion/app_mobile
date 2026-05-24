@@ -51,23 +51,29 @@ fun GetStartedScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = AlTheme.spacing.lg),
-            verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(
-                text = state.title,
-                style = AlTheme.typography.title,
-                color = AlTheme.colors.textBase,
-                textAlign = TextAlign.Center,
-            )
-            Spacer(modifier = Modifier.height(AlTheme.spacing.sm))
-            Text(
-                text = state.subtitle,
-                style = AlTheme.typography.body,
-                color = AlTheme.colors.textMuted,
-                textAlign = TextAlign.Center,
-            )
-            Spacer(modifier = Modifier.height(AlTheme.spacing.xl))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = state.title,
+                    style = AlTheme.typography.title,
+                    color = AlTheme.colors.textBase,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(modifier = Modifier.height(AlTheme.spacing.sm))
+                Text(
+                    text = state.subtitle,
+                    style = AlTheme.typography.body,
+                    color = AlTheme.colors.textMuted,
+                    textAlign = TextAlign.Center,
+                )
+            }
             AlButton(
                 text = state.signUpLabel,
                 onClick = { onAction(GetStartedAction.SignUpClick) },

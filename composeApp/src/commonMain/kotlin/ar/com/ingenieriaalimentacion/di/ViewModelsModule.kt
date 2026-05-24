@@ -2,6 +2,7 @@ package ar.com.ingenieriaalimentacion.di
 
 import ar.com.ingenieriaalimentacion.app.AppViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.establishment.select_establishment.SelectEstablishmentViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.get_started.GetStartedViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.home.HomeViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.register.RegisterViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.create_subject.CreateSubjectViewModel
@@ -12,6 +13,7 @@ import org.koin.dsl.module
 
 val viewModelsModule = module {
     viewModelOf(::AppViewModel)
+    viewModelOf(::GetStartedViewModel)
     viewModelOf(::HomeViewModel)
     viewModelOf(::RegisterViewModel)
     viewModelOf(::CreateSubjectViewModel)

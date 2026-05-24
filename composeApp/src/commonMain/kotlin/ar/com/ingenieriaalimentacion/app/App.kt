@@ -42,8 +42,8 @@ fun App(
 
 private fun startDestinationFor(sessionStatus: SessionStatus): Route = when (sessionStatus) {
     is SessionStatus.Authenticated -> Route.Home
-    // NotAuthenticated / RefreshFailure / Initializing → register (Initializing handled separately).
-    else -> Route.Register
+    // NotAuthenticated / RefreshFailure / Initializing → get_started (Initializing handled separately).
+    else -> Route.GetStarted
 }
 
 @Composable

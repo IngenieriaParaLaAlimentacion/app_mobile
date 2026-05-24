@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import ar.com.ingenieriaalimentacion.presentation.feature.establishment.select_establishment.selectEstablishmentScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.get_started.getStartedScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.home.homeScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.register.registerScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.create_subject.createSubjectScreen
@@ -18,6 +19,7 @@ fun AppNavHost(
         navController = navController,
         startDestination = startScreen,
     ) {
+        getStartedScreen(navController)
         homeScreen(navController)
         registerScreen(navController)
         selectEstablishmentScreen(navController)

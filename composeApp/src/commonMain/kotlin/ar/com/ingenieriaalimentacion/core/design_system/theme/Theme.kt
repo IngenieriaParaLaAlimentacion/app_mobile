@@ -1,8 +1,12 @@
 package ar.com.ingenieriaalimentacion.core.design_system.theme
 
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 
 private val lightColors = AlColors(
@@ -17,14 +21,42 @@ private val lightColors = AlColors(
 
 @Composable
 fun AlTheme(content: @Composable () -> Unit) {
-    CompositionLocalProvider(
-        LocalAlColors provides lightColors,
-        LocalAlTypography provides defaultAlTypography(),
-        LocalAlSpacing provides AlSpacing(),
-        LocalAlCorners provides AlCorners(),
-        LocalAlBorders provides AlBorders(),
+    val geist = geistFontFamily()
+    val outerTypography = MaterialTheme.typography
+    val geistTypography = remember(geist, outerTypography) {
+        Typography(
+            displayLarge = outerTypography.displayLarge.copy(fontFamily = geist),
+            displayMedium = outerTypography.displayMedium.copy(fontFamily = geist),
+            displaySmall = outerTypography.displaySmall.copy(fontFamily = geist),
+            headlineLarge = outerTypography.headlineLarge.copy(fontFamily = geist),
+            headlineMedium = outerTypography.headlineMedium.copy(fontFamily = geist),
+            headlineSmall = outerTypography.headlineSmall.copy(fontFamily = geist),
+            titleLarge = outerTypography.titleLarge.copy(fontFamily = geist),
+            titleMedium = outerTypography.titleMedium.copy(fontFamily = geist),
+            titleSmall = outerTypography.titleSmall.copy(fontFamily = geist),
+            bodyLarge = outerTypography.bodyLarge.copy(fontFamily = geist),
+            bodyMedium = outerTypography.bodyMedium.copy(fontFamily = geist),
+            bodySmall = outerTypography.bodySmall.copy(fontFamily = geist),
+            labelLarge = outerTypography.labelLarge.copy(fontFamily = geist),
+            labelMedium = outerTypography.labelMedium.copy(fontFamily = geist),
+            labelSmall = outerTypography.labelSmall.copy(fontFamily = geist),
+        )
+    }
+    MaterialTheme(
+        colorScheme = MaterialTheme.colorScheme,
+        typography = geistTypography,
+        shapes = MaterialTheme.shapes,
     ) {
-        content()
+        CompositionLocalProvider(
+            LocalAlColors provides lightColors,
+            LocalAlTypography provides defaultAlTypography(),
+            LocalAlSpacing provides AlSpacing(),
+            LocalAlCorners provides AlCorners(),
+            LocalAlBorders provides AlBorders(),
+            LocalTextStyle provides LocalTextStyle.current.copy(fontFamily = geist),
+        ) {
+            content()
+        }
     }
 }
 

@@ -51,7 +51,7 @@ class AuthRepositoryImpl(
 
     override suspend fun signOut() {
         // Best-effort server invalidation; always clear local state.
-        runCatching { httpClient.post("auth/logout") }
+        runCatching { httpClient.post("api/v1/auth/logout") }
         sessionManager.deleteSession()
         clearBearerCache()
         statusSink.value = SessionStatus.NotAuthenticated(isSignOut = true)

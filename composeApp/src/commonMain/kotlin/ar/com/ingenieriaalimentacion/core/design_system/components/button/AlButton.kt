@@ -8,6 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 
 @Composable
@@ -21,6 +22,7 @@ fun AlButton(
         text = text,
         color = AlTheme.colors.textInverted,
         style = AlTheme.typography.body,
+        textAlign = TextAlign.Center,
         modifier = modifier
             .clip(RoundedCornerShape(AlTheme.corners.md))
             .background(AlTheme.colors.accent)

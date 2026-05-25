@@ -27,7 +27,9 @@ fun NavGraphBuilder.registerScreen(navController: NavController) {
         )
     }
     composable<Route.RegisterSuccess> {
-        RegisterSuccessScreen()
+        RegisterSuccessScreen(
+            onLoginClick = { /* TODO: navigate to LoginScreen once implemented */ },
+        )
     }
 }
 

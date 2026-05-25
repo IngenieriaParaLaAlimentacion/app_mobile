@@ -63,6 +63,12 @@ class AuthRepositoryImpl(
         throw AuthFailure(mapResetError(throwable), throwable)
     }
 
+    override suspend fun requestPasswordRecovery(email: String): Result<Unit> = runCatching {
+        api.requestPasswordRecovery(email)
+    }.recoverCatching { throwable ->
+        throw AuthFailure(mapRequestRecoveryError(throwable), throwable)
+    }
+
     private fun clearBearerCache() {
         httpClient.authProviders
             .filterIsInstance<BearerAuthProvider>()
@@ -78,14 +84,14 @@ class AuthRepositoryImpl(
     }
 
     private fun mapResetError(throwable: Throwable): AuthError = when {
-        throwable is ResponseException && throwable.response.status == HttpStatusCode.BadRequest ->
-            AuthError.WeakPassword
-        throwable is ResponseException &&
-            (throwable.response.status == HttpStatusCode.Unauthorized ||
-                throwable.response.status == HttpStatusCode.Gone ||
-                throwable.response.status == HttpStatusCode.NotFound) ->
+        throwable is ResponseException && throwable.response.status == HttpStatusCode.Unauthorized ->
             AuthError.InvalidOrExpiredToken
         throwable is ResponseException -> AuthError.Network
+        else -> AuthError.Unknown(throwable)
+    }
+
+    private fun mapRequestRecoveryError(throwable: Throwable): AuthError = when (throwable) {
+        is ResponseException -> AuthError.Network
         else -> AuthError.Unknown(throwable)
     }
 }

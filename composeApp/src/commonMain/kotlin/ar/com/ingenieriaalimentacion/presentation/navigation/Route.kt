@@ -36,4 +36,8 @@ sealed class Route {
     @Serializable
     @SerialName("reset_password_success")
     data object ResetPasswordSuccess : Route()
+
+    @Serializable
+    @SerialName("forgot_password")
+    data object ForgotPassword : Route()
 }

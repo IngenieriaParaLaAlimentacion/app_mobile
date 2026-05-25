@@ -2,6 +2,7 @@ package ar.com.ingenieriaalimentacion.data.auth
 
 import ar.com.ingenieriaalimentacion.data.auth.dto.LoginRequest
 import ar.com.ingenieriaalimentacion.data.auth.dto.RefreshRequest
+import ar.com.ingenieriaalimentacion.data.auth.dto.RequestPasswordRecoveryRequest
 import ar.com.ingenieriaalimentacion.data.auth.dto.ResetPasswordRequest
 import ar.com.ingenieriaalimentacion.domain.model.auth.UserSession
 import io.ktor.client.HttpClient
@@ -30,9 +31,16 @@ class AuthApi(private val refreshClient: HttpClient) {
         }.body()
 
     suspend fun resetPassword(token: String, newPassword: String) {
-        refreshClient.post("auth/reset-password") {
+        refreshClient.post("auth/password-recovery/confirm") {
             contentType(ContentType.Application.Json)
             setBody(ResetPasswordRequest(token = token, password = newPassword))
+        }
+    }
+
+    suspend fun requestPasswordRecovery(email: String) {
+        refreshClient.post("auth/password-recovery/request") {
+            contentType(ContentType.Application.Json)
+            setBody(RequestPasswordRecoveryRequest(email = email))
         }
     }
 }

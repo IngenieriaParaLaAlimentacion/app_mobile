@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.forgot_password.forgotPasswordScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.auth.login.loginScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.reset_password.resetPasswordScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.establishment.select_establishment.selectEstablishmentScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.get_started.getStartedScreen
@@ -24,6 +25,7 @@ fun AppNavHost(
         getStartedScreen(navController)
         homeScreen(navController)
         registerScreen(navController)
+        loginScreen(navController)
         selectEstablishmentScreen(navController)
         createSubjectScreen(navController)
         resetPasswordScreen(navController)

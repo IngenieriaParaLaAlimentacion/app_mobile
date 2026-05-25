@@ -4,6 +4,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.composable
+import ar.com.ingenieriaalimentacion.presentation.feature.auth.login.navigateToLogin
 import ar.com.ingenieriaalimentacion.presentation.feature.register.navigateToRegister
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 
@@ -24,5 +25,6 @@ internal fun navigate(
 ) {
     when (destination) {
         GetStartedDestination.NavigateToRegister -> navController.navigateToRegister()
+        GetStartedDestination.NavigateToLogin -> navController.navigateToLogin()
     }
 }

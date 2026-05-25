@@ -6,5 +6,5 @@ data class GetStartedState(
     val subtitle: String = "Gestioná tu establecimiento desde tu teléfono.",
     val signUpLabel: String = "Crear cuenta",
     val logInLabel: String = "Iniciar sesión",
-    val isLoginEnabled: Boolean = false,
+    val isLoginEnabled: Boolean = true,
 )

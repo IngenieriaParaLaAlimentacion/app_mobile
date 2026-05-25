@@ -40,4 +40,8 @@ sealed class Route {
     @Serializable
     @SerialName("forgot_password")
     data object ForgotPassword : Route()
+
+    @Serializable
+    @SerialName("login")
+    data object Login : Route()
 }

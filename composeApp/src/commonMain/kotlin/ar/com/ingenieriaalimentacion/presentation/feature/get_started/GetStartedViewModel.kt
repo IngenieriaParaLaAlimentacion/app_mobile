@@ -20,7 +20,8 @@ class GetStartedViewModel : ViewModel() {
         when (action) {
             GetStartedAction.SignUpClick ->
                 _state.update { it.copy(destination = GetStartedDestination.NavigateToRegister) }
-            GetStartedAction.LogInClick -> Unit
+            GetStartedAction.LogInClick ->
+                _state.update { it.copy(destination = GetStartedDestination.NavigateToLogin) }
         }
     }
 

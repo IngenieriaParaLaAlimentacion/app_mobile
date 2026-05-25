@@ -54,6 +54,15 @@ class AuthRepositoryImpl(
         statusSink.value = SessionStatus.NotAuthenticated(isSignOut = true)
     }
 
+    override suspend fun resetPassword(token: String, newPassword: String): Result<Unit> = runCatching {
+        api.resetPassword(token, newPassword)
+        // Force a clean re-login with the new password — and clear any stale session
+        // (safe whether or not a session exists).
+        signOut()
+    }.recoverCatching { throwable ->
+        throw AuthFailure(mapResetError(throwable), throwable)
+    }
+
     private fun clearBearerCache() {
         httpClient.authProviders
             .filterIsInstance<BearerAuthProvider>()
@@ -64,6 +73,18 @@ class AuthRepositoryImpl(
     private fun mapToAuthError(throwable: Throwable): AuthError = when {
         throwable is ResponseException && throwable.response.status == HttpStatusCode.Unauthorized ->
             AuthError.InvalidCredentials
+        throwable is ResponseException -> AuthError.Network
+        else -> AuthError.Unknown(throwable)
+    }
+
+    private fun mapResetError(throwable: Throwable): AuthError = when {
+        throwable is ResponseException && throwable.response.status == HttpStatusCode.BadRequest ->
+            AuthError.WeakPassword
+        throwable is ResponseException &&
+            (throwable.response.status == HttpStatusCode.Unauthorized ||
+                throwable.response.status == HttpStatusCode.Gone ||
+                throwable.response.status == HttpStatusCode.NotFound) ->
+            AuthError.InvalidOrExpiredToken
         throwable is ResponseException -> AuthError.Network
         else -> AuthError.Unknown(throwable)
     }

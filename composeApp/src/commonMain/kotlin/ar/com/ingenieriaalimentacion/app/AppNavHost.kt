@@ -3,6 +3,7 @@ package ar.com.ingenieriaalimentacion.app
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
+import ar.com.ingenieriaalimentacion.presentation.feature.auth.reset_password.resetPasswordScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.establishment.select_establishment.selectEstablishmentScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.get_started.getStartedScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.home.homeScreen
@@ -24,5 +25,6 @@ fun AppNavHost(
         registerScreen(navController)
         selectEstablishmentScreen(navController)
         createSubjectScreen(navController)
+        resetPasswordScreen(navController)
     }
 }

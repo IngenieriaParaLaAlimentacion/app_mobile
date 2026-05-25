@@ -28,4 +28,12 @@ sealed class Route {
     @Serializable
     @SerialName("select_establishment")
     data class SelectEstablishment(val preselectedJson: String = "[]") : Route()
+
+    @Serializable
+    @SerialName("reset_password")
+    data class ResetPassword(val token: String) : Route()
+
+    @Serializable
+    @SerialName("reset_password_success")
+    data object ResetPasswordSuccess : Route()
 }

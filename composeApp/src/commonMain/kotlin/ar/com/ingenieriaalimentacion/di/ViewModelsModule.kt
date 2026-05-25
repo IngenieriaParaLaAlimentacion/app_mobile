@@ -2,6 +2,7 @@ package ar.com.ingenieriaalimentacion.di
 
 import ar.com.ingenieriaalimentacion.app.AppViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.establishment.select_establishment.SelectEstablishmentViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.auth.reset_password.ResetPasswordViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.get_started.GetStartedViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.home.HomeViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.register.RegisterViewModel
@@ -19,5 +20,8 @@ val viewModelsModule = module {
     viewModelOf(::CreateSubjectViewModel)
     viewModel { (route: Route.SelectEstablishment) ->
         SelectEstablishmentViewModel(route = route, getEstablishments = get())
+    }
+    viewModel { (route: Route.ResetPassword) ->
+        ResetPasswordViewModel(route = route, resetPassword = get())
     }
 }

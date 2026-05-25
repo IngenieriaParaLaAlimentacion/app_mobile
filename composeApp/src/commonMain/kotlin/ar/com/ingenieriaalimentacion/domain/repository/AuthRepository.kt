@@ -10,4 +10,5 @@ interface AuthRepository {
     suspend fun bootstrap()
     suspend fun signIn(credentials: Credentials): Result<UserSession>
     suspend fun signOut()
+    suspend fun resetPassword(token: String, newPassword: String): Result<Unit>
 }

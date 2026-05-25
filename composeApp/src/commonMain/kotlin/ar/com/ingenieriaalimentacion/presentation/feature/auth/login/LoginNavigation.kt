@@ -28,5 +28,6 @@ internal fun navigate(
                 popUpTo(0) { inclusive = true }
             }
         LoginDestination.ForgotPassword -> navController.navigateToForgotPassword()
+        LoginDestination.Back -> { navController.popBackStack() }
     }
 }

@@ -45,6 +45,9 @@ class LoginViewModel(
             LoginAction.DismissError -> _state.update { it.copy(submitError = null) }
             LoginAction.ForgotPasswordClick ->
                 _state.update { it.copy(destination = LoginDestination.ForgotPassword) }
+
+            LoginAction.Back ->
+                _state.update { it.copy(destination = LoginDestination.Back) }
         }
     }
 

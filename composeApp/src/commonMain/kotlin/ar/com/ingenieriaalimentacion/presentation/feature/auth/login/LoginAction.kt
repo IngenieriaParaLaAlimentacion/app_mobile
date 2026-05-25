@@ -6,4 +6,5 @@ sealed interface LoginAction {
     data object Submit : LoginAction
     data object DismissError : LoginAction
     data object ForgotPasswordClick : LoginAction
+    data object Back : LoginAction
 }

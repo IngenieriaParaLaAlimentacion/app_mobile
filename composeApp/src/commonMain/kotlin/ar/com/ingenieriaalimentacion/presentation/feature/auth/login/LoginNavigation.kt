@@ -4,6 +4,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.composable
+import ar.com.ingenieriaalimentacion.presentation.feature.auth.forgot_password.navigateToForgotPassword
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 
 fun NavController.navigateToLogin(navOptions: NavOptions? = null) =
@@ -26,5 +27,6 @@ internal fun navigate(
             navController.navigate(Route.Home) {
                 popUpTo(0) { inclusive = true }
             }
+        LoginDestination.ForgotPassword -> navController.navigateToForgotPassword()
     }
 }

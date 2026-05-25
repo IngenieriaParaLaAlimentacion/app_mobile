@@ -7,7 +7,6 @@ data class LoginState(
     val isSubmitting: Boolean = false,
     val fieldErrors: LoginFieldErrors = LoginFieldErrors(),
     val submitError: String? = null,
-    val isForgotPasswordEnabled: Boolean = false,
 ) {
     val canSubmit: Boolean
         get() = email.isNotBlank() && password.isNotBlank() && !isSubmitting

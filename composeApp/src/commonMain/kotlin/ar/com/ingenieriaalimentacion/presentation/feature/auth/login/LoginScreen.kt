@@ -2,6 +2,7 @@ package ar.com.ingenieriaalimentacion.presentation.feature.auth.login
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -146,9 +147,14 @@ fun LoginScreen(
             Text(
                 text = "¿Olvidaste tu contraseña?",
                 style = MaterialTheme.typography.bodyMedium,
-                color = styles.mutedForeground,
+                color = styles.foreground,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = !state.isSubmitting) {
+                        onAction(LoginAction.ForgotPasswordClick)
+                    }
+                    .padding(vertical = 8.dp),
             )
         }
     }

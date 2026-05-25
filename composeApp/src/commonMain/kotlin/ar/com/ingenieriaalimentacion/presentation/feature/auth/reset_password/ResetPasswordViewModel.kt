@@ -99,7 +99,8 @@ class ResetPasswordViewModel(
                 "La contraseña no cumple los requisitos mínimos."
             AuthError.Network ->
                 "No pudimos conectarnos. Verificá tu conexión e intentá nuevamente."
-            AuthError.InvalidCredentials, is AuthError.Unknown, null ->
+            AuthError.InvalidCredentials, AuthError.AccountPendingValidation,
+            is AuthError.Unknown, null ->
                 "Ocurrió un error inesperado. Intentá nuevamente."
         }
     }

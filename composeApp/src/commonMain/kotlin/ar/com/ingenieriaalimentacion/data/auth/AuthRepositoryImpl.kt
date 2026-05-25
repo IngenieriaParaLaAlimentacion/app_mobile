@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.auth
 
+import ar.com.ingenieriaalimentacion.data.device.DeviceIdProvider
 import ar.com.ingenieriaalimentacion.domain.model.auth.AuthError
 import ar.com.ingenieriaalimentacion.domain.model.auth.Credentials
 import ar.com.ingenieriaalimentacion.domain.model.auth.SessionSource
@@ -22,6 +23,7 @@ class AuthRepositoryImpl(
     private val sessionManager: SessionManager,
     private val httpClient: HttpClient,
     private val statusSink: MutableStateFlow<SessionStatus>,
+    private val deviceIdProvider: DeviceIdProvider,
 ) : AuthRepository {
 
     override val sessionStatus: StateFlow<SessionStatus> = statusSink.asStateFlow()
@@ -37,7 +39,8 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun signIn(credentials: Credentials): Result<UserSession> = runCatching {
-        val session = api.signIn(credentials.email, credentials.password)
+        val deviceId = deviceIdProvider.getOrCreate()
+        val session = api.signIn(credentials.email, credentials.password, deviceId)
         sessionManager.saveSession(session)
         clearBearerCache()
         statusSink.value = SessionStatus.Authenticated(session, SessionSource.SignIn)
@@ -79,6 +82,8 @@ class AuthRepositoryImpl(
     private fun mapToAuthError(throwable: Throwable): AuthError = when {
         throwable is ResponseException && throwable.response.status == HttpStatusCode.Unauthorized ->
             AuthError.InvalidCredentials
+        throwable is ResponseException && throwable.response.status == HttpStatusCode.Forbidden ->
+            AuthError.AccountPendingValidation
         throwable is ResponseException -> AuthError.Network
         else -> AuthError.Unknown(throwable)
     }

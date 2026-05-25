@@ -1,0 +1,112 @@
+package ar.com.ingenieriaalimentacion.data.device
+
+import android.content.Context
+import android.os.Build
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
+import android.security.keystore.StrongBoxUnavailableException
+import android.util.Base64
+import android.util.Log
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.security.GeneralSecurityException
+import java.security.KeyStore
+import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
+
+actual class DeviceIdStore(context: Context) {
+
+    private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+    actual suspend fun get(): String? = withContext(Dispatchers.IO) {
+        val combined = prefs.getString(PREF_KEY, null) ?: return@withContext null
+        val bytes = try {
+            Base64.decode(combined, Base64.NO_WRAP)
+        } catch (e: IllegalArgumentException) {
+            Log.w(TAG, "Stored device id blob is not valid Base64 — clearing", e)
+            prefs.edit().remove(PREF_KEY).apply()
+            return@withContext null
+        }
+        if (bytes.size < IV_BYTES + 1) {
+            Log.w(TAG, "Stored device id blob too short — clearing")
+            prefs.edit().remove(PREF_KEY).apply()
+            return@withContext null
+        }
+        val iv = bytes.copyOfRange(0, IV_BYTES)
+        val ciphertext = bytes.copyOfRange(IV_BYTES, bytes.size)
+        try {
+            val cipher = Cipher.getInstance(TRANSFORMATION).apply {
+                init(Cipher.DECRYPT_MODE, loadKey(), GCMParameterSpec(GCM_TAG_BITS, iv))
+            }
+            cipher.doFinal(ciphertext).decodeToString()
+        } catch (e: GeneralSecurityException) {
+            Log.w(TAG, "Stored device id blob failed AES/GCM decryption — clearing", e)
+            prefs.edit().remove(PREF_KEY).apply()
+            null
+        }
+    }
+
+    actual suspend fun set(value: String): Unit = withContext(Dispatchers.IO) {
+        val cipher = Cipher.getInstance(TRANSFORMATION).apply {
+            init(Cipher.ENCRYPT_MODE, loadOrCreateKey())
+        }
+        val iv = cipher.iv
+        val ciphertext = cipher.doFinal(value.encodeToByteArray())
+        val combined = iv + ciphertext
+        prefs.edit()
+            .putString(PREF_KEY, Base64.encodeToString(combined, Base64.NO_WRAP))
+            .apply()
+    }
+
+    private fun loadKey(): SecretKey {
+        val ks = KeyStore.getInstance(KEYSTORE_PROVIDER).apply { load(null) }
+        return ks.getKey(KEY_ALIAS, null) as SecretKey
+    }
+
+    private fun loadOrCreateKey(): SecretKey {
+        val ks = KeyStore.getInstance(KEYSTORE_PROVIDER).apply { load(null) }
+        ks.getKey(KEY_ALIAS, null)?.let { return it as SecretKey }
+
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            try {
+                generateAesKey(strongBoxBacked = true)
+            } catch (_: StrongBoxUnavailableException) {
+                generateAesKey(strongBoxBacked = false)
+            }
+        } else {
+            generateAesKey(strongBoxBacked = false)
+        }
+    }
+
+    private fun generateAesKey(strongBoxBacked: Boolean): SecretKey {
+        val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, KEYSTORE_PROVIDER)
+        val spec = KeyGenParameterSpec.Builder(
+            KEY_ALIAS,
+            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
+        )
+            .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+            .setKeySize(256)
+            .apply {
+                if (strongBoxBacked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    setIsStrongBoxBacked(true)
+                }
+            }
+            .build()
+        generator.init(spec)
+        return generator.generateKey()
+    }
+
+    private companion object {
+        const val PREFS_NAME = "ar.com.ingenieriaalimentacion.device"
+        const val PREF_KEY = "device_id"
+        const val KEYSTORE_PROVIDER = "AndroidKeyStore"
+        const val KEY_ALIAS = "ar.com.ingenieriaalimentacion.device.id_v1"
+        const val TRANSFORMATION = "AES/GCM/NoPadding"
+        const val IV_BYTES = 12
+        const val GCM_TAG_BITS = 128
+        const val TAG = "DeviceIdStore"
+    }
+}

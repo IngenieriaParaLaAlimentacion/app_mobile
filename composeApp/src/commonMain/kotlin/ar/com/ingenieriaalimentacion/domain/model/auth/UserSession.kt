@@ -13,4 +13,5 @@ data class UserSession(
     @SerialName("expires_in") val expiresIn: Long = 0L,
     @SerialName("token_type") val tokenType: String = "Bearer",
     val expiresAt: Instant = Clock.System.now() + expiresIn.seconds,
+    val user: AuthUser? = null,
 )

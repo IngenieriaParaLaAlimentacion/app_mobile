@@ -1,6 +1,7 @@
 package ar.com.ingenieriaalimentacion.data.network
 
 import ar.com.ingenieriaalimentacion.data.auth.AuthApi
+import ar.com.ingenieriaalimentacion.data.device.DeviceIdProvider
 import ar.com.ingenieriaalimentacion.domain.model.auth.SessionSource
 import ar.com.ingenieriaalimentacion.domain.model.auth.SessionStatus
 import ar.com.ingenieriaalimentacion.domain.model.auth.UserSession
@@ -50,6 +51,7 @@ object HttpClientFactory {
         sessionManager: SessionManager,
         authApi: AuthApi,
         statusSink: MutableStateFlow<SessionStatus>,
+        deviceIdProvider: DeviceIdProvider,
     ): HttpClient = HttpClient(engine) {
         install(ContentNegotiation) { json(json) }
         install(Logging) {
@@ -67,11 +69,13 @@ object HttpClientFactory {
                         statusSink.value = SessionStatus.NotAuthenticated(isSignOut = false)
                         return@refreshTokens null
                     }
-                    runCatching { authApi.refresh(current.refreshToken) }.fold(
+                    val deviceId = deviceIdProvider.getOrCreate()
+                    runCatching { authApi.refresh(current.refreshToken, deviceId) }.fold(
                         onSuccess = { fresh: UserSession ->
-                            sessionManager.saveSession(fresh)
-                            statusSink.value = SessionStatus.Authenticated(fresh, SessionSource.Refresh(current))
-                            BearerTokens(fresh.accessToken, fresh.refreshToken)
+                            val merged = fresh.copy(user = fresh.user ?: current.user)
+                            sessionManager.saveSession(merged)
+                            statusSink.value = SessionStatus.Authenticated(merged, SessionSource.Refresh(current))
+                            BearerTokens(merged.accessToken, merged.refreshToken)
                         },
                         onFailure = { cause ->
                             sessionManager.deleteSession()

@@ -37,6 +37,7 @@ val clientsModule = module {
             sessionManager = get<SessionManager>(),
             authApi = get(),
             statusSink = get(),
+            deviceIdProvider = get(),
         )
     }
 

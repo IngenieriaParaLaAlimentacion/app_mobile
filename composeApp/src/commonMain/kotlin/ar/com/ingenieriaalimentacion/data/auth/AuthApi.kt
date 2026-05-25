@@ -18,16 +18,16 @@ import io.ktor.http.contentType
  */
 class AuthApi(private val refreshClient: HttpClient) {
 
-    suspend fun signIn(email: String, password: String): UserSession =
+    suspend fun signIn(email: String, password: String, deviceId: String): UserSession =
         refreshClient.post("auth/login") {
             contentType(ContentType.Application.Json)
-            setBody(LoginRequest(email, password))
+            setBody(LoginRequest(email, password, deviceId))
         }.body()
 
-    suspend fun refresh(refreshToken: String): UserSession =
+    suspend fun refresh(refreshToken: String, deviceId: String): UserSession =
         refreshClient.post("auth/refresh") {
             contentType(ContentType.Application.Json)
-            setBody(RefreshRequest(refreshToken))
+            setBody(RefreshRequest(refreshToken, deviceId))
         }.body()
 
     suspend fun resetPassword(token: String, newPassword: String) {

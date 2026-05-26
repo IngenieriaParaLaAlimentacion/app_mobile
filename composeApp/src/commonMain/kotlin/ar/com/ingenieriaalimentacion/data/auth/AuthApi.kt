@@ -1,6 +1,7 @@
 package ar.com.ingenieriaalimentacion.data.auth
 
 import ar.com.ingenieriaalimentacion.data.auth.dto.LoginRequest
+import ar.com.ingenieriaalimentacion.data.auth.dto.LogoutRequest
 import ar.com.ingenieriaalimentacion.data.auth.dto.RefreshRequest
 import ar.com.ingenieriaalimentacion.data.auth.dto.RequestPasswordRecoveryRequest
 import ar.com.ingenieriaalimentacion.data.auth.dto.ResetPasswordRequest
@@ -41,6 +42,13 @@ class AuthApi(private val refreshClient: HttpClient) {
         refreshClient.post("api/v1/auth/password-recovery/request") {
             contentType(ContentType.Application.Json)
             setBody(RequestPasswordRecoveryRequest(email = email))
+        }
+    }
+
+    suspend fun logout(refreshToken: String, deviceId: String) {
+        refreshClient.post("api/v1/auth/logout") {
+            contentType(ContentType.Application.Json)
+            setBody(LogoutRequest(deviceId = deviceId, refreshToken = refreshToken))
         }
     }
 }

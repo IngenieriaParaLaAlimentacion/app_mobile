@@ -12,7 +12,6 @@ import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.auth.authProviders
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider
-import io.ktor.client.request.post
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,7 +50,11 @@ class AuthRepositoryImpl(
 
     override suspend fun signOut() {
         // Best-effort server invalidation; always clear local state.
-        runCatching { httpClient.post("api/v1/auth/logout") }
+        val refreshToken = (statusSink.value as? SessionStatus.Authenticated)?.session?.refreshToken
+        if (refreshToken != null) {
+            val deviceId = deviceIdProvider.getOrCreate()
+            runCatching { api.logout(refreshToken, deviceId) }
+        }
         sessionManager.deleteSession()
         clearBearerCache()
         statusSink.value = SessionStatus.NotAuthenticated(isSignOut = true)

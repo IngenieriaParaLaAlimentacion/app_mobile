@@ -18,6 +18,7 @@ fun AlButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
+    val background = if (enabled) AlTheme.colors.accent else AlTheme.colors.surfaceMuted
     Text(
         text = text,
         color = AlTheme.colors.textInverted,
@@ -25,7 +26,7 @@ fun AlButton(
         textAlign = TextAlign.Center,
         modifier = modifier
             .clip(RoundedCornerShape(AlTheme.corners.md))
-            .background(AlTheme.colors.accent)
+            .background(background)
             .clickable(enabled = enabled) { onClick() }
             .padding(
                 horizontal = AlTheme.spacing.lg,

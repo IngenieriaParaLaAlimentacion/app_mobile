@@ -24,7 +24,7 @@ internal fun navigate(
 ) {
     when (destination) {
         LoginDestination.Home ->
-            navController.navigate(Route.Home) {
+            navController.navigate(Route.AuthedShell) {
                 popUpTo(0) { inclusive = true }
             }
         LoginDestination.ForgotPassword -> navController.navigateToForgotPassword()

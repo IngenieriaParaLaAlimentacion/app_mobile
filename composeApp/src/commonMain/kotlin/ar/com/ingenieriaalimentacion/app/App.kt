@@ -41,7 +41,7 @@ fun App(
 }
 
 private fun startDestinationFor(sessionStatus: SessionStatus): Route = when (sessionStatus) {
-    is SessionStatus.Authenticated -> Route.Home
+    is SessionStatus.Authenticated -> Route.AuthedShell
     // NotAuthenticated / RefreshFailure / Initializing → get_started (Initializing handled separately).
     else -> Route.GetStarted
 }

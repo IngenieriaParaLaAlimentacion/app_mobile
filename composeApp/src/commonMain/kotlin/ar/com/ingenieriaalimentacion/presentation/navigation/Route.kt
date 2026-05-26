@@ -44,4 +44,12 @@ sealed class Route {
     @Serializable
     @SerialName("login")
     data object Login : Route()
+
+    @Serializable
+    @SerialName("settings")
+    data object Settings : Route()
+
+    @Serializable
+    @SerialName("authed_shell")
+    data object AuthedShell : Route()
 }

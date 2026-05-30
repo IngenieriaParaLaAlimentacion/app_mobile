@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,6 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
+import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.establishment.Establishment
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
@@ -67,78 +67,87 @@ fun SelectEstablishmentScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .safeDrawingPadding()
-                .imePadding()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .imePadding(),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = "‹ Atrás",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = styles.foreground,
-                    modifier = Modifier.clickable { onAction(SelectEstablishmentAction.BackClick) },
-                )
-                Button(onClick = { onAction(SelectEstablishmentAction.ConfirmClick) }) {
-                    Text(if (state.selectedCount > 0) "Listo (${state.selectedCount})" else "Listo")
-                }
-            }
-
-            Input(
-                value = state.query,
-                onValueChange = { onAction(SelectEstablishmentAction.QueryChanged(it)) },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = "Buscar establecimiento",
-                singleLine = true,
+            AlBackTopAppBar(
+                onBackClick = { onAction(SelectEstablishmentAction.BackClick) },
+                title = "Establecimiento",
             )
 
-            Box(modifier = Modifier.fillMaxSize()) {
-                when {
-                    state.isLoading -> Spinner(
-                        modifier = Modifier.align(Alignment.Center),
-                        size = 28.dp,
-                    )
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp),
+            ) {
+                Input(
+                    value = state.query,
+                    onValueChange = { onAction(SelectEstablishmentAction.QueryChanged(it)) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp),
+                    placeholder = "Buscar establecimiento",
+                    singleLine = true,
+                )
 
-                    state.loadError -> Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Text(
-                            text = "No se pudieron cargar los establecimientos.",
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(vertical = 16.dp),
+                ) {
+                    when {
+                        state.isLoading -> Spinner(
+                            modifier = Modifier.align(Alignment.Center),
+                            size = 28.dp,
+                        )
+
+                        state.loadError -> Column(
+                            modifier = Modifier.align(Alignment.Center),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Text(
+                                text = "No se pudieron cargar los establecimientos.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = styles.mutedForeground,
+                            )
+                            Button(onClick = { onAction(SelectEstablishmentAction.RetryClick) }) {
+                                Text("Reintentar")
+                            }
+                        }
+
+                        state.results.isEmpty() -> Text(
+                            text = "Sin resultados",
                             style = MaterialTheme.typography.bodyMedium,
                             color = styles.mutedForeground,
+                            modifier = Modifier.align(Alignment.Center),
                         )
-                        Button(onClick = { onAction(SelectEstablishmentAction.RetryClick) }) {
-                            Text("Reintentar")
+
+                        else -> LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            items(items = state.results, key = { it.id }) { establishment ->
+                                EstablishmentCard(
+                                    establishment = establishment,
+                                    selected = state.isSelected(establishment.id),
+                                    onClick = {
+                                        onAction(SelectEstablishmentAction.EstablishmentToggled(establishment))
+                                    },
+                                )
+                            }
                         }
                     }
+                }
 
-                    state.results.isEmpty() -> Text(
-                        text = "Sin resultados",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = styles.mutedForeground,
-                        modifier = Modifier.align(Alignment.Center),
-                    )
-
-                    else -> LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        items(items = state.results, key = { it.id }) { establishment ->
-                            EstablishmentCard(
-                                establishment = establishment,
-                                selected = state.isSelected(establishment.id),
-                                onClick = {
-                                    onAction(SelectEstablishmentAction.EstablishmentToggled(establishment))
-                                },
-                            )
-                        }
-                    }
+                Button(
+                    onClick = { onAction(SelectEstablishmentAction.ConfirmClick) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 24.dp),
+                    fullWidth = true,
+                ) {
+                    Text(if (state.selectedCount > 0) "Listo (${state.selectedCount})" else "Listo")
                 }
             }
         }

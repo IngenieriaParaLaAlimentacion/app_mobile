@@ -39,6 +39,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.domain.model.establishment.Establishment
 import com.komoui.components.Button
 import com.komoui.components.Input
@@ -90,135 +91,145 @@ fun RegisterScreen(
             .fillMaxSize()
             .background(styles.background)
             .safeDrawingPadding()
-            .imePadding()
-            .padding(horizontal = 24.dp),
+            .imePadding(),
     ) {
+        AlBackTopAppBar(
+            onBackClick = { onAction(RegisterAction.Back) },
+            enabled = !state.isSubmitting,
+        )
+
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .verticalScroll(scrollState)
-                .padding(top = 24.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .fillMaxSize()
+                .padding(horizontal = 24.dp),
         ) {
-            Text(
-                text = "Crear cuenta",
-                style = MaterialTheme.typography.headlineMedium,
-                color = styles.foreground,
-            )
-            Text(
-                text = "Registrate como responsable de establecimiento. Tu cuenta quedará pendiente de aprobación.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = styles.mutedForeground,
-            )
-
-            RegisterField(
-                label = "Email",
-                value = state.email,
-                onValueChange = { onAction(RegisterAction.EmailChanged(it)) },
-                error = state.fieldErrors.email,
-                enabled = !state.isSubmitting,
-                scrollState = scrollState,
-                isImeVisible = isImeVisible,
-                placeholder = "tu@email.com",
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            )
-
-            RegisterField(
-                label = "Contraseña",
-                value = state.password,
-                onValueChange = { onAction(RegisterAction.PasswordChanged(it)) },
-                error = state.fieldErrors.password,
-                enabled = !state.isSubmitting,
-                scrollState = scrollState,
-                isImeVisible = isImeVisible,
-                placeholder = "Mínimo 8 caracteres",
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                visualTransformation = PasswordVisualTransformation(),
-            )
-
-            RegisterField(
-                label = "Nombre",
-                value = state.name,
-                onValueChange = { onAction(RegisterAction.NameChanged(it)) },
-                error = state.fieldErrors.name,
-                enabled = !state.isSubmitting,
-                scrollState = scrollState,
-                isImeVisible = isImeVisible,
-                placeholder = "Tu nombre",
-            )
-
-            RegisterField(
-                label = "Apellido",
-                value = state.lastName,
-                onValueChange = { onAction(RegisterAction.LastNameChanged(it)) },
-                error = state.fieldErrors.lastName,
-                enabled = !state.isSubmitting,
-                scrollState = scrollState,
-                isImeVisible = isImeVisible,
-                placeholder = "Tu apellido",
-            )
-
-            Text(
-                text = "Establecimientos",
-                style = MaterialTheme.typography.labelLarge,
-                color = styles.foreground,
-            )
-            val selectedNames = state.selectedEstablishments.map { it.name }
-            val triggerLabel = when {
-                selectedNames.isEmpty() -> "Seleccionar establecimiento"
-                selectedNames.size == 1 -> selectedNames.first()
-                else -> "${selectedNames.size} establecimientos seleccionados"
-            }
-            val triggerColor = if (selectedNames.isEmpty()) styles.mutedForeground else styles.foreground
-            val triggerBorder = if (state.fieldErrors.establishments != null) styles.destructive else styles.border
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, triggerBorder, RoundedCornerShape(8.dp))
-                    .clickable(enabled = !state.isSubmitting) {
-                        onAction(RegisterAction.OpenEstablishmentSelector)
-                    }
-                    .padding(horizontal = 12.dp, vertical = 14.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                    .weight(1f)
+                    .verticalScroll(scrollState)
+                    .padding(top = 24.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
-                    text = triggerLabel,
-                    color = triggerColor,
-                    style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
+                    text = "Crear cuenta",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = styles.foreground,
                 )
                 Text(
-                    text = "›",
-                    color = styles.mutedForeground,
+                    text = "Registrate como responsable de establecimiento. Tu cuenta quedará pendiente de aprobación.",
                     style = MaterialTheme.typography.bodyMedium,
+                    color = styles.mutedForeground,
                 )
-            }
-            state.fieldErrors.establishments?.let { error ->
-                Text(text = error, color = styles.destructive, style = MaterialTheme.typography.bodySmall)
-            }
-        }
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            state.submitError?.let { error ->
-                Text(text = error, color = styles.destructive, style = MaterialTheme.typography.bodyMedium)
+                RegisterField(
+                    label = "Email",
+                    value = state.email,
+                    onValueChange = { onAction(RegisterAction.EmailChanged(it)) },
+                    error = state.fieldErrors.email,
+                    enabled = !state.isSubmitting,
+                    scrollState = scrollState,
+                    isImeVisible = isImeVisible,
+                    placeholder = "tu@email.com",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                )
+
+                RegisterField(
+                    label = "Contraseña",
+                    value = state.password,
+                    onValueChange = { onAction(RegisterAction.PasswordChanged(it)) },
+                    error = state.fieldErrors.password,
+                    enabled = !state.isSubmitting,
+                    scrollState = scrollState,
+                    isImeVisible = isImeVisible,
+                    placeholder = "Mínimo 8 caracteres",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    visualTransformation = PasswordVisualTransformation(),
+                )
+
+                RegisterField(
+                    label = "Nombre",
+                    value = state.name,
+                    onValueChange = { onAction(RegisterAction.NameChanged(it)) },
+                    error = state.fieldErrors.name,
+                    enabled = !state.isSubmitting,
+                    scrollState = scrollState,
+                    isImeVisible = isImeVisible,
+                    placeholder = "Tu nombre",
+                )
+
+                RegisterField(
+                    label = "Apellido",
+                    value = state.lastName,
+                    onValueChange = { onAction(RegisterAction.LastNameChanged(it)) },
+                    error = state.fieldErrors.lastName,
+                    enabled = !state.isSubmitting,
+                    scrollState = scrollState,
+                    isImeVisible = isImeVisible,
+                    placeholder = "Tu apellido",
+                )
+
+                Text(
+                    text = "Establecimientos",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = styles.foreground,
+                )
+                val selectedNames = state.selectedEstablishments.map { it.name }
+                val triggerLabel = when {
+                    selectedNames.isEmpty() -> "Seleccionar establecimiento"
+                    selectedNames.size == 1 -> selectedNames.first()
+                    else -> "${selectedNames.size} establecimientos seleccionados"
+                }
+                val triggerColor = if (selectedNames.isEmpty()) styles.mutedForeground else styles.foreground
+                val triggerBorder = if (state.fieldErrors.establishments != null) styles.destructive else styles.border
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, triggerBorder, RoundedCornerShape(8.dp))
+                        .clickable(enabled = !state.isSubmitting) {
+                            onAction(RegisterAction.OpenEstablishmentSelector)
+                        }
+                        .padding(horizontal = 12.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = triggerLabel,
+                        color = triggerColor,
+                        style = MaterialTheme.typography.bodyLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        text = "›",
+                        color = styles.mutedForeground,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+                state.fieldErrors.establishments?.let { error ->
+                    Text(text = error, color = styles.destructive, style = MaterialTheme.typography.bodySmall)
+                }
             }
-            Button(
-                onClick = { onAction(RegisterAction.Submit) },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = state.canSubmit,
-                loading = state.isSubmitting,
-                fullWidth = true,
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text("Crear cuenta")
+                state.submitError?.let { error ->
+                    Text(text = error, color = styles.destructive, style = MaterialTheme.typography.bodyMedium)
+                }
+                Button(
+                    onClick = { onAction(RegisterAction.Submit) },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = state.canSubmit,
+                    loading = state.isSubmitting,
+                    fullWidth = true,
+                ) {
+                    Text("Crear cuenta")
+                }
             }
         }
     }

@@ -6,19 +6,15 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -29,9 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -41,6 +35,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import com.komoui.components.Button
 import com.komoui.components.Input
 import com.komoui.themes.styles
@@ -80,121 +75,98 @@ fun LoginScreen(
             .fillMaxSize()
             .background(styles.background)
             .safeDrawingPadding()
-            .imePadding()
-            .padding(horizontal = 24.dp),
+            .imePadding(),
     ) {
-        LoginTopBar(
+        AlBackTopAppBar(
+            onBackClick = { onAction(LoginAction.Back) },
             enabled = !state.isSubmitting,
-            onBack = { onAction(LoginAction.Back) },
         )
 
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .verticalScroll(scrollState)
-                .padding(top = 8.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .fillMaxSize()
+                .padding(horizontal = 24.dp),
         ) {
-            Text(
-                text = "Iniciar sesión",
-                style = MaterialTheme.typography.headlineMedium,
-                color = styles.foreground,
-            )
-            Text(
-                text = "Ingresá tu email y contraseña para continuar.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = styles.mutedForeground,
-            )
-
-            LoginField(
-                label = "Email",
-                value = state.email,
-                onValueChange = { onAction(LoginAction.EmailChanged(it)) },
-                error = state.fieldErrors.email,
-                enabled = !state.isSubmitting,
-                scrollState = scrollState,
-                isImeVisible = isImeVisible,
-                placeholder = "tu@email.com",
-                keyboardType = KeyboardType.Email,
-            )
-
-            LoginField(
-                label = "Contraseña",
-                value = state.password,
-                onValueChange = { onAction(LoginAction.PasswordChanged(it)) },
-                error = state.fieldErrors.password,
-                enabled = !state.isSubmitting,
-                scrollState = scrollState,
-                isImeVisible = isImeVisible,
-                placeholder = "Tu contraseña",
-                keyboardType = KeyboardType.Password,
-                visualTransformation = PasswordVisualTransformation(),
-            )
-        }
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            state.submitError?.let { error ->
-                Text(
-                    text = error,
-                    color = styles.destructive,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-            Button(
-                onClick = { onAction(LoginAction.Submit) },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = state.canSubmit,
-                loading = state.isSubmitting,
-                fullWidth = true,
-            ) {
-                Text("Iniciar sesión")
-            }
-            Text(
-                text = "¿Olvidaste tu contraseña?",
-                style = MaterialTheme.typography.bodyMedium,
-                color = styles.foreground,
-                textAlign = TextAlign.Center,
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(enabled = !state.isSubmitting) {
-                        onAction(LoginAction.ForgotPasswordClick)
-                    }
-                    .padding(vertical = 8.dp),
-            )
-        }
-    }
-}
+                    .weight(1f)
+                    .verticalScroll(scrollState)
+                    .padding(top = 8.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    text = "Iniciar sesión",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = styles.foreground,
+                )
+                Text(
+                    text = "Ingresá tu email y contraseña para continuar.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = styles.mutedForeground,
+                )
 
-@Composable
-private fun LoginTopBar(
-    enabled: Boolean,
-    onBack: () -> Unit,
-) {
-    val styles = MaterialTheme.styles
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp),
-        contentAlignment = Alignment.CenterStart,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .clickable(enabled = enabled, onClick = onBack),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = "‹",
-                style = MaterialTheme.typography.headlineMedium,
-                color = styles.foreground,
-            )
+                LoginField(
+                    label = "Email",
+                    value = state.email,
+                    onValueChange = { onAction(LoginAction.EmailChanged(it)) },
+                    error = state.fieldErrors.email,
+                    enabled = !state.isSubmitting,
+                    scrollState = scrollState,
+                    isImeVisible = isImeVisible,
+                    placeholder = "tu@email.com",
+                    keyboardType = KeyboardType.Email,
+                )
+
+                LoginField(
+                    label = "Contraseña",
+                    value = state.password,
+                    onValueChange = { onAction(LoginAction.PasswordChanged(it)) },
+                    error = state.fieldErrors.password,
+                    enabled = !state.isSubmitting,
+                    scrollState = scrollState,
+                    isImeVisible = isImeVisible,
+                    placeholder = "Tu contraseña",
+                    keyboardType = KeyboardType.Password,
+                    visualTransformation = PasswordVisualTransformation(),
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                state.submitError?.let { error ->
+                    Text(
+                        text = error,
+                        color = styles.destructive,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+                Button(
+                    onClick = { onAction(LoginAction.Submit) },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = state.canSubmit,
+                    loading = state.isSubmitting,
+                    fullWidth = true,
+                ) {
+                    Text("Iniciar sesión")
+                }
+                Text(
+                    text = "¿Olvidaste tu contraseña?",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = styles.foreground,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = !state.isSubmitting) {
+                            onAction(LoginAction.ForgotPasswordClick)
+                        }
+                        .padding(vertical = 8.dp),
+                )
+            }
         }
     }
 }
@@ -249,4 +221,3 @@ private fun LoginField(
         )
     }
 }
-

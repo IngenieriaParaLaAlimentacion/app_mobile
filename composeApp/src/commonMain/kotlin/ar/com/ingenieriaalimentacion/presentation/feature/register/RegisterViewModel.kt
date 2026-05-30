@@ -58,6 +58,7 @@ class RegisterViewModel(
 
             RegisterAction.Submit -> submit()
             RegisterAction.DismissError -> _state.update { it.copy(submitError = null) }
+            RegisterAction.Back -> _state.update { it.copy(destination = RegisterDestination.Back) }
         }
     }
 

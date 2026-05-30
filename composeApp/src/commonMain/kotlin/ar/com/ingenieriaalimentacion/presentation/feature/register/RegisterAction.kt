@@ -11,4 +11,5 @@ sealed interface RegisterAction {
     data class EstablishmentsSelected(val establishments: List<Establishment>) : RegisterAction
     data object Submit : RegisterAction
     data object DismissError : RegisterAction
+    data object Back : RegisterAction
 }

@@ -45,5 +45,7 @@ internal fun navigate(
 
         is RegisterDestination.SelectEstablishment ->
             navController.navigateToSelectEstablishment(destination.preselectedJson)
+
+        RegisterDestination.Back -> navController.popBackStack()
     }
 }

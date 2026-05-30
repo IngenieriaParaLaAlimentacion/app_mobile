@@ -31,6 +31,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import com.komoui.components.Button
 import com.komoui.components.Input
 import com.komoui.themes.styles
@@ -70,98 +71,108 @@ fun ForgotPasswordScreen(
             .fillMaxSize()
             .background(styles.background)
             .safeDrawingPadding()
-            .imePadding()
-            .padding(horizontal = 24.dp),
+            .imePadding(),
     ) {
-        if (state.isSent) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .verticalScroll(scrollState)
-                    .padding(top = 24.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Text(
-                    text = "Revisá tu email",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = styles.foreground,
-                )
-                Text(
-                    text = "Si existe una cuenta con ese email, te enviamos un enlace " +
-                        "para recuperar tu contraseña. Revisá tu bandeja de entrada y la carpeta de spam.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = styles.mutedForeground,
-                )
-            }
+        AlBackTopAppBar(
+            onBackClick = { onAction(ForgotPasswordAction.Back) },
+            enabled = !state.isSubmitting,
+        )
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Button(
-                    onClick = { onAction(ForgotPasswordAction.Back) },
-                    modifier = Modifier.fillMaxWidth(),
-                    fullWidth = true,
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp),
+        ) {
+            if (state.isSent) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .verticalScroll(scrollState)
+                        .padding(top = 24.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    Text("Volver")
-                }
-            }
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .verticalScroll(scrollState)
-                    .padding(top = 24.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Text(
-                    text = "Recuperar contraseña",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = styles.foreground,
-                )
-                Text(
-                    text = "Ingresá tu email y te enviaremos un enlace para recuperar tu contraseña.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = styles.mutedForeground,
-                )
-
-                ForgotPasswordField(
-                    label = "Email",
-                    value = state.email,
-                    onValueChange = { onAction(ForgotPasswordAction.EmailChanged(it)) },
-                    error = state.fieldError,
-                    enabled = !state.isSubmitting,
-                    scrollState = scrollState,
-                    isImeVisible = isImeVisible,
-                    placeholder = "tu@email.com",
-                )
-            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                state.submitError?.let { error ->
                     Text(
-                        text = error,
-                        color = styles.destructive,
+                        text = "Revisá tu email",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = styles.foreground,
+                    )
+                    Text(
+                        text = "Si existe una cuenta con ese email, te enviamos un enlace " +
+                            "para recuperar tu contraseña. Revisá tu bandeja de entrada y la carpeta de spam.",
                         style = MaterialTheme.typography.bodyMedium,
+                        color = styles.mutedForeground,
                     )
                 }
-                Button(
-                    onClick = { onAction(ForgotPasswordAction.Submit) },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = state.canSubmit,
-                    loading = state.isSubmitting,
-                    fullWidth = true,
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text("Enviar enlace")
+                    Button(
+                        onClick = { onAction(ForgotPasswordAction.Back) },
+                        modifier = Modifier.fillMaxWidth(),
+                        fullWidth = true,
+                    ) {
+                        Text("Volver")
+                    }
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .verticalScroll(scrollState)
+                        .padding(top = 24.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Text(
+                        text = "Recuperar contraseña",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = styles.foreground,
+                    )
+                    Text(
+                        text = "Ingresá tu email y te enviaremos un enlace para recuperar tu contraseña.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = styles.mutedForeground,
+                    )
+
+                    ForgotPasswordField(
+                        label = "Email",
+                        value = state.email,
+                        onValueChange = { onAction(ForgotPasswordAction.EmailChanged(it)) },
+                        error = state.fieldError,
+                        enabled = !state.isSubmitting,
+                        scrollState = scrollState,
+                        isImeVisible = isImeVisible,
+                        placeholder = "tu@email.com",
+                    )
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    state.submitError?.let { error ->
+                        Text(
+                            text = error,
+                            color = styles.destructive,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                    Button(
+                        onClick = { onAction(ForgotPasswordAction.Submit) },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = state.canSubmit,
+                        loading = state.isSubmitting,
+                        fullWidth = true,
+                    ) {
+                        Text("Enviar enlace")
+                    }
                 }
             }
         }

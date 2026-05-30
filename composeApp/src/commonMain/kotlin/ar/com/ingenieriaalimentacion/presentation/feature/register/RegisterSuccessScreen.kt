@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.success.AlSuccessTick
+import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import com.komoui.themes.styles
 import kotlinx.coroutines.delay
 
@@ -45,7 +46,12 @@ fun RegisterSuccessScreen(
             .fillMaxSize()
             .background(styles.background)
             .safeDrawingPadding()
-            .padding(32.dp),
+            .padding(
+                start = AlTheme.spacing.xl,
+                end = AlTheme.spacing.xl,
+                top = AlTheme.spacing.xl,
+                bottom = AlTheme.spacing.lg,
+            ),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Column(

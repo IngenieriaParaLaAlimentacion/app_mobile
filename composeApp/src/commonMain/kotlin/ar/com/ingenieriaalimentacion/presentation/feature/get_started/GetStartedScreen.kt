@@ -50,7 +50,8 @@ fun GetStartedScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = AlTheme.spacing.lg),
+                .padding(horizontal = AlTheme.spacing.lg)
+                .padding(bottom = AlTheme.spacing.lg),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Column(

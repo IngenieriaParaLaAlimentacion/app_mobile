@@ -176,7 +176,7 @@ fun RegisterScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 24.dp),
+                    .padding(top = 8.dp, bottom = AlTheme.spacing.lg),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 state.submitError?.let { error ->

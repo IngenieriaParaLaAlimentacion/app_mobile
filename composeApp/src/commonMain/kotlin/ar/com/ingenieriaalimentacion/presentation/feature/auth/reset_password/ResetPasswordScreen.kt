@@ -24,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.header.AlScreenHeader
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlPasswordInput
+import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import com.komoui.themes.styles
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -107,7 +108,7 @@ fun ResetPasswordScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 8.dp, bottom = 24.dp),
+                .padding(top = 8.dp, bottom = AlTheme.spacing.lg),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             state.submitError?.let { error ->

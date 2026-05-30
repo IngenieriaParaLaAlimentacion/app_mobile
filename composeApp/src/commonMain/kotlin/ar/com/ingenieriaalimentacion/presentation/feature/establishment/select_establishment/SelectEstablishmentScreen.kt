@@ -22,6 +22,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButt
 import ar.com.ingenieriaalimentacion.core.design_system.components.card.AlSelectableCard
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
+import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlInput
 import com.komoui.components.Spinner
@@ -139,7 +140,7 @@ fun SelectEstablishmentScreen(
                     onClick = { onAction(SelectEstablishmentAction.ConfirmClick) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 24.dp),
+                        .padding(bottom = AlTheme.spacing.lg),
                     fullWidth = true,
                 ) {
                     Text(if (state.selectedCount > 0) "Listo (${state.selectedCount})" else "Listo")

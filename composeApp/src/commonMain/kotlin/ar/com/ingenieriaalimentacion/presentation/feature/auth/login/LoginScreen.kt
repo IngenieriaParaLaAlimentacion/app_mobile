@@ -29,6 +29,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButt
 import ar.com.ingenieriaalimentacion.core.design_system.components.header.AlScreenHeader
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlInput
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
+import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import com.komoui.themes.styles
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -83,7 +84,7 @@ fun LoginScreen(
                     .fillMaxWidth()
                     .weight(1f)
                     .verticalScroll(scrollState)
-                    .padding(top = 8.dp, bottom = 16.dp),
+                    .padding(top = AlTheme.spacing.md, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 AlScreenHeader(

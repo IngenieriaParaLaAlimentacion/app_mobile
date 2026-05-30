@@ -45,6 +45,7 @@ fun AlInput(
     singleLine: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     visualTransformation: VisualTransformation = VisualTransformation.None,
+    trailingIcon: @Composable (() -> Unit)? = null,
     scrollState: ScrollState? = null,
     isImeVisible: Boolean = false,
 ) {
@@ -93,6 +94,7 @@ fun AlInput(
             interactionSource = interactionSource,
             keyboardOptions = keyboardOptions,
             visualTransformation = visualTransformation,
+            trailingIcon = trailingIcon,
             supportingText = error?.let {
                 { Text(text = it, color = styles.destructive, style = MaterialTheme.typography.bodySmall) }
             },

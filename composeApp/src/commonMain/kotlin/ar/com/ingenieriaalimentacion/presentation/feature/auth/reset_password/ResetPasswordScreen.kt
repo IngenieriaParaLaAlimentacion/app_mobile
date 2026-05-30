@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -20,13 +19,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.header.AlScreenHeader
-import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlInput
+import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlPasswordInput
 import com.komoui.themes.styles
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -84,7 +81,7 @@ fun ResetPasswordScreen(
                     "Una vez confirmada, vas a poder ingresar con ella.",
             )
 
-            AlInput(
+            AlPasswordInput(
                 label = "Nueva contraseña",
                 value = state.newPassword,
                 onValueChange = { onAction(ResetPasswordAction.NewPasswordChanged(it)) },
@@ -93,11 +90,9 @@ fun ResetPasswordScreen(
                 scrollState = scrollState,
                 isImeVisible = isImeVisible,
                 placeholder = "Mínimo 8 caracteres",
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                visualTransformation = PasswordVisualTransformation(),
             )
 
-            AlInput(
+            AlPasswordInput(
                 label = "Repetir contraseña",
                 value = state.confirmPassword,
                 onValueChange = { onAction(ResetPasswordAction.ConfirmPasswordChanged(it)) },
@@ -106,8 +101,6 @@ fun ResetPasswordScreen(
                 scrollState = scrollState,
                 isImeVisible = isImeVisible,
                 placeholder = "Volvé a ingresarla",
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                visualTransformation = PasswordVisualTransformation(),
             )
         }
 

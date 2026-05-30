@@ -3,9 +3,11 @@ package ar.com.ingenieriaalimentacion.presentation.feature.auth.forgot_password
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
@@ -114,24 +116,29 @@ fun ForgotPasswordScreen(
                         .weight(1f)
                         .verticalScroll(scrollState)
                         .padding(top = AlTheme.spacing.md, bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     AlScreenHeader(
                         title = "Recuperar contraseña",
                         subtitle = "Ingresá tu email y te enviaremos un enlace para recuperar tu contraseña.",
                     )
 
-                    AlInput(
-                        label = "Email",
-                        value = state.email,
-                        onValueChange = { onAction(ForgotPasswordAction.EmailChanged(it)) },
-                        error = state.fieldError,
-                        enabled = !state.isSubmitting,
-                        scrollState = scrollState,
-                        isImeVisible = isImeVisible,
-                        placeholder = "tu@email.com",
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                    )
+                    Spacer(Modifier.height(AlTheme.spacing.lg))
+
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.md),
+                    ) {
+                        AlInput(
+                            label = "Email",
+                            value = state.email,
+                            onValueChange = { onAction(ForgotPasswordAction.EmailChanged(it)) },
+                            error = state.fieldError,
+                            enabled = !state.isSubmitting,
+                            scrollState = scrollState,
+                            isImeVisible = isImeVisible,
+                            placeholder = "tu@email.com",
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        )
+                    }
                 }
 
                 Column(

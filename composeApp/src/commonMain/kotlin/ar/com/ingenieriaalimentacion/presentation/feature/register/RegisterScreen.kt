@@ -1,20 +1,18 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.register
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -22,17 +20,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.header.AlScreenHeader
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlInput
+import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlPasswordInput
+import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlSelectField
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.establishment.Establishment
@@ -102,7 +99,6 @@ fun RegisterScreen(
                     .weight(1f)
                     .verticalScroll(scrollState)
                     .padding(top = AlTheme.spacing.md, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 AlScreenHeader(
                     title = "Crear cuenta",
@@ -110,93 +106,70 @@ fun RegisterScreen(
                         "Tu cuenta quedará pendiente de aprobación.",
                 )
 
-                AlInput(
-                    label = "Email",
-                    value = state.email,
-                    onValueChange = { onAction(RegisterAction.EmailChanged(it)) },
-                    error = state.fieldErrors.email,
-                    enabled = !state.isSubmitting,
-                    scrollState = scrollState,
-                    isImeVisible = isImeVisible,
-                    placeholder = "tu@email.com",
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                )
+                Spacer(Modifier.height(AlTheme.spacing.lg))
 
-                AlInput(
-                    label = "Contraseña",
-                    value = state.password,
-                    onValueChange = { onAction(RegisterAction.PasswordChanged(it)) },
-                    error = state.fieldErrors.password,
-                    enabled = !state.isSubmitting,
-                    scrollState = scrollState,
-                    isImeVisible = isImeVisible,
-                    placeholder = "Mínimo 8 caracteres",
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    visualTransformation = PasswordVisualTransformation(),
-                )
-
-                AlInput(
-                    label = "Nombre",
-                    value = state.name,
-                    onValueChange = { onAction(RegisterAction.NameChanged(it)) },
-                    error = state.fieldErrors.name,
-                    enabled = !state.isSubmitting,
-                    scrollState = scrollState,
-                    isImeVisible = isImeVisible,
-                    placeholder = "Tu nombre",
-                )
-
-                AlInput(
-                    label = "Apellido",
-                    value = state.lastName,
-                    onValueChange = { onAction(RegisterAction.LastNameChanged(it)) },
-                    error = state.fieldErrors.lastName,
-                    enabled = !state.isSubmitting,
-                    scrollState = scrollState,
-                    isImeVisible = isImeVisible,
-                    placeholder = "Tu apellido",
-                )
-
-                Text(
-                    text = "Establecimientos",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = styles.foreground,
-                )
-                val selectedNames = state.selectedEstablishments.map { it.name }
-                val triggerLabel = when {
-                    selectedNames.isEmpty() -> "Seleccionar establecimiento"
-                    selectedNames.size == 1 -> selectedNames.first()
-                    else -> "${selectedNames.size} establecimientos seleccionados"
-                }
-                val triggerColor = if (selectedNames.isEmpty()) styles.mutedForeground else styles.foreground
-                val triggerBorder = if (state.fieldErrors.establishments != null) styles.destructive else styles.border
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(1.dp, triggerBorder, RoundedCornerShape(8.dp))
-                        .clickable(enabled = !state.isSubmitting) {
-                            onAction(RegisterAction.OpenEstablishmentSelector)
-                        }
-                        .padding(horizontal = 12.dp, vertical = 14.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.md),
                 ) {
-                    Text(
-                        text = triggerLabel,
-                        color = triggerColor,
-                        style = MaterialTheme.typography.bodyLarge,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
+                    AlInput(
+                        label = "Email",
+                        value = state.email,
+                        onValueChange = { onAction(RegisterAction.EmailChanged(it)) },
+                        error = state.fieldErrors.email,
+                        enabled = !state.isSubmitting,
+                        scrollState = scrollState,
+                        isImeVisible = isImeVisible,
+                        placeholder = "tu@email.com",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     )
-                    Text(
-                        text = "›",
-                        color = styles.mutedForeground,
-                        style = MaterialTheme.typography.bodyMedium,
+
+                    AlPasswordInput(
+                        label = "Contraseña",
+                        value = state.password,
+                        onValueChange = { onAction(RegisterAction.PasswordChanged(it)) },
+                        error = state.fieldErrors.password,
+                        enabled = !state.isSubmitting,
+                        scrollState = scrollState,
+                        isImeVisible = isImeVisible,
+                        placeholder = "Mínimo 8 caracteres",
                     )
-                }
-                state.fieldErrors.establishments?.let { error ->
-                    Text(text = error, color = styles.destructive, style = MaterialTheme.typography.bodySmall)
+
+                    AlInput(
+                        label = "Nombre",
+                        value = state.name,
+                        onValueChange = { onAction(RegisterAction.NameChanged(it)) },
+                        error = state.fieldErrors.name,
+                        enabled = !state.isSubmitting,
+                        scrollState = scrollState,
+                        isImeVisible = isImeVisible,
+                        placeholder = "Tu nombre",
+                    )
+
+                    AlInput(
+                        label = "Apellido",
+                        value = state.lastName,
+                        onValueChange = { onAction(RegisterAction.LastNameChanged(it)) },
+                        error = state.fieldErrors.lastName,
+                        enabled = !state.isSubmitting,
+                        scrollState = scrollState,
+                        isImeVisible = isImeVisible,
+                        placeholder = "Tu apellido",
+                    )
+
+                    val selectedNames = state.selectedEstablishments.map { it.name }
+                    val selectionLabel = when {
+                        selectedNames.isEmpty() -> ""
+                        selectedNames.size == 1 -> selectedNames.first()
+                        else -> "${selectedNames.size} establecimientos seleccionados"
+                    }
+                    AlSelectField(
+                        label = "Establecimientos",
+                        value = selectionLabel,
+                        placeholder = "Seleccionar establecimiento",
+                        onClick = { onAction(RegisterAction.OpenEstablishmentSelector) },
+                        error = state.fieldErrors.establishments,
+                        enabled = !state.isSubmitting,
+                    )
                 }
             }
 

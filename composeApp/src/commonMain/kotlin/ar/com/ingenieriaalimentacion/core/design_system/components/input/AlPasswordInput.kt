@@ -5,9 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -21,6 +18,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.komoui.themes.styles
+import ingenieria_alimentacion.composeapp.generated.resources.Res
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_eye_close_line
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_eye_line
+import org.jetbrains.compose.resources.vectorResource
 
 /**
  * Design-system password field. Wraps [AlInput] with a built-in show/hide
@@ -59,11 +60,13 @@ fun AlPasswordInput(
         },
         trailingIcon = {
             Icon(
-                imageVector = if (passwordVisible) {
-                    Icons.Filled.VisibilityOff
-                } else {
-                    Icons.Filled.Visibility
-                },
+                imageVector = vectorResource(
+                    if (passwordVisible) {
+                        Res.drawable.ic_mingcute_eye_close_line
+                    } else {
+                        Res.drawable.ic_mingcute_eye_line
+                    },
+                ),
                 contentDescription = if (passwordVisible) {
                     "Ocultar contraseña"
                 } else {

@@ -60,9 +60,10 @@ fun HomeScreen(
             )
             Spacer(modifier = Modifier.height(AlTheme.spacing.md))
             AlButton(
-                text = "Cargar sujeto",
                 onClick = { onAction(HomeAction.CreateSubjectClick) },
-            )
+            ) {
+                Text("Cargar sujeto")
+            }
         }
     }
 }

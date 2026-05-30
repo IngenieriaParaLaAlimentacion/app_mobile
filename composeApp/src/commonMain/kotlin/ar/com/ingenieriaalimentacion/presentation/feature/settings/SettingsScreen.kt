@@ -3,6 +3,7 @@ package ar.com.ingenieriaalimentacion.presentation.feature.settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,10 +49,11 @@ fun SettingsScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             AlButton(
-                text = "Logout",
                 onClick = { onAction(SettingsAction.SignOutClick) },
                 enabled = !state.isSigningOut,
-            )
+            ) {
+                Text("Logout")
+            }
         }
     }
 }

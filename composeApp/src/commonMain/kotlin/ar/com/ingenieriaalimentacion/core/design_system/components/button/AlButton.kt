@@ -1,36 +1,39 @@
 package ar.com.ingenieriaalimentacion.core.design_system.components.button
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.style.TextAlign
-import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
+import com.komoui.components.Button
+import com.komoui.components.ButtonVariant
 
+/**
+ * Design-system button variants. Re-exported from KomoUI so screens reference
+ * the design system instead of importing KomoUI directly.
+ */
+typealias AlButtonVariant = ButtonVariant
+
+/**
+ * Design-system button. Thin wrapper over the KomoUI [Button] so every screen
+ * imports a single canonical button from the design system instead of reaching
+ * for KomoUI or raw Material directly.
+ */
 @Composable
 fun AlButton(
-    text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    loading: Boolean = false,
+    fullWidth: Boolean = false,
+    variant: AlButtonVariant = AlButtonVariant.Default,
+    content: @Composable RowScope.() -> Unit,
 ) {
-    val background = if (enabled) AlTheme.colors.accent else AlTheme.colors.surfaceMuted
-    Text(
-        text = text,
-        color = AlTheme.colors.textInverted,
-        style = AlTheme.typography.body,
-        textAlign = TextAlign.Center,
-        modifier = modifier
-            .clip(RoundedCornerShape(AlTheme.corners.md))
-            .background(background)
-            .clickable(enabled = enabled) { onClick() }
-            .padding(
-                horizontal = AlTheme.spacing.lg,
-                vertical = AlTheme.spacing.md,
-            ),
+    Button(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        loading = loading,
+        fullWidth = fullWidth,
+        variant = variant,
+        content = content,
     )
 }

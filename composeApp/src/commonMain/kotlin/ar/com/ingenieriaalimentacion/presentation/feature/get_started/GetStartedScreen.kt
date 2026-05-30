@@ -1,6 +1,5 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.get_started
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -17,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
+import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButtonVariant
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import org.koin.compose.viewmodel.koinViewModel
@@ -75,23 +75,22 @@ fun GetStartedScreen(
                 )
             }
             AlButton(
-                text = state.signUpLabel,
                 onClick = { onAction(GetStartedAction.SignUpClick) },
                 modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(modifier = Modifier.height(AlTheme.spacing.md))
-            Text(
-                text = state.logInLabel,
-                style = AlTheme.typography.body,
-                color = AlTheme.colors.textMuted,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(enabled = state.isLoginEnabled) {
-                        onAction(GetStartedAction.LogInClick)
-                    }
-                    .padding(vertical = AlTheme.spacing.md),
-            )
+                fullWidth = true,
+            ) {
+                Text(state.signUpLabel)
+            }
+            Spacer(modifier = Modifier.height(AlTheme.spacing.sm))
+            AlButton(
+                onClick = { onAction(GetStartedAction.LogInClick) },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = state.isLoginEnabled,
+                fullWidth = true,
+                variant = AlButtonVariant.Secondary,
+            ) {
+                Text(state.logInLabel)
+            }
         }
     }
 }

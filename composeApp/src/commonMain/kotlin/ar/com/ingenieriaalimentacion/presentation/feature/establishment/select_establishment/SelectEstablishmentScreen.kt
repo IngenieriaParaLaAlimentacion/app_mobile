@@ -23,13 +23,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.establishment.Establishment
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
-import com.komoui.components.Button
-import com.komoui.components.Input
+import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlInput
 import com.komoui.components.Spinner
 import com.komoui.themes.styles
 import org.koin.compose.viewmodel.koinViewModel
@@ -79,7 +79,7 @@ fun SelectEstablishmentScreen(
                     .fillMaxSize()
                     .padding(horizontal = 24.dp),
             ) {
-                Input(
+                AlInput(
                     value = state.query,
                     onValueChange = { onAction(SelectEstablishmentAction.QueryChanged(it)) },
                     modifier = Modifier
@@ -111,7 +111,7 @@ fun SelectEstablishmentScreen(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = styles.mutedForeground,
                             )
-                            Button(onClick = { onAction(SelectEstablishmentAction.RetryClick) }) {
+                            AlButton(onClick = { onAction(SelectEstablishmentAction.RetryClick) }) {
                                 Text("Reintentar")
                             }
                         }
@@ -140,7 +140,7 @@ fun SelectEstablishmentScreen(
                     }
                 }
 
-                Button(
+                AlButton(
                     onClick = { onAction(SelectEstablishmentAction.ConfirmClick) },
                     modifier = Modifier
                         .fillMaxWidth()

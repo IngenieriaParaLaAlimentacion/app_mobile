@@ -23,8 +23,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.success.AlSuccessTick
-import com.komoui.components.Button
 import com.komoui.themes.styles
 import kotlinx.coroutines.delay
 
@@ -85,7 +85,7 @@ fun RegisterSuccessScreen(
                 }
             }
         }
-        Button(
+        AlButton(
             onClick = onLoginClick,
             modifier = Modifier.fillMaxWidth(),
             fullWidth = true,

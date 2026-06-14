@@ -196,7 +196,8 @@ class RegisterViewModelTest {
 
             val state = awaitState { it.destination != null }
             assertEquals(RegisterDestination.Success, state.destination)
-            assertFalse(state.isSubmitting)
+            // Stays loading through navigation; the screen is torn down before the spinner clears.
+            assertTrue(state.isSubmitting)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -243,7 +244,7 @@ class RegisterViewModelTest {
     }
 
     @Test
-    fun `isSubmitting toggles around the call`() = runTest(dispatcher) {
+    fun `isSubmitting turns true in flight and stays true on success`() = runTest(dispatcher) {
         val gate = CompletableDeferred<Unit>()
         val registrationRepo = FakeRegistrationRepository().apply { this.gate = gate }
         val vm = viewModel(registrationRepo = registrationRepo)
@@ -257,8 +258,10 @@ class RegisterViewModelTest {
             assertTrue(awaitState { it.isSubmitting }.isSubmitting)
 
             gate.complete(Unit)
+            // On success the flag stays true so the button keeps loading until navigation
+            // tears down the screen (avoids the idle-button flash).
             val done = awaitState { it.destination != null }
-            assertFalse(done.isSubmitting)
+            assertTrue(done.isSubmitting)
             assertEquals(RegisterDestination.Success, done.destination)
             cancelAndIgnoreRemainingEvents()
         }

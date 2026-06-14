@@ -72,9 +72,10 @@ class LoginViewModel(
                 ),
             ).fold(
                 onSuccess = {
-                    _state.update {
-                        it.copy(isSubmitting = false, destination = LoginDestination.Home)
-                    }
+                    // Keep isSubmitting = true so the button stays in its loading state until
+                    // navigation tears down this screen. Clearing it here would stop the spinner
+                    // a frame before navigation, flashing the idle button.
+                    _state.update { it.copy(destination = LoginDestination.Home) }
                 },
                 onFailure = { throwable ->
                     _state.update {

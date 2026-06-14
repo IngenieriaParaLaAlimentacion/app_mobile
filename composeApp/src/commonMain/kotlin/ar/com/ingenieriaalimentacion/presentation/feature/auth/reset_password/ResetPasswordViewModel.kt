@@ -63,9 +63,9 @@ class ResetPasswordViewModel(
         viewModelScope.launch {
             resetPassword(token = route.token, newPassword = current.newPassword).fold(
                 onSuccess = {
-                    _state.update {
-                        it.copy(isSubmitting = false, destination = ResetPasswordDestination.Success)
-                    }
+                    // Keep isSubmitting = true until navigation tears down this screen, so the
+                    // button doesn't flash back to idle before the screen changes.
+                    _state.update { it.copy(destination = ResetPasswordDestination.Success) }
                 },
                 onFailure = { throwable ->
                     _state.update {

@@ -7,6 +7,11 @@ import ar.com.ingenieriaalimentacion.domain.usecase.auth.ResetPasswordUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.SignInUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.SignOutUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.establishment.GetEstablishmentsUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetAvailableEstablishmentsUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyProfileUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.RequestEstablishmentAccessUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.UpdateMyProfileUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.registration.RegisterManagerUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.CreateSubjectUseCase
 import org.koin.dsl.module
@@ -21,4 +26,9 @@ val useCasesModule = module {
     factory { GetEstablishmentsUseCase(get()) }
     factory { RegisterManagerUseCase(get()) }
     factory { CreateSubjectUseCase(get()) }
+    factory { GetMyProfileUseCase(get()) }
+    factory { GetMyEstablishmentsUseCase(get()) }
+    factory { UpdateMyProfileUseCase(get()) }
+    factory { GetAvailableEstablishmentsUseCase(get()) }
+    factory { RequestEstablishmentAccessUseCase(get()) }
 }

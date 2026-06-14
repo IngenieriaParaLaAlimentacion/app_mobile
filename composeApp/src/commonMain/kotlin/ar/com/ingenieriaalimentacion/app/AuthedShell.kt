@@ -16,7 +16,8 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.navbar.AlBott
 import ar.com.ingenieriaalimentacion.core.design_system.components.navbar.AlBottomNavTab
 import ar.com.ingenieriaalimentacion.presentation.feature.home.HomeDestination
 import ar.com.ingenieriaalimentacion.presentation.feature.home.HomeScreenRoot
-import ar.com.ingenieriaalimentacion.presentation.feature.settings.SettingsScreenRoot
+import ar.com.ingenieriaalimentacion.presentation.feature.profile.view.ProfileScreenRoot
+import ar.com.ingenieriaalimentacion.presentation.feature.profile.view.navigateProfile
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.create_subject.navigateToCreateSubject
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 
@@ -26,7 +27,7 @@ fun AuthedShell(onSignOut: () -> Unit) {
     val innerNav = rememberNavController()
     val entry by innerNav.currentBackStackEntryAsState()
     val selectedTab = when {
-        entry?.destination?.hasRoute<Route.Settings>() == true -> AlBottomNavTab.Settings
+        entry?.destination?.hasRoute<Route.Profile>() == true -> AlBottomNavTab.Profile
         else -> AlBottomNavTab.Home
     }
 
@@ -37,14 +38,17 @@ fun AuthedShell(onSignOut: () -> Unit) {
                 onSelected = { tab ->
                     val target: Route = when (tab) {
                         AlBottomNavTab.Home -> Route.Home
-                        AlBottomNavTab.Settings -> Route.Settings
+                        AlBottomNavTab.Profile -> Route.Profile
                     }
                     innerNav.navigate(target) {
+                        // Save/restore each tab's back stack entry so its ViewModel
+                        // survives tab switches instead of being recreated (which would
+                        // re-fire ProfileViewModel.init -> /me on every Profile re-entry).
                         popUpTo(innerNav.graph.findStartDestination().id) {
-                            saveState = false
+                            saveState = true
                         }
                         launchSingleTop = true
-                        restoreState = false
+                        restoreState = true
                     }
                 },
             )
@@ -66,8 +70,10 @@ fun AuthedShell(onSignOut: () -> Unit) {
                     },
                 )
             }
-            composable<Route.Settings> {
-                SettingsScreenRoot(onLoggedOut = onSignOut)
+            composable<Route.Profile> {
+                ProfileScreenRoot(
+                    navigate = { dest -> navigateProfile(dest, outerNav, onSignOut) },
+                )
             }
         }
     }

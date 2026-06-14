@@ -88,6 +88,73 @@ Do NOT use `BringIntoViewRequester` — it is experimental and unreliable on iOS
    }
    ```
 
+### Navigate-back-with-result to refresh (CMP pattern)
+When a child editor mutates server data (e.g. `EditProfile` PATCHes `/me`) and the
+parent that opened it must reflect the change after `popBackStack()`, push a
+**one-shot result** through the back stack entry's `SavedStateHandle` instead of
+blanket-refreshing on every `ON_RESUME`. The parent then refreshes only on a real
+success — never when the user just opened the editor and backed out. This is how the
+`../extra` CMP project (`profile_home` ← `enter_bio`, `listing_detail` ← `edit_listing`)
+does it.
+
+**Result keys.** Keep the keys as shared `const val`s in one file so producer and
+consumer agree on the string (extra: `presentation/common/Results.kt`):
+```kotlin
+const val PROFILE_UPDATED_RESULT = "PROFILE_UPDATED_RESULT"
+```
+
+**1. Producer — the child editor.** Distinguish a plain back from a successful save in
+the `*Destination` (`EditProfile` already has `data object Back` and `data object Saved`),
+and emit `Saved` *only* in the PATCH success branch of the ViewModel:
+```kotlin
+updateMyProfile(update).fold(
+    onSuccess = { _state.update { it.copy(isSaving = false, destination = EditProfileDestination.Saved) } },
+    onFailure = { error -> _state.update { it.copy(isSaving = false, saveError = error) } },
+)
+```
+Write the result into the **previous** back stack entry's `savedStateHandle` right
+before popping, in the `*Navigation` handler:
+```kotlin
+when (destination) {
+    EditProfileDestination.Back -> navController.popBackStack()
+    EditProfileDestination.Saved -> {
+        navController.previousBackStackEntry?.savedStateHandle?.set(PROFILE_UPDATED_RESULT, true)
+        navController.popBackStack()
+    }
+}
+```
+
+**2. Consumer — the parent screen root.** Collect the key as a `StateFlow`, refresh,
+then `remove` it so it fires once (consume-once):
+```kotlin
+LaunchedEffect(entry) {
+    entry.savedStateHandle
+        .getStateFlow<Boolean?>(PROFILE_UPDATED_RESULT, null)
+        .collect { result ->
+            if (result != null) {
+                viewModel.refresh()
+                entry.savedStateHandle.remove<Boolean?>(PROFILE_UPDATED_RESULT)
+            }
+        }
+}
+```
+
+**Which back stack entry? (important for the Profile case).** The producer's write
+target and the consumer's read target must be the **same** entry. In `../extra` the
+parent and child share one NavController, so it is simply
+`navController.currentBackStackEntry`. In *this* app the Profile tab lives inside
+`AuthedShell`'s **inner** `NavHost`, while `EditProfile` is pushed on the **outer** nav
+(`LocalOuterNavController`). So `EditProfile`'s `previousBackStackEntry` is the
+**AuthedShell** outer-nav entry — not the Profile inner-nav entry. Both sides must use
+the outer nav's shared entry: the producer writes to `outerNav.previousBackStackEntry`
+(already the case, since `editProfileScreen` receives the outer `navController`), and
+`ProfileScreenRoot` must read from `LocalOuterNavController.current.currentBackStackEntry`,
+not its inner entry.
+
+Adopting this lets `ProfileScreenRoot` drop the `LifecycleResumeEffect` +
+`skipFirstResume` workaround (which re-fetches `/me` on every tab re-entry); the result
+key refreshes only after a confirmed save.
+
 ## Commands
 
 The project requires Java 21. `scripts/compile.sh` sets `JAVA_HOME` automatically.

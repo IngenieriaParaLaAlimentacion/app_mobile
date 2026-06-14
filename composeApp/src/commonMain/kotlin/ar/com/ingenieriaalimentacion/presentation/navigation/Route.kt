@@ -46,8 +46,25 @@ sealed class Route {
     data object Login : Route()
 
     @Serializable
-    @SerialName("settings")
-    data object Settings : Route()
+    @SerialName("profile")
+    data object Profile : Route()
+
+    @Serializable
+    @SerialName("edit_profile")
+    data class EditProfile(
+        val name: String,
+        val lastName: String,
+        val email: String,
+        val role: String,
+    ) : Route()
+
+    @Serializable
+    @SerialName("request_establishment")
+    data object RequestEstablishment : Route()
+
+    @Serializable
+    @SerialName("my_establishments")
+    data object MyEstablishments : Route()
 
     @Serializable
     @SerialName("authed_shell")

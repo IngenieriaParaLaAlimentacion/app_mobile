@@ -4,10 +4,12 @@ import ar.com.ingenieriaalimentacion.data.auth.AuthRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.auth.storage.TokenStoreSessionManager
 import ar.com.ingenieriaalimentacion.data.device.DeviceIdProvider
 import ar.com.ingenieriaalimentacion.data.establishment.EstablishmentRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.profile.ProfileRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.registration.RegistrationRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.subject.SubjectRepositoryImpl
 import ar.com.ingenieriaalimentacion.domain.repository.AuthRepository
 import ar.com.ingenieriaalimentacion.domain.repository.EstablishmentRepository
+import ar.com.ingenieriaalimentacion.domain.repository.ProfileRepository
 import ar.com.ingenieriaalimentacion.domain.repository.RegistrationRepository
 import ar.com.ingenieriaalimentacion.domain.repository.SessionManager
 import ar.com.ingenieriaalimentacion.domain.repository.SubjectRepository
@@ -33,4 +35,5 @@ val repositoriesModule = module {
     single<EstablishmentRepository> { EstablishmentRepositoryImpl(api = get()) }
     single<RegistrationRepository> { RegistrationRepositoryImpl(api = get()) }
     single<SubjectRepository> { SubjectRepositoryImpl(api = get()) }
+    single<ProfileRepository> { ProfileRepositoryImpl(api = get()) }
 }

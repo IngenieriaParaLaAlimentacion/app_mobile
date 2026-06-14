@@ -12,21 +12,22 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
+import ingenieria_alimentacion.composeapp.generated.resources.Res
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_home_line
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_user_3_line
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.vectorResource
 
-enum class AlBottomNavTab(val label: String, val icon: ImageVector) {
-    Home("Home", Icons.Default.Home),
-    Settings("Settings", Icons.Default.Settings),
+enum class AlBottomNavTab(val label: String, val icon: DrawableResource) {
+    Home("Home", Res.drawable.ic_mingcute_home_line),
+    Profile("Perfil", Res.drawable.ic_mingcute_user_3_line),
 }
 
 @Composable
@@ -56,7 +57,7 @@ fun AlBottomNavBar(
                 verticalArrangement = Arrangement.Center,
             ) {
                 Icon(
-                    imageVector = tab.icon,
+                    imageVector = vectorResource(tab.icon),
                     contentDescription = tab.label,
                     tint = tint,
                     modifier = Modifier.size(24.dp),

@@ -3,6 +3,7 @@ package ar.com.ingenieriaalimentacion.di
 import ar.com.ingenieriaalimentacion.data.auth.AuthApi
 import ar.com.ingenieriaalimentacion.data.establishment.EstablishmentApi
 import ar.com.ingenieriaalimentacion.data.network.HttpClientFactory
+import ar.com.ingenieriaalimentacion.data.profile.ProfileApi
 import ar.com.ingenieriaalimentacion.data.registration.RegistrationApi
 import ar.com.ingenieriaalimentacion.data.subject.SubjectApi
 import ar.com.ingenieriaalimentacion.domain.model.auth.SessionStatus
@@ -42,4 +43,5 @@ val clientsModule = module {
     }
 
     single { SubjectApi(client = get()) }
+    single { ProfileApi(client = get()) }
 }

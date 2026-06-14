@@ -10,6 +10,9 @@ import ar.com.ingenieriaalimentacion.presentation.feature.auth.login.loginScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.reset_password.resetPasswordScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.establishment.select_establishment.selectEstablishmentScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.get_started.getStartedScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.profile.edit.editProfileScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.profile.establishments.myEstablishmentsScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.profile.request_establishment.requestEstablishmentScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.register.registerScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.create_subject.createSubjectScreen
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
@@ -29,6 +32,9 @@ fun AppNavHost(
             loginScreen(navController)
             selectEstablishmentScreen(navController)
             createSubjectScreen(navController)
+            editProfileScreen(navController)
+            requestEstablishmentScreen(navController)
+            myEstablishmentsScreen(navController)
             resetPasswordScreen(navController)
             forgotPasswordScreen(navController)
             composable<Route.AuthedShell> {

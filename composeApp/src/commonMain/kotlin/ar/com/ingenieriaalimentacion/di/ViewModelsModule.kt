@@ -7,8 +7,11 @@ import ar.com.ingenieriaalimentacion.presentation.feature.auth.login.LoginViewMo
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.reset_password.ResetPasswordViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.get_started.GetStartedViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.home.HomeViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.profile.edit.EditProfileViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.profile.establishments.MyEstablishmentsViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.profile.request_establishment.RequestEstablishmentViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.profile.view.ProfileViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.register.RegisterViewModel
-import ar.com.ingenieriaalimentacion.presentation.feature.settings.SettingsViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.create_subject.CreateSubjectViewModel
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 import org.koin.core.module.dsl.viewModel
@@ -23,11 +26,16 @@ val viewModelsModule = module {
     viewModelOf(::LoginViewModel)
     viewModelOf(::CreateSubjectViewModel)
     viewModelOf(::ForgotPasswordViewModel)
-    viewModelOf(::SettingsViewModel)
+    viewModelOf(::ProfileViewModel)
+    viewModelOf(::RequestEstablishmentViewModel)
+    viewModelOf(::MyEstablishmentsViewModel)
     viewModel { (route: Route.SelectEstablishment) ->
         SelectEstablishmentViewModel(route = route, getEstablishments = get())
     }
     viewModel { (route: Route.ResetPassword) ->
         ResetPasswordViewModel(route = route, resetPassword = get())
+    }
+    viewModel { (route: Route.EditProfile) ->
+        EditProfileViewModel(route = route, updateMyProfile = get())
     }
 }

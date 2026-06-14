@@ -43,6 +43,32 @@ Models, use cases, repository interfaces, utils, and constants. No dependencies 
 ### On data
 DTOs for HTTP request/response bodies, mappers, repository implementations, and clients.
 
+### Icons
+This project uses **MingCute** icons, NOT Material Design icons. There is no
+`compose.materialIconsExtended` dependency and `androidx.compose.material.icons.*`
+(`Icons.Default.*`, `Icons.AutoMirrored.*`, etc.) must not be used.
+
+Icons are Android Vector Drawables under
+`composeApp/src/commonMain/composeResources/drawable/`, named `ic_mingcute_<name>.xml`,
+and rendered from common code via `vectorResource(Res.drawable.ic_mingcute_<name>)`.
+Their fill is `#FF000000`, so always pass a `tint` at the call site (see
+`AlPasswordInput`, `AlBackTopAppBar`, `AlListRow`).
+
+```kotlin
+import ingenieria_alimentacion.composeapp.generated.resources.Res
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_home_line
+import org.jetbrains.compose.resources.vectorResource
+
+Icon(
+    imageVector = vectorResource(Res.drawable.ic_mingcute_home_line),
+    contentDescription = "...",
+    tint = AlTheme.colors.textMuted,
+)
+```
+
+To add a new icon, use the `add-mingcute-icon` skill (runs the deterministic
+driver) and rebuild once so the `Res.drawable.*` accessor is generated.
+
 ### Scroll-to-field on keyboard open (CMP pattern)
 Do NOT use `BringIntoViewRequester` — it is experimental and unreliable on iOS in Compose Multiplatform. Use `ScrollState` directly:
 

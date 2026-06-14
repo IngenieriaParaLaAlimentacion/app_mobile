@@ -10,6 +10,11 @@ data class AlColors(
     val textMuted: Color,
     val textInverted: Color,
     val accent: Color,
+    val accentContainer: Color,
+    val warning: Color,
+    val warningContainer: Color,
+    val danger: Color,
+    val dangerContainer: Color,
     val border: Color,
 )
 

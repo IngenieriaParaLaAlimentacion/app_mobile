@@ -16,6 +16,11 @@ private val lightColors = AlColors(
     textMuted = Color(0xFF71717A),
     textInverted = Color(0xFFFFFFFF),
     accent = Color(0xFF15803D),
+    accentContainer = Color(0xFFDCFCE7),
+    warning = Color(0xFFB45309),
+    warningContainer = Color(0xFFFEF3C7),
+    danger = Color(0xFFB91C1C),
+    dangerContainer = Color(0xFFFEE2E2),
     border = Color(0xFFE4E4E7),
 )
 

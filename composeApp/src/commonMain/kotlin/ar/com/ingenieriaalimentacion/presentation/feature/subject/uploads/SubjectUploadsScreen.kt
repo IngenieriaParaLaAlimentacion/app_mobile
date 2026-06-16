@@ -82,12 +82,12 @@ private fun Header(onSyncNow: () -> Unit) {
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
             Text(
-                text = "Cargas pendientes",
+                text = "Historial",
                 style = AlTheme.typography.title,
                 color = AlTheme.colors.textBase,
             )
             Text(
-                text = "Estado de sincronización de los sujetos cargados.",
+                text = "Tus últimas cargas y su estado de sincronización.",
                 style = AlTheme.typography.caption,
                 color = AlTheme.colors.textMuted,
             )
@@ -188,7 +188,7 @@ private fun EmptyState() {
             verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
         ) {
             Text(
-                text = "Sin subidas todavía",
+                text = "Sin cargas todavía",
                 style = AlTheme.typography.body.copy(fontWeight = FontWeight.Medium),
                 color = AlTheme.colors.textBase,
             )

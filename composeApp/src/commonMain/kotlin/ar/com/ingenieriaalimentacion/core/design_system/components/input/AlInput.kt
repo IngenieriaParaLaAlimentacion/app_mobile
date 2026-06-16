@@ -32,6 +32,11 @@ import com.komoui.themes.styles
  * Pass [scrollState] + [isImeVisible] to enable auto-scroll-on-focus for fields
  * inside a scrollable, IME-affected form. Omit them for standalone inputs (e.g.
  * a search box) that don't need the behavior.
+ *
+ * [onFocusChange] reports focus gained (`true`) / lost (`false`). The initial
+ * unfocused state is never reported, so a blur callback only fires after the
+ * field has actually been focused — feed it into a [TextFieldState.onFocus] to
+ * drive blur-aware validation.
  */
 @Composable
 fun AlInput(
@@ -48,11 +53,19 @@ fun AlInput(
     trailingIcon: @Composable (() -> Unit)? = null,
     scrollState: ScrollState? = null,
     isImeVisible: Boolean = false,
+    onFocusChange: (Boolean) -> Unit = {},
 ) {
     val styles = MaterialTheme.styles
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
     var fieldScrollOffset by remember { mutableStateOf(0) }
+    var hasFocusedOnce by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isFocused) {
+        if (isFocused) hasFocusedOnce = true
+        // Skip the initial unfocused state; only report real focus/blur transitions.
+        if (hasFocusedOnce) onFocusChange(isFocused)
+    }
 
     if (scrollState != null) {
         LaunchedEffect(isFocused, isImeVisible) {

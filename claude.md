@@ -69,6 +69,49 @@ Icon(
 To add a new icon, use the `add-mingcute-icon` skill (runs the deterministic
 driver) and rebuild once so the `Res.drawable.*` accessor is generated.
 
+### Blur-aware form validation (pattern)
+Form fields validate per-field with a UX rule: **never show an error while the
+user is editing the field**; surface it only after they leave it (blur), and
+only when the field has content that breaks a rule. Empty-but-touched fields stay
+quiet; `Submit` force-shows every error (including "required"). The reusable
+pieces live in `core/validation/`:
+
+- `TextFieldState` — `value` + `isFocused` + `hasBlurred` + `forceShow` + `error`.
+  `error` is recomputed eagerly (so `isValid` is always current); `displayError`
+  decides *when* to render it. Update it from the ViewModel with `onChange`,
+  `onFocus`, and `showError` (submit).
+- `Rules` — composable `Validator` builders (`required`, `maxLength`, `minLength`,
+  `matches`, `digitsInRange`) combined with `Rules.of(...)` (first failure wins).
+  Content rules pass on blank, so `required` owns presence.
+- `AlInput` exposes `onFocusChange: (Boolean) -> Unit`; feed it into
+  `TextFieldState.onFocus`. The initial unfocused state is never reported, so the
+  blur callback only fires after a real focus.
+
+Wiring (see `presentation/feature/subject/create_subject/` as the reference):
+```kotlin
+// State: one TextFieldState per text field
+data class FooState(val dni: TextFieldState = TextFieldState(), ...)
+
+// ViewModel: one Validator per field, one-line reducers
+private val dniValidator: Validator = Rules.of(
+    Rules.required("Ingresá el DNI."),
+    Rules.digitsInRange(1..99_999_999, "DNI inválido."),
+)
+is FooAction.DniChanged -> _state.update { it.copy(dni = it.dni.onChange(action.value, dniValidator)) }
+is FooAction.DniFocusChanged -> _state.update { it.copy(dni = it.dni.onFocus(action.focused, dniValidator)) }
+// submit(): re-validate + force-show, then build the model only if every field isValid
+val validated = _state.value.copy(dni = _state.value.dni.showError(dniValidator), ...)
+
+// Screen:
+AlInput(
+    value = state.dni.value,
+    onValueChange = { onAction(FooAction.DniChanged(it)) },
+    onFocusChange = { onAction(FooAction.DniFocusChanged(it)) },
+    error = state.dni.displayError,
+)
+```
+Non-text fields (e.g. a `Sex` selector) keep a plain `String?` error set on submit.
+
 ### Scroll-to-field on keyboard open (CMP pattern)
 Do NOT use `BringIntoViewRequester` — it is experimental and unreliable on iOS in Compose Multiplatform. Use `ScrollState` directly:
 

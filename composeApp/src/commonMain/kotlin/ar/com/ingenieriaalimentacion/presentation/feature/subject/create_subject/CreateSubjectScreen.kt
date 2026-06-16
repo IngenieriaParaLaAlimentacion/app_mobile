@@ -113,9 +113,10 @@ fun CreateSubjectScreen(
 
                     AlInput(
                         label = "DNI",
-                        value = state.dni,
+                        value = state.dni.value,
                         onValueChange = { onAction(CreateSubjectAction.DniChanged(it)) },
-                        error = state.fieldErrors.dni,
+                        onFocusChange = { onAction(CreateSubjectAction.DniFocusChanged(it)) },
+                        error = state.dni.displayError,
                         enabled = !state.isSubmitting,
                         scrollState = scrollState,
                         isImeVisible = isImeVisible,
@@ -126,15 +127,16 @@ fun CreateSubjectScreen(
                     SexSelector(
                         selected = state.sex,
                         onSelected = { onAction(CreateSubjectAction.SexChanged(it)) },
-                        error = state.fieldErrors.sex,
+                        error = state.sexError,
                         enabled = !state.isSubmitting,
                     )
 
                     AlInput(
                         label = "Nombre",
-                        value = state.name,
+                        value = state.name.value,
                         onValueChange = { onAction(CreateSubjectAction.NameChanged(it)) },
-                        error = state.fieldErrors.name,
+                        onFocusChange = { onAction(CreateSubjectAction.NameFocusChanged(it)) },
+                        error = state.name.displayError,
                         enabled = !state.isSubmitting,
                         scrollState = scrollState,
                         isImeVisible = isImeVisible,
@@ -143,9 +145,10 @@ fun CreateSubjectScreen(
 
                     AlInput(
                         label = "Apellido",
-                        value = state.lastName,
+                        value = state.lastName.value,
                         onValueChange = { onAction(CreateSubjectAction.LastNameChanged(it)) },
-                        error = state.fieldErrors.lastName,
+                        onFocusChange = { onAction(CreateSubjectAction.LastNameFocusChanged(it)) },
+                        error = state.lastName.displayError,
                         enabled = !state.isSubmitting,
                         scrollState = scrollState,
                         isImeVisible = isImeVisible,
@@ -154,9 +157,10 @@ fun CreateSubjectScreen(
 
                     AlInput(
                         label = "Fecha de nacimiento",
-                        value = state.birthDate,
+                        value = state.birthDate.value,
                         onValueChange = { onAction(CreateSubjectAction.BirthDateChanged(it)) },
-                        error = state.fieldErrors.birthDate,
+                        onFocusChange = { onAction(CreateSubjectAction.BirthDateFocusChanged(it)) },
+                        error = state.birthDate.displayError,
                         enabled = !state.isSubmitting,
                         scrollState = scrollState,
                         isImeVisible = isImeVisible,

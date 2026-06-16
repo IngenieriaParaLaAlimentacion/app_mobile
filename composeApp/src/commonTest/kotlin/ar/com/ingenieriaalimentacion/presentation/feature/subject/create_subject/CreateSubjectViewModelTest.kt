@@ -68,8 +68,8 @@ class CreateSubjectViewModelTest {
             vm.onAction(CreateSubjectAction.Submit)
             val state = awaitState { it.successMessage != null }
             assertEquals("Guardado. Se sincronizará automáticamente.", state.successMessage)
-            assertEquals("", state.dni)
-            assertEquals("", state.name)
+            assertEquals("", state.dni.value)
+            assertEquals("", state.name.value)
             cancelAndIgnoreRemainingEvents()
         }
 
@@ -78,17 +78,55 @@ class CreateSubjectViewModelTest {
     }
 
     @Test
-    fun `validation blocks enqueue`() = runTest(dispatcher) {
+    fun `submit on empty form blocks enqueue and forces field errors to show`() = runTest(dispatcher) {
         val repo = FakeSubjectRepository()
         val vm = viewModel(repo)
 
         vm.state.test {
             awaitItem() // initial
             vm.onAction(CreateSubjectAction.Submit)
-            val state = awaitState { it.fieldErrors.dni != null }
-            assertTrue(state.fieldErrors.dni != null)
+            val state = awaitState { it.dni.displayError != null }
+            assertEquals("Ingresá el DNI.", state.dni.displayError)
+            assertEquals("Seleccioná el sexo.", state.sexError)
             cancelAndIgnoreRemainingEvents()
         }
         assertTrue(repo.enqueued.isEmpty())
+    }
+
+    @Test
+    fun `invalid dni stays hidden while typing then surfaces on blur`() = runTest(dispatcher) {
+        val repo = FakeSubjectRepository()
+        val vm = viewModel(repo)
+
+        vm.state.test {
+            awaitItem() // initial
+            vm.onAction(CreateSubjectAction.DniFocusChanged(true))
+            vm.onAction(CreateSubjectAction.DniChanged("0"))
+            // While focused/typing the error is computed but not displayed.
+            val typing = awaitState { it.dni.value == "0" }
+            assertTrue(typing.dni.error != null)
+            assertEquals(null, typing.dni.displayError)
+
+            // Leaving the field reveals it.
+            vm.onAction(CreateSubjectAction.DniFocusChanged(false))
+            val blurred = awaitState { it.dni.displayError != null }
+            assertEquals("Ingresá un DNI válido (1 a 8 dígitos).", blurred.dni.displayError)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `blurring an empty field does not show a required error`() = runTest(dispatcher) {
+        val repo = FakeSubjectRepository()
+        val vm = viewModel(repo)
+
+        vm.state.test {
+            awaitItem() // initial
+            vm.onAction(CreateSubjectAction.NameFocusChanged(true))
+            vm.onAction(CreateSubjectAction.NameFocusChanged(false))
+            val state = awaitState { it.name.hasBlurred }
+            assertEquals(null, state.name.displayError)
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 }

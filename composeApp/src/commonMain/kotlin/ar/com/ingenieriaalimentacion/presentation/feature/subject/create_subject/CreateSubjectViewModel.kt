@@ -68,7 +68,7 @@ class CreateSubjectViewModel(
             is CreateSubjectAction.BirthDateChanged ->
                 _state.update {
                     it.copy(
-                        birthDate = formatBirthDate(action.value),
+                        birthDate = action.value.filter(Char::isDigit).take(8),
                         fieldErrors = it.fieldErrors.copy(birthDate = null),
                         successMessage = null,
                     )
@@ -170,30 +170,20 @@ class CreateSubjectViewModel(
         return Parsed(value, errors)
     }
 
-    private fun formatBirthDate(input: String): String {
-        val digits = input.filter(Char::isDigit).take(8)
-        return buildString {
-            digits.forEachIndexed { i, c ->
-                if (i == 2 || i == 4) append('/')
-                append(c)
-            }
-        }
-    }
-
     private fun parseBirthDate(input: String): Pair<LocalDate?, String?> {
         if (input.isBlank()) return null to "Ingresá la fecha de nacimiento."
-        val match = BIRTH_DATE_REGEX.matchEntire(input)
-            ?: return null to "Formato esperado DD/MM/AAAA."
-        val (d, m, y) = match.destructured
+        if (input.length != 8 || !input.all(Char::isDigit)) {
+            return null to "Formato esperado DD/MM/AAAA."
+        }
         val parsed = runCatching {
-            LocalDate(year = y.toInt(), monthNumber = m.toInt(), dayOfMonth = d.toInt())
+            LocalDate(
+                year = input.substring(4, 8).toInt(),
+                monthNumber = input.substring(2, 4).toInt(),
+                dayOfMonth = input.substring(0, 2).toInt(),
+            )
         }.getOrNull() ?: return null to "Fecha inválida."
         val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
         if (parsed > today) return null to "La fecha no puede ser futura."
         return parsed to null
-    }
-
-    private companion object {
-        val BIRTH_DATE_REGEX = Regex("""^(\d{2})/(\d{2})/(\d{4})$""")
     }
 }

@@ -14,6 +14,10 @@ import ar.com.ingenieriaalimentacion.domain.usecase.profile.RequestEstablishment
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.UpdateMyProfileUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.registration.RegisterManagerUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.CreateSubjectUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.subject.DeleteSubjectUploadUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.subject.ObserveSubjectUploadsUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.subject.RetrySubjectUploadUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.subject.SyncSubjectsUseCase
 import org.koin.dsl.module
 
 val useCasesModule = module {
@@ -26,6 +30,10 @@ val useCasesModule = module {
     factory { GetEstablishmentsUseCase(get()) }
     factory { RegisterManagerUseCase(get()) }
     factory { CreateSubjectUseCase(get()) }
+    factory { ObserveSubjectUploadsUseCase(get()) }
+    factory { SyncSubjectsUseCase(get()) }
+    factory { RetrySubjectUploadUseCase(get()) }
+    factory { DeleteSubjectUploadUseCase(get()) }
     factory { GetMyProfileUseCase(get()) }
     factory { GetMyEstablishmentsUseCase(get()) }
     factory { UpdateMyProfileUseCase(get()) }

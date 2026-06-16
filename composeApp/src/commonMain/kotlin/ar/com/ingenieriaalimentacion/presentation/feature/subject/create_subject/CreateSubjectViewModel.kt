@@ -2,9 +2,8 @@ package ar.com.ingenieriaalimentacion.presentation.feature.subject.create_subjec
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import ar.com.ingenieriaalimentacion.data.subject.SubjectFailure
+import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.domain.model.subject.NewSubject
-import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectError
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.CreateSubjectUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -18,6 +17,7 @@ import kotlin.time.Clock
 
 class CreateSubjectViewModel(
     private val createSubject: CreateSubjectUseCase,
+    private val syncCoordinator: SyncCoordinator,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CreateSubjectState())
@@ -103,16 +103,20 @@ class CreateSubjectViewModel(
         _state.update { it.copy(isSubmitting = true, submitError = null, successMessage = null) }
         viewModelScope.launch {
             createSubject(newSubject).fold(
-                onSuccess = { subject ->
+                onSuccess = {
                     _state.update {
                         CreateSubjectState(
-                            successMessage = "Sujeto ${subject.name} ${subject.lastName} cargado correctamente.",
+                            successMessage = "Guardado. Se sincronizará automáticamente.",
                         )
                     }
+                    syncCoordinator.requestSync() // fire-and-forget; UI does not wait on the result
                 },
-                onFailure = { throwable ->
+                onFailure = {
                     _state.update {
-                        it.copy(isSubmitting = false, submitError = throwable.toUserMessage())
+                        it.copy(
+                            isSubmitting = false,
+                            submitError = "No se pudo guardar. Intentá nuevamente.",
+                        )
                     }
                 },
             )
@@ -187,17 +191,6 @@ class CreateSubjectViewModel(
         val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
         if (parsed > today) return null to "La fecha no puede ser futura."
         return parsed to null
-    }
-
-    private fun Throwable.toUserMessage(): String {
-        val error = (this as? SubjectFailure)?.error
-        return when (error) {
-            SubjectError.InvalidData -> "Los datos ingresados no son válidos. Revisá el formulario."
-            SubjectError.Unauthorized -> "Tu sesión expiró. Iniciá sesión nuevamente."
-            SubjectError.Forbidden -> "No tenés permisos para cargar sujetos."
-            SubjectError.Network -> "No pudimos conectarnos. Verificá tu conexión e intentá nuevamente."
-            is SubjectError.Unknown, null -> "Ocurrió un error inesperado. Intentá nuevamente."
-        }
     }
 
     private companion object {

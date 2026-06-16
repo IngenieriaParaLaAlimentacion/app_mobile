@@ -13,6 +13,7 @@ fun initKoin(
             listOf(
                 platformModule,
                 sharedModule,
+                databaseModule,
                 clientsModule,
                 repositoriesModule,
                 useCasesModule,

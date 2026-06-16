@@ -7,15 +7,20 @@ import ar.com.ingenieriaalimentacion.data.establishment.EstablishmentRepositoryI
 import ar.com.ingenieriaalimentacion.data.profile.ProfileRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.registration.RegistrationRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.subject.SubjectRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.subject.local.DefaultSubjectLocalStore
+import ar.com.ingenieriaalimentacion.data.subject.local.SubjectLocalStore
 import ar.com.ingenieriaalimentacion.domain.repository.AuthRepository
 import ar.com.ingenieriaalimentacion.domain.repository.EstablishmentRepository
 import ar.com.ingenieriaalimentacion.domain.repository.ProfileRepository
 import ar.com.ingenieriaalimentacion.domain.repository.RegistrationRepository
 import ar.com.ingenieriaalimentacion.domain.repository.SessionManager
 import ar.com.ingenieriaalimentacion.domain.repository.SubjectRepository
+import ar.com.ingenieriaalimentacion.domain.util.IdGenerator
+import ar.com.ingenieriaalimentacion.domain.util.UuidGenerator
 import kotlinx.serialization.json.Json
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
+import kotlin.time.Clock
 
 val repositoriesModule = module {
     single<Json>(named("auth")) {
@@ -34,6 +39,17 @@ val repositoriesModule = module {
     }
     single<EstablishmentRepository> { EstablishmentRepositoryImpl(api = get()) }
     single<RegistrationRepository> { RegistrationRepositoryImpl(api = get()) }
-    single<SubjectRepository> { SubjectRepositoryImpl(api = get()) }
+    single<SubjectLocalStore> {
+        DefaultSubjectLocalStore(queries = get(), now = { Clock.System.now().toEpochMilliseconds() })
+    }
+    single<IdGenerator> { UuidGenerator() }
+    single<SubjectRepository> {
+        SubjectRepositoryImpl(
+            api = get(),
+            local = get(),
+            idGenerator = get(),
+            now = { Clock.System.now().toEpochMilliseconds() },
+        )
+    }
     single<ProfileRepository> { ProfileRepositoryImpl(api = get()) }
 }

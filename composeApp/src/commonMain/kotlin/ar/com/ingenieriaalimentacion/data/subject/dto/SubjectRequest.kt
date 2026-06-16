@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class SubjectRequest(
+    val id: String,                              // client-generated UUID (idempotency key)
     val dni: Int,
     val sex: SexDto,
     val name: String,

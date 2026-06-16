@@ -1,0 +1,61 @@
+CREATE TABLE PendingSubject (
+    localId        TEXT    NOT NULL PRIMARY KEY,  -- v4 UUID; also the request `id`
+    dni            INTEGER NOT NULL,
+    sex            TEXT    NOT NULL,              -- 'male' | 'female'
+    name           TEXT    NOT NULL,
+    lastName       TEXT    NOT NULL,
+    birthDate      TEXT    NOT NULL,              -- ISO YYYY-MM-DD
+    isRural        INTEGER NOT NULL,             -- 0/1
+    isIndigenous   INTEGER NOT NULL,             -- 0/1
+    syncState      TEXT    NOT NULL,             -- PENDING|SYNCING|SYNCED|MERGED|FAILED
+    canonicalId    TEXT,                         -- server id (own id on 201/200; canonical on 409)
+    errorMessage   TEXT,                         -- short Spanish reason when FAILED
+    attemptCount   INTEGER NOT NULL DEFAULT 0,
+    createdAt      INTEGER NOT NULL,             -- epoch millis
+    updatedAt      INTEGER NOT NULL
+);
+
+CREATE INDEX PendingSubject_state ON PendingSubject(syncState);
+
+insert:
+INSERT INTO PendingSubject(localId, dni, sex, name, lastName, birthDate, isRural, isIndigenous,
+    syncState, canonicalId, errorMessage, attemptCount, createdAt, updatedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+selectAll:
+SELECT * FROM PendingSubject ORDER BY createdAt DESC;
+
+selectSyncable:                                  -- All PENDING rows (fresh or auto-retrying). Backoff
+SELECT * FROM PendingSubject                     -- gating (updatedAt + delay <= now) is applied in Kotlin.
+WHERE syncState = 'PENDING' ORDER BY createdAt ASC;
+
+selectById:
+SELECT * FROM PendingSubject WHERE localId = ?;
+
+bumpRetry:                                        -- transient 401/network: back to PENDING (from SYNCING),
+UPDATE PendingSubject SET syncState = 'PENDING', attemptCount = attemptCount + 1, errorMessage = ?,  -- count the
+    updatedAt = ? WHERE localId = ?;              -- attempt, restart the backoff window so it auto-retries.
+
+resetSyncingToPending:                            -- CRASH RECOVERY: run once on SyncCoordinator.start().
+UPDATE PendingSubject SET syncState = 'PENDING', updatedAt = ? WHERE syncState = 'SYNCING';
+
+pruneTerminalOlderThan:                           -- GC SYNCED/MERGED rows older than a cutoff (epoch ms).
+DELETE FROM PendingSubject WHERE syncState IN ('SYNCED', 'MERGED') AND updatedAt < :cutoff;
+
+markState:
+UPDATE PendingSubject SET syncState = ?, updatedAt = ? WHERE localId = ?;
+
+markSynced:                                      -- 201/200 or 409
+UPDATE PendingSubject SET syncState = ?, canonicalId = ?, errorMessage = NULL, updatedAt = ?
+WHERE localId = ?;
+
+markFailed:
+UPDATE PendingSubject SET syncState = 'FAILED', errorMessage = ?, attemptCount = attemptCount + 1,
+    updatedAt = ? WHERE localId = ?;
+
+resetForRetry:                                   -- manual Retry on a dead-letter FAILED row: fresh start.
+UPDATE PendingSubject SET syncState = 'PENDING', errorMessage = NULL, attemptCount = 0, updatedAt = ?
+WHERE localId = ?;
+
+deleteById:
+DELETE FROM PendingSubject WHERE localId = ?;

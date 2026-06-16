@@ -21,12 +21,14 @@ import androidx.compose.ui.unit.dp
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ingenieria_alimentacion.composeapp.generated.resources.Res
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_home_line
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_upload_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_user_3_line
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.vectorResource
 
 enum class AlBottomNavTab(val label: String, val icon: DrawableResource) {
     Home("Home", Res.drawable.ic_mingcute_home_line),
+    Uploads("Subidas", Res.drawable.ic_mingcute_upload_line),
     Profile("Perfil", Res.drawable.ic_mingcute_user_3_line),
 }
 

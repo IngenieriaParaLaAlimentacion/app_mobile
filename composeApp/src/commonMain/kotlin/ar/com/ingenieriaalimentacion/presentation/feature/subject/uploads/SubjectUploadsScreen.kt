@@ -82,7 +82,7 @@ private fun Header(onSyncNow: () -> Unit) {
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
             Text(
-                text = "Subidas",
+                text = "Cargas pendientes",
                 style = AlTheme.typography.title,
                 color = AlTheme.colors.textBase,
             )

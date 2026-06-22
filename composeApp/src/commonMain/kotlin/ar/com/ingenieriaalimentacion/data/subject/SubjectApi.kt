@@ -1,13 +1,17 @@
 package ar.com.ingenieriaalimentacion.data.subject
 
+import ar.com.ingenieriaalimentacion.data.subject.dto.PaginatedSubjectsResponse
 import ar.com.ingenieriaalimentacion.data.subject.dto.SubjectConflictProblem
 import ar.com.ingenieriaalimentacion.data.subject.dto.SubjectRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 import kotlinx.coroutines.CancellationException
 
 /**
@@ -41,4 +45,14 @@ class SubjectApi(private val client: HttpClient) {
             if (t is CancellationException) throw t
             SubjectUploadOutcome.Retryable(t)                 // connection failures
         }
+
+    suspend fun list(page: Int, pageSize: Int, search: String?): PaginatedSubjectsResponse {
+        val response = client.get("api/v1/subjects") {
+            parameter("page", page)
+            parameter("page_size", pageSize)
+            search?.takeIf { it.isNotBlank() }?.let { parameter("search", it) }
+        }
+        if (!response.status.isSuccess()) error("subjects list failed: ${response.status.value}")
+        return response.body()
+    }
 }

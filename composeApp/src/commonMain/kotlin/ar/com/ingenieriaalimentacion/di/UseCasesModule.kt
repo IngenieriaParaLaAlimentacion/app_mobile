@@ -15,6 +15,7 @@ import ar.com.ingenieriaalimentacion.domain.usecase.profile.UpdateMyProfileUseCa
 import ar.com.ingenieriaalimentacion.domain.usecase.registration.RegisterManagerUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.CreateSubjectUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.DeleteSubjectUploadUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.subject.GetSubjectsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.ObserveSubjectUploadsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.RetrySubjectUploadUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.SyncSubjectsUseCase
@@ -30,6 +31,7 @@ val useCasesModule = module {
     factory { GetEstablishmentsUseCase(get()) }
     factory { RegisterManagerUseCase(get()) }
     factory { CreateSubjectUseCase(get()) }
+    factory { GetSubjectsUseCase(get()) }
     factory { ObserveSubjectUploadsUseCase(get()) }
     factory { SyncSubjectsUseCase(get()) }
     factory { RetrySubjectUploadUseCase(get()) }

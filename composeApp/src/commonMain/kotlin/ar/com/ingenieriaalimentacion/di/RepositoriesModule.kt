@@ -6,6 +6,7 @@ import ar.com.ingenieriaalimentacion.data.device.DeviceIdProvider
 import ar.com.ingenieriaalimentacion.data.establishment.EstablishmentRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.profile.ProfileRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.registration.RegistrationRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.subject.SubjectQueryRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.subject.SubjectRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.subject.local.DefaultSubjectLocalStore
 import ar.com.ingenieriaalimentacion.data.subject.local.SubjectLocalStore
@@ -14,6 +15,7 @@ import ar.com.ingenieriaalimentacion.domain.repository.EstablishmentRepository
 import ar.com.ingenieriaalimentacion.domain.repository.ProfileRepository
 import ar.com.ingenieriaalimentacion.domain.repository.RegistrationRepository
 import ar.com.ingenieriaalimentacion.domain.repository.SessionManager
+import ar.com.ingenieriaalimentacion.domain.repository.SubjectQueryRepository
 import ar.com.ingenieriaalimentacion.domain.repository.SubjectRepository
 import ar.com.ingenieriaalimentacion.domain.util.IdGenerator
 import ar.com.ingenieriaalimentacion.domain.util.UuidGenerator
@@ -51,5 +53,6 @@ val repositoriesModule = module {
             now = { Clock.System.now().toEpochMilliseconds() },
         )
     }
+    single<SubjectQueryRepository> { SubjectQueryRepositoryImpl(api = get()) }
     single<ProfileRepository> { ProfileRepositoryImpl(api = get()) }
 }

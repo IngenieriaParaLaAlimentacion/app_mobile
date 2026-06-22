@@ -21,6 +21,12 @@ class HomeViewModel : ViewModel() {
             HomeAction.PrimaryClick -> Unit
             HomeAction.CreateSubjectClick ->
                 _state.update { it.copy(destination = HomeDestination.NavigateToCreateSubject) }
+            HomeAction.LoadMeasurementClick ->
+                _state.update { it.copy(destination = HomeDestination.NavigateToSelectSubject) }
+            is HomeAction.SubjectPicked ->
+                _state.update { it.copy(pickedSubject = action.subject) }
+            HomeAction.DismissPicked ->
+                _state.update { it.copy(pickedSubject = null) }
         }
     }
 

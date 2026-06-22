@@ -1,6 +1,5 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.home
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -13,21 +12,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
-import ar.com.ingenieriaalimentacion.core.design_system.components.card.AlInfoCard
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
-import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
-import kotlinx.serialization.json.Json
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun HomeScreenRoot(
     viewModel: HomeViewModel = koinViewModel(),
-    pickedSubjectResult: String? = null,
-    onResultConsumed: () -> Unit = {},
     navigate: (HomeDestination) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -36,14 +29,6 @@ fun HomeScreenRoot(
         state.destination?.let {
             navigate(it)
             viewModel.clearDestination()
-        }
-    }
-
-    LaunchedEffect(pickedSubjectResult) {
-        pickedSubjectResult?.let { json ->
-            runCatching { Json.decodeFromString<SubjectSummary>(json) }
-                .onSuccess { viewModel.onAction(HomeAction.SubjectPicked(it)) }
-            onResultConsumed()
         }
     }
 
@@ -87,22 +72,6 @@ fun HomeScreen(
                 onClick = { onAction(HomeAction.LoadMeasurementClick) },
             ) {
                 Text("Cargar medición")
-            }
-
-            state.pickedSubject?.let { subject ->
-                Spacer(modifier = Modifier.height(AlTheme.spacing.md))
-                AlInfoCard(
-                    title = "${subject.name} ${subject.lastName}",
-                    description = "DNI ${subject.dni}",
-                    trailing = {
-                        Text(
-                            text = "×",
-                            style = AlTheme.typography.title,
-                            color = AlTheme.colors.textMuted,
-                            modifier = Modifier.clickable { onAction(HomeAction.DismissPicked) },
-                        )
-                    },
-                )
             }
         }
     }

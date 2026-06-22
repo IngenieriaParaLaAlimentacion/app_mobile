@@ -228,8 +228,8 @@ No change to `AppViewModel.start()` or `AuthedShell.SyncTriggers` (they call
 
 ### Success Criteria
 #### Automated Verification:
-- [ ] Common compiles: `./scripts/compile.sh`
-- [ ] Existing subject sync tests still pass: `export JAVA_HOME=$(/usr/libexec/java_home -v 21) && ./gradlew :composeApp:testDebugUnitTest --no-daemon`
+- [x] Common compiles: `./scripts/compile.sh`
+- [x] Existing subject sync tests still pass: `export JAVA_HOME=$(/usr/libexec/java_home -v 21) && ./gradlew :composeApp:testDebugUnitTest --no-daemon`
 #### Manual Verification:
 - [ ] Subjects still sync (offline create → SYNCED) — no regression.
 
@@ -398,8 +398,8 @@ interface MeasurementLocalStore {
 
 ### Success Criteria
 #### Automated Verification:
-- [ ] Common compiles (generates `PendingMeasurementQueries`): `./scripts/compile.sh`
-- [ ] Android assembles: `./gradlew :composeApp:assembleDebug --no-daemon`
+- [x] Common compiles (generates `PendingMeasurementQueries`): `./scripts/compile.sh`
+- [x] Android assembles: `./gradlew :composeApp:assembleDebug --no-daemon`
 #### Manual Verification: none yet.
 
 ---
@@ -488,7 +488,7 @@ DI: register `MeasurementApi(get())` in `di/ClientsModule.kt` using the same aut
 
 ### Success Criteria
 #### Automated Verification:
-- [ ] Common compiles: `./scripts/compile.sh`
+- [x] Common compiles: `./scripts/compile.sh`
 #### Manual Verification: none (exercised in Phase 6 tests + Phase 5 flow).
 
 ---
@@ -596,8 +596,8 @@ the latter for Historia 3 but built now. (Retry/Delete/SyncNow use cases are His
 
 ### Success Criteria
 #### Automated Verification:
-- [ ] Common compiles: `./scripts/compile.sh`
-- [ ] Android assembles + iOS metadata: `./gradlew :composeApp:assembleDebug compileKotlinIosSimulatorArm64 --no-daemon`
+- [x] Common compiles: `./scripts/compile.sh`
+- [x] Android assembles + iOS metadata: `./gradlew :composeApp:assembleDebug compileKotlinIosSimulatorArm64 --no-daemon`
 #### Manual Verification: none yet.
 
 ---
@@ -757,9 +757,9 @@ internal fun navigate(destination: MeasurementDestination, navController: NavCon
 
 ### Success Criteria
 #### Automated Verification:
-- [ ] Common compiles: `./scripts/compile.sh`
-- [ ] Android assembles: `./gradlew :composeApp:assembleDebug --no-daemon`
-- [ ] No provisional-banner leftovers: `grep -rn "pickedSubject" composeApp/src` returns nothing (once Historia 1's provisional consumption is replaced).
+- [x] Common compiles: `./scripts/compile.sh`
+- [x] Android assembles: `./gradlew :composeApp:assembleDebug --no-daemon`
+- [x] No provisional-banner leftovers: Home's `pickedSubject` banner + `SubjectPicked`/`DismissPicked` handling removed from `HomeState`/`HomeScreen`/`HomeViewModel`/`HomeAction`/`AuthedShell`. (The only remaining `pickedSubject*` matches are the measurement screen's `pickedSubjectResult` param, which this plan's own Phase 5 spec defines.)
 #### Manual Verification:
 - [ ] Home → "Cargar medición" → selector opens; choosing a subject lands on the form with the subject shown; "Cambiar" re-opens the selector and updates it.
 - [ ] Establishment picker lists approved establishments; auto-selected when only one; required error shows on submit when none.
@@ -796,8 +796,8 @@ Focused unit tests for the highest-risk logic, mirroring the existing subject te
 
 ### Success Criteria
 #### Automated Verification:
-- [ ] Tests pass: `export JAVA_HOME=$(/usr/libexec/java_home -v 21) && ./gradlew :composeApp:testDebugUnitTest --no-daemon`
-- [ ] Common compiles + Android assembles + iOS metadata.
+- [x] Tests pass: `export JAVA_HOME=$(/usr/libexec/java_home -v 21) && ./gradlew :composeApp:testDebugUnitTest --no-daemon`
+- [x] Common compiles + Android assembles + iOS metadata.
 #### Manual Verification:
 - [ ] Save offline → row persists; go online → `SYNCED` with `bmi`/alerts stored (inspect via Historia 3 or DB).
 - [ ] Force 422/403/404 → `FAILED` with the right Spanish message.

@@ -33,6 +33,15 @@ object Rules {
     fun digitsInRange(range: IntRange, message: String): Validator =
         { value -> if (value.isNotBlank() && value.toIntOrNull().let { it == null || it !in range }) message else null }
 
+    /**
+     * Passes on blank (so [required] owns presence). Accepts ',' or '.' as the decimal separator;
+     * enforces `min < x <= max` (exclusive-low, inclusive-high).
+     */
+    fun decimalInRange(min: Double, max: Double, message: String): Validator = { value ->
+        val v = value.trim().replace(',', '.').toDoubleOrNull()
+        if (value.isNotBlank() && (v == null || v <= min || v > max)) message else null
+    }
+
     /** Runs [rules] in order, returning the first non-null (failing) message. */
     fun of(vararg rules: Validator): Validator =
         { value -> rules.firstNotNullOfOrNull { rule -> rule(value) } }

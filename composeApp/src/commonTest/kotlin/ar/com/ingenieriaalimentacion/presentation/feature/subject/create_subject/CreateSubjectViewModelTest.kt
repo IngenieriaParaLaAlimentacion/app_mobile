@@ -36,7 +36,7 @@ class CreateSubjectViewModelTest {
     }
 
     private fun viewModel(repo: FakeSubjectRepository): CreateSubjectViewModel {
-        val coordinator = SyncCoordinator(repo, FakeConnectivityObserver(), AppScope())
+        val coordinator = SyncCoordinator(listOf(repo), FakeConnectivityObserver(), AppScope())
         return CreateSubjectViewModel(CreateSubjectUseCase(repo), coordinator)
     }
 

@@ -4,6 +4,9 @@ import ar.com.ingenieriaalimentacion.data.auth.AuthRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.auth.storage.TokenStoreSessionManager
 import ar.com.ingenieriaalimentacion.data.device.DeviceIdProvider
 import ar.com.ingenieriaalimentacion.data.establishment.EstablishmentRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.measurement.MeasurementRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.measurement.local.DefaultMeasurementLocalStore
+import ar.com.ingenieriaalimentacion.data.measurement.local.MeasurementLocalStore
 import ar.com.ingenieriaalimentacion.data.profile.ProfileRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.registration.RegistrationRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.subject.SubjectQueryRepositoryImpl
@@ -13,6 +16,7 @@ import ar.com.ingenieriaalimentacion.data.subject.local.SubjectLocalStore
 import ar.com.ingenieriaalimentacion.domain.repository.AuthRepository
 import ar.com.ingenieriaalimentacion.domain.repository.EstablishmentRepository
 import ar.com.ingenieriaalimentacion.domain.repository.ProfileRepository
+import ar.com.ingenieriaalimentacion.domain.repository.MeasurementRepository
 import ar.com.ingenieriaalimentacion.domain.repository.RegistrationRepository
 import ar.com.ingenieriaalimentacion.domain.repository.SessionManager
 import ar.com.ingenieriaalimentacion.domain.repository.SubjectQueryRepository
@@ -54,5 +58,16 @@ val repositoriesModule = module {
         )
     }
     single<SubjectQueryRepository> { SubjectQueryRepositoryImpl(api = get()) }
+    single<MeasurementLocalStore> {
+        DefaultMeasurementLocalStore(queries = get(), now = { Clock.System.now().toEpochMilliseconds() })
+    }
+    single<MeasurementRepository> {
+        MeasurementRepositoryImpl(
+            api = get(),
+            local = get(),
+            idGenerator = get(),
+            now = { Clock.System.now().toEpochMilliseconds() },
+        )
+    }
     single<ProfileRepository> { ProfileRepositoryImpl(api = get()) }
 }

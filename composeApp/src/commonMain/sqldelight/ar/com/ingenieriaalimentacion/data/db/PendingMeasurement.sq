@@ -1,0 +1,64 @@
+CREATE TABLE PendingMeasurement (
+    localId           TEXT    NOT NULL PRIMARY KEY,  -- v4 UUID; also the request `id`
+    subjectId         TEXT    NOT NULL,              -- server UUID (from SubjectSummary)
+    subjectName       TEXT    NOT NULL,              -- denormalized for history display
+    subjectLastName   TEXT    NOT NULL,
+    subjectDni        INTEGER NOT NULL,
+    establishmentId   TEXT    NOT NULL,
+    establishmentName TEXT    NOT NULL,              -- denormalized for history display
+    weightKg          REAL    NOT NULL,
+    heightCm          REAL    NOT NULL,
+    measuredAt        TEXT    NOT NULL,              -- ISO 8601 UTC (…Z)
+    syncState         TEXT    NOT NULL,              -- PENDING|SYNCING|SYNCED|FAILED
+    errorMessage      TEXT,                          -- short Spanish reason when FAILED
+    attemptCount      INTEGER NOT NULL DEFAULT 0,
+    bmi               REAL,                          -- server-computed, set on SYNCED
+    alertsJson        TEXT,                          -- serialized List<ClinicalAlert>, set on SYNCED
+    createdAt         INTEGER NOT NULL,              -- epoch millis
+    updatedAt         INTEGER NOT NULL
+);
+
+CREATE INDEX PendingMeasurement_state ON PendingMeasurement(syncState);
+
+insert:
+INSERT INTO PendingMeasurement(localId, subjectId, subjectName, subjectLastName, subjectDni,
+    establishmentId, establishmentName, weightKg, heightCm, measuredAt, syncState, errorMessage,
+    attemptCount, bmi, alertsJson, createdAt, updatedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+selectAll:
+SELECT * FROM PendingMeasurement ORDER BY createdAt DESC;
+
+selectSyncable:                                      -- all PENDING; backoff gating applied in Kotlin
+SELECT * FROM PendingMeasurement WHERE syncState = 'PENDING' ORDER BY createdAt ASC;
+
+selectById:
+SELECT * FROM PendingMeasurement WHERE localId = ?;
+
+markState:
+UPDATE PendingMeasurement SET syncState = ?, updatedAt = ? WHERE localId = ?;
+
+markSynced:                                          -- 201/200: persist bmi + alerts, clear error
+UPDATE PendingMeasurement SET syncState = 'SYNCED', bmi = ?, alertsJson = ?, errorMessage = NULL,
+    updatedAt = ? WHERE localId = ?;
+
+bumpRetry:                                           -- transient 401/network: stay PENDING, count attempt
+UPDATE PendingMeasurement SET syncState = 'PENDING', attemptCount = attemptCount + 1,
+    errorMessage = ?, updatedAt = ? WHERE localId = ?;
+
+markFailed:                                          -- 404/403/422 or dead-letter
+UPDATE PendingMeasurement SET syncState = 'FAILED', errorMessage = ?, attemptCount = attemptCount + 1,
+    updatedAt = ? WHERE localId = ?;
+
+resetForRetry:                                       -- manual Retry (Historia 3): fresh start
+UPDATE PendingMeasurement SET syncState = 'PENDING', errorMessage = NULL, attemptCount = 0,
+    updatedAt = ? WHERE localId = ?;
+
+resetSyncingToPending:                               -- crash recovery on coordinator start
+UPDATE PendingMeasurement SET syncState = 'PENDING', updatedAt = ? WHERE syncState = 'SYNCING';
+
+pruneTerminalOlderThan:                              -- GC SYNCED rows older than cutoff
+DELETE FROM PendingMeasurement WHERE syncState = 'SYNCED' AND updatedAt < :cutoff;
+
+deleteById:
+DELETE FROM PendingMeasurement WHERE localId = ?;

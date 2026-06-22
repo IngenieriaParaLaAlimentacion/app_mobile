@@ -7,6 +7,10 @@ import ar.com.ingenieriaalimentacion.domain.usecase.auth.ResetPasswordUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.SignInUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.SignOutUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.establishment.GetEstablishmentsUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.measurement.CreateMeasurementUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.measurement.DeleteMeasurementUploadUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.measurement.ObserveMeasurementsUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.measurement.RetryMeasurementUploadUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetAvailableEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyProfileUseCase
@@ -36,6 +40,10 @@ val useCasesModule = module {
     factory { SyncSubjectsUseCase(get()) }
     factory { RetrySubjectUploadUseCase(get()) }
     factory { DeleteSubjectUploadUseCase(get()) }
+    factory { CreateMeasurementUseCase(get()) }
+    factory { ObserveMeasurementsUseCase(get()) }
+    factory { RetryMeasurementUploadUseCase(get()) }
+    factory { DeleteMeasurementUploadUseCase(get()) }
     factory { GetMyProfileUseCase(get()) }
     factory { GetMyEstablishmentsUseCase(get()) }
     factory { UpdateMyProfileUseCase(get()) }

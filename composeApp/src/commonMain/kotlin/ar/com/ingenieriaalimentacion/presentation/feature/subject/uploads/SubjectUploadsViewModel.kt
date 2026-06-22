@@ -42,14 +42,7 @@ class SubjectUploadsViewModel(
         when (action) {
             is SubjectUploadsAction.Retry -> retry(action.localId)
             is SubjectUploadsAction.Delete -> delete(action.localId)
-            SubjectUploadsAction.SyncNow -> syncCoordinator.requestSync()
-            SubjectUploadsAction.BackClick ->
-                _state.update { it.copy(destination = SubjectUploadsDestination.Back) }
         }
-    }
-
-    fun clearDestination() {
-        _state.update { it.copy(destination = null) }
     }
 
     private fun retry(localId: String) {

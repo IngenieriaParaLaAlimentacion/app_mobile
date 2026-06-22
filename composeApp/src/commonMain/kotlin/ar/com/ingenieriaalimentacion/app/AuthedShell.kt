@@ -8,10 +8,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.LifecycleStartEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.isActive
 import org.koin.compose.koinInject
 import kotlin.time.Duration.Companion.minutes
@@ -24,14 +22,12 @@ import androidx.navigation.compose.rememberNavController
 import ar.com.ingenieriaalimentacion.core.design_system.components.navbar.AlBottomNavBar
 import ar.com.ingenieriaalimentacion.core.design_system.components.navbar.AlBottomNavTab
 import ar.com.ingenieriaalimentacion.presentation.feature.home.HomeDestination
+import ar.com.ingenieriaalimentacion.presentation.feature.history.HistoryHubScreenRoot
 import ar.com.ingenieriaalimentacion.presentation.feature.home.HomeScreenRoot
+import ar.com.ingenieriaalimentacion.presentation.feature.measurement.create_measurement.navigateToCreateMeasurement
 import ar.com.ingenieriaalimentacion.presentation.feature.profile.view.ProfileScreenRoot
 import ar.com.ingenieriaalimentacion.presentation.feature.profile.view.navigateProfile
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.create_subject.navigateToCreateSubject
-import ar.com.ingenieriaalimentacion.presentation.feature.subject.select_subject.SELECTED_SUBJECT_RESULT
-import ar.com.ingenieriaalimentacion.presentation.feature.subject.select_subject.navigateToSelectSubject
-import ar.com.ingenieriaalimentacion.presentation.feature.subject.uploads.SubjectUploadsDestination
-import ar.com.ingenieriaalimentacion.presentation.feature.subject.uploads.SubjectUploadsScreenRoot
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 
 @Composable
@@ -43,7 +39,7 @@ fun AuthedShell(onSignOut: () -> Unit) {
     val entry by innerNav.currentBackStackEntryAsState()
     val selectedTab = when {
         entry?.destination?.hasRoute<Route.Profile>() == true -> AlBottomNavTab.Profile
-        entry?.destination?.hasRoute<Route.SubjectUploads>() == true -> AlBottomNavTab.Uploads
+        entry?.destination?.hasRoute<Route.History>() == true -> AlBottomNavTab.History
         else -> AlBottomNavTab.Home
     }
 
@@ -54,7 +50,7 @@ fun AuthedShell(onSignOut: () -> Unit) {
                 onSelected = { tab ->
                     val target: Route = when (tab) {
                         AlBottomNavTab.Home -> Route.Home
-                        AlBottomNavTab.Uploads -> Route.SubjectUploads
+                        AlBottomNavTab.History -> Route.History
                         AlBottomNavTab.Profile -> Route.Profile
                     }
                     innerNav.navigate(target) {
@@ -77,37 +73,20 @@ fun AuthedShell(onSignOut: () -> Unit) {
             modifier = Modifier.padding(padding),
         ) {
             composable<Route.Home> {
-                val outerEntry = outerNav.currentBackStackEntry
-                val pickedJson by (
-                    outerEntry?.savedStateHandle
-                        ?.getStateFlow<String?>(SELECTED_SUBJECT_RESULT, null)
-                        ?: MutableStateFlow(null)
-                    ).collectAsStateWithLifecycle()
-
                 HomeScreenRoot(
-                    pickedSubjectResult = pickedJson,
-                    onResultConsumed = {
-                        outerEntry?.savedStateHandle?.set(SELECTED_SUBJECT_RESULT, null)
-                    },
                     navigate = { destination ->
                         when (destination) {
                             HomeDestination.Back -> outerNav.popBackStack()
                             HomeDestination.NavigateToCreateSubject ->
                                 outerNav.navigateToCreateSubject()
-                            HomeDestination.NavigateToSelectSubject ->
-                                outerNav.navigateToSelectSubject()
+                            HomeDestination.NavigateToCreateMeasurement ->
+                                outerNav.navigateToCreateMeasurement()
                         }
                     },
                 )
             }
-            composable<Route.SubjectUploads> {
-                SubjectUploadsScreenRoot(
-                    navigate = { destination ->
-                        when (destination) {
-                            SubjectUploadsDestination.Back -> outerNav.popBackStack()
-                        }
-                    },
-                )
+            composable<Route.History> {
+                HistoryHubScreenRoot()
             }
             composable<Route.Profile> {
                 ProfileScreenRoot(

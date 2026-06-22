@@ -26,8 +26,12 @@ sealed class Route {
     data object CreateSubject : Route()
 
     @Serializable
-    @SerialName("subject_uploads")
-    data object SubjectUploads : Route()
+    @SerialName("history")
+    data object History : Route()
+
+    @Serializable
+    @SerialName("create_measurement")
+    data object CreateMeasurement : Route()
 
     @Serializable
     @SerialName("select_establishment")

@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,80 +22,43 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ar.com.ingenieriaalimentacion.core.design_system.components.EmptyState
 import ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlStatusBadge
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButtonVariant
-import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun SubjectUploadsScreenRoot(
+fun SubjectUploadsContentRoot(
+    modifier: Modifier = Modifier,
     viewModel: SubjectUploadsViewModel = koinViewModel(),
-    navigate: (SubjectUploadsDestination) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-
-    LaunchedEffect(state.destination) {
-        state.destination?.let {
-            navigate(it)
-            viewModel.clearDestination()
-        }
-    }
-
-    SubjectUploadsScreen(
-        state = state,
-        onAction = viewModel::onAction,
-    )
+    SubjectUploadsContent(state = state, onAction = viewModel::onAction, modifier = modifier)
 }
 
 @Composable
-fun SubjectUploadsScreen(
+fun SubjectUploadsContent(
     state: SubjectUploadsState,
     onAction: (SubjectUploadsAction) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    AlScaffold {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Header(onSyncNow = { onAction(SubjectUploadsAction.SyncNow) })
+    when {
+        state.isLoading -> Box(modifier.fillMaxSize(), Alignment.Center) {
+            CircularProgressIndicator(color = AlTheme.colors.accent)
+        }
 
-            when {
-                state.isEmpty -> EmptyState()
-                else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(state.uploads, key = { it.localId }) { upload ->
-                        SubjectUploadRow(upload = upload, onAction = onAction)
-                    }
-                }
+        state.isEmpty -> EmptyState(
+            title = "Sin cargas todavía",
+            caption = "Los sujetos que cargues aparecerán acá con su estado de sincronización.",
+            modifier = modifier,
+        )
+
+        else -> LazyColumn(modifier.fillMaxSize()) {
+            items(state.uploads, key = { it.localId }) { upload ->
+                SubjectUploadRow(upload = upload, onAction = onAction)
             }
-        }
-    }
-}
-
-@Composable
-private fun Header(onSyncNow: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = AlTheme.spacing.md, vertical = AlTheme.spacing.md),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
-            Text(
-                text = "Historial",
-                style = AlTheme.typography.title,
-                color = AlTheme.colors.textBase,
-            )
-            Text(
-                text = "Tus últimas cargas y su estado de sincronización.",
-                style = AlTheme.typography.caption,
-                color = AlTheme.colors.textMuted,
-            )
-        }
-        AlButton(
-            onClick = onSyncNow,
-            variant = AlButtonVariant.Outline,
-        ) {
-            Text("Sincronizar")
         }
     }
 }
@@ -173,30 +135,5 @@ private fun SubjectUploadRow(
                 .height(AlTheme.borders.thin)
                 .background(AlTheme.colors.border),
         )
-    }
-}
-
-@Composable
-private fun EmptyState() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier = Modifier.padding(AlTheme.spacing.xl),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
-        ) {
-            Text(
-                text = "Sin cargas todavía",
-                style = AlTheme.typography.body.copy(fontWeight = FontWeight.Medium),
-                color = AlTheme.colors.textBase,
-            )
-            Text(
-                text = "Los sujetos que cargues aparecerán acá con su estado de sincronización.",
-                style = AlTheme.typography.caption,
-                color = AlTheme.colors.textMuted,
-            )
-        }
     }
 }

@@ -7,6 +7,8 @@ import ar.com.ingenieriaalimentacion.presentation.feature.auth.login.LoginViewMo
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.reset_password.ResetPasswordViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.get_started.GetStartedViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.home.HomeViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.measurement.create_measurement.MeasurementViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.measurement.uploads.MeasurementUploadsViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.profile.edit.EditProfileViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.profile.establishments.MyEstablishmentsViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.profile.request_establishment.RequestEstablishmentViewModel
@@ -27,6 +29,8 @@ val viewModelsModule = module {
     viewModelOf(::RegisterViewModel)
     viewModelOf(::LoginViewModel)
     viewModelOf(::CreateSubjectViewModel)
+    viewModelOf(::MeasurementViewModel)
+    viewModelOf(::MeasurementUploadsViewModel)
     viewModelOf(::SelectSubjectViewModel)
     viewModelOf(::SubjectUploadsViewModel)
     viewModelOf(::ForgotPasswordViewModel)

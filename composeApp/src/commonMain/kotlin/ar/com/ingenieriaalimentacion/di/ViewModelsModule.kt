@@ -13,6 +13,7 @@ import ar.com.ingenieriaalimentacion.presentation.feature.profile.request_establ
 import ar.com.ingenieriaalimentacion.presentation.feature.profile.view.ProfileViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.register.RegisterViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.create_subject.CreateSubjectViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.subject.select_subject.SelectSubjectViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.uploads.SubjectUploadsViewModel
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 import org.koin.core.module.dsl.viewModel
@@ -26,6 +27,7 @@ val viewModelsModule = module {
     viewModelOf(::RegisterViewModel)
     viewModelOf(::LoginViewModel)
     viewModelOf(::CreateSubjectViewModel)
+    viewModelOf(::SelectSubjectViewModel)
     viewModelOf(::SubjectUploadsViewModel)
     viewModelOf(::ForgotPasswordViewModel)
     viewModelOf(::ProfileViewModel)

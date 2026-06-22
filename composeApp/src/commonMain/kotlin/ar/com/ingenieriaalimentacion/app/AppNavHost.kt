@@ -15,6 +15,7 @@ import ar.com.ingenieriaalimentacion.presentation.feature.profile.establishments
 import ar.com.ingenieriaalimentacion.presentation.feature.profile.request_establishment.requestEstablishmentScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.register.registerScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.create_subject.createSubjectScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.subject.select_subject.selectSubjectScreen
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 
 @Composable
@@ -32,6 +33,7 @@ fun AppNavHost(
             loginScreen(navController)
             selectEstablishmentScreen(navController)
             createSubjectScreen(navController)
+            selectSubjectScreen(navController)
             editProfileScreen(navController)
             requestEstablishmentScreen(navController)
             myEstablishmentsScreen(navController)

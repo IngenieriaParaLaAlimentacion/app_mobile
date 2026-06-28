@@ -13,6 +13,12 @@ sqldelight {
     databases {
         create("AppDatabase") {
             packageName.set("ar.com.ingenieriaalimentacion.data.db")
+            // Emit a .db snapshot per schema version so migrations have a baseline to
+            // diff against. Committed alongside the .sqm files.
+            schemaOutputDirectory.set(file("src/commonMain/sqldelight/databases"))
+            // Fail the build if a .sq schema change has no matching .sqm migration
+            // (the exact mistake that shipped PendingMeasurement without a migration).
+            verifyMigrations.set(true)
         }
     }
 }
@@ -130,3 +136,9 @@ android {
 dependencies {
     debugImplementation(compose.uiTooling)
 }
+
+// Run the SQLDelight migration check on every compile (assembleDebug skips `check`,
+// which is exactly when a missing migration would otherwise slip through to a device).
+// Incremental: re-runs only when a .sq / .sqm / schema .db file actually changes.
+tasks.matching { it.name.startsWith("compile") && it.name.contains("Kotlin") }
+    .configureEach { dependsOn("verifyCommonMainAppDatabaseMigration") }

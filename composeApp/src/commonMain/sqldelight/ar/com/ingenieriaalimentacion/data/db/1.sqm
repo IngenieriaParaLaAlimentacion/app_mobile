@@ -1,0 +1,27 @@
+-- Migrate schema v1 -> v2.
+-- v1 shipped only PendingSubject (commit 8f272dc). PendingMeasurement was added to
+-- the .sq schema later (commit b35826c) without a migration, so databases created at
+-- v1 are missing the table and crash on query. This adds it.
+-- IF NOT EXISTS keeps the migration idempotent for dev databases that already received
+-- the table via create() while still pinned at v1.
+CREATE TABLE IF NOT EXISTS PendingMeasurement (
+    localId           TEXT    NOT NULL PRIMARY KEY,  -- v4 UUID; also the request `id`
+    subjectId         TEXT    NOT NULL,              -- server UUID (from SubjectSummary)
+    subjectName       TEXT    NOT NULL,              -- denormalized for history display
+    subjectLastName   TEXT    NOT NULL,
+    subjectDni        INTEGER NOT NULL,
+    establishmentId   TEXT    NOT NULL,
+    establishmentName TEXT    NOT NULL,              -- denormalized for history display
+    weightKg          REAL    NOT NULL,
+    heightCm          REAL    NOT NULL,
+    measuredAt        TEXT    NOT NULL,              -- ISO 8601 UTC (…Z)
+    syncState         TEXT    NOT NULL,              -- PENDING|SYNCING|SYNCED|FAILED
+    errorMessage      TEXT,                          -- short Spanish reason when FAILED
+    attemptCount      INTEGER NOT NULL DEFAULT 0,
+    bmi               REAL,                          -- server-computed, set on SYNCED
+    alertsJson        TEXT,                          -- serialized List<ClinicalAlert>, set on SYNCED
+    createdAt         INTEGER NOT NULL,              -- epoch millis
+    updatedAt         INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS PendingMeasurement_state ON PendingMeasurement(syncState);

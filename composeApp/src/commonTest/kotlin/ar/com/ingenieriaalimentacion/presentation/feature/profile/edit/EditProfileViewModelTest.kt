@@ -28,12 +28,12 @@ class EditProfileViewModelTest {
     private val dispatcher = StandardTestDispatcher()
 
     private val route = Route.EditProfile(
-        name = "Ana", lastName = "García", email = "a@b.com", role = "professional",
+        name = "Ana", lastName = "García", email = "a@b.com", role = "analyst",
     )
 
     private val savedProfile = Profile(
         id = "u1", email = "a@b.com", name = "Nuevo", lastName = "García",
-        role = "professional", establishments = null,
+        role = "analyst", establishments = null,
     )
 
     @BeforeTest
@@ -66,7 +66,7 @@ class EditProfileViewModelTest {
         assertEquals("Ana", state.name)
         assertEquals("García", state.lastName)
         assertEquals("a@b.com", state.email)
-        assertEquals("professional", state.role)
+        assertEquals("analyst", state.role)
         assertFalse(state.canSave) // no changes yet
     }
 

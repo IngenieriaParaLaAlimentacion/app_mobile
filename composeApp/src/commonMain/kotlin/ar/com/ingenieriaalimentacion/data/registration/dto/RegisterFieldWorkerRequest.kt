@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class RegisterManagerRequest(
+data class RegisterFieldWorkerRequest(
     val email: String,
     val password: String,
     val name: String,

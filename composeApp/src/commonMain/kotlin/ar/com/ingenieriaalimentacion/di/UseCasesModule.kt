@@ -16,7 +16,7 @@ import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsU
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyProfileUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.RequestEstablishmentAccessUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.UpdateMyProfileUseCase
-import ar.com.ingenieriaalimentacion.domain.usecase.registration.RegisterManagerUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.registration.RegisterFieldWorkerUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.CreateSubjectUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.DeleteSubjectUploadUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.GetSubjectsUseCase
@@ -33,7 +33,7 @@ val useCasesModule = module {
     factory { RequestPasswordRecoveryUseCase(get()) }
     factory { ObserveSessionStatusUseCase(get()) }
     factory { GetEstablishmentsUseCase(get()) }
-    factory { RegisterManagerUseCase(get()) }
+    factory { RegisterFieldWorkerUseCase(get()) }
     factory { CreateSubjectUseCase(get()) }
     factory { GetSubjectsUseCase(get()) }
     factory { ObserveSubjectUploadsUseCase(get()) }

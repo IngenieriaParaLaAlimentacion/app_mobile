@@ -63,7 +63,7 @@ class ProfileRepositoryImplTest {
         val repo = repository {
             respondJson(
                 this,
-                """{"id":"u1","email":"a@b.com","name":"Ana","last_name":"García","role":"professional","establishments":null}""",
+                """{"id":"u1","email":"a@b.com","name":"Ana","last_name":"García","role":"analyst","establishments":null}""",
             )
         }
 
@@ -78,7 +78,7 @@ class ProfileRepositoryImplTest {
         val repo = repository {
             respondJson(
                 this,
-                """{"id":"u1","email":"a@b.com","name":"Ana","last_name":"García","role":"establishment_manager","establishments":[]}""",
+                """{"id":"u1","email":"a@b.com","name":"Ana","last_name":"García","role":"field_worker","establishments":[]}""",
             )
         }
 
@@ -93,7 +93,7 @@ class ProfileRepositoryImplTest {
         val repo = repository {
             respondJson(
                 this,
-                """{"id":"u1","email":"a@b.com","name":"Ana","last_name":"García","role":"establishment_manager","establishments":[$establishmentJson]}""",
+                """{"id":"u1","email":"a@b.com","name":"Ana","last_name":"García","role":"field_worker","establishments":[$establishmentJson]}""",
             )
         }
 
@@ -133,7 +133,7 @@ class ProfileRepositoryImplTest {
             capturedBody = (request.body as? TextContent)?.text
             respondJson(
                 this,
-                """{"id":"u1","email":"a@b.com","name":"Nuevo","last_name":"García","role":"professional","establishments":null}""",
+                """{"id":"u1","email":"a@b.com","name":"Nuevo","last_name":"García","role":"analyst","establishments":null}""",
             )
         }
 

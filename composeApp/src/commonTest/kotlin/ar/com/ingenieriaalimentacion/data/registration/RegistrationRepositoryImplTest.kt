@@ -1,6 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.registration
 
-import ar.com.ingenieriaalimentacion.domain.model.registration.ManagerRegistration
+import ar.com.ingenieriaalimentacion.domain.model.registration.FieldWorkerRegistration
 import ar.com.ingenieriaalimentacion.domain.model.registration.RegistrationError
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -25,7 +25,7 @@ import kotlin.test.assertTrue
 
 class RegistrationRepositoryImplTest {
 
-    private val registration = ManagerRegistration(
+    private val registration = FieldWorkerRegistration(
         email = "manager@example.com",
         password = "password123",
         name = "Ana",
@@ -39,7 +39,7 @@ class RegistrationRepositoryImplTest {
           "email": "manager@example.com",
           "name": "Ana",
           "last_name": "García",
-          "role": "establishment_manager",
+          "role": "field_worker",
           "status": "pending_validation",
           "establishments": ["est-1", "est-2"]
         }
@@ -67,7 +67,7 @@ class RegistrationRepositoryImplTest {
             )
         }
 
-        val result = repo.registerManager(registration)
+        val result = repo.registerFieldWorker(registration)
 
         val value = result.getOrNull()
         assertEquals("id-1", value?.id)
@@ -86,7 +86,7 @@ class RegistrationRepositoryImplTest {
             )
         }
 
-        repo.registerManager(registration)
+        repo.registerFieldWorker(registration)
 
         val body = capturedBody
         assertTrue(body != null && body.contains("\"last_name\""), "body should contain last_name: $body")
@@ -123,7 +123,7 @@ class RegistrationRepositoryImplTest {
             )
         }
 
-        val result = repo.registerManager(registration)
+        val result = repo.registerFieldWorker(registration)
 
         val failure = result.exceptionOrNull()
         assertTrue(failure is RegistrationFailure, "expected RegistrationFailure but was $failure")

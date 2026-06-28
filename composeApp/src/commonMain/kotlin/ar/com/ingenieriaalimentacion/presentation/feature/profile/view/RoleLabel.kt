@@ -4,7 +4,7 @@ package ar.com.ingenieriaalimentacion.presentation.feature.profile.view
 internal fun roleLabel(role: String): String = when (role) {
     "superadmin" -> "Superadministrador"
     "admin" -> "Administrador"
-    "professional" -> "Profesional"
-    "establishment_manager" -> "Encargado de establecimiento"
+    "analyst" -> "Analista"
+    "field_worker" -> "Trabajador de campo"
     else -> role
 }

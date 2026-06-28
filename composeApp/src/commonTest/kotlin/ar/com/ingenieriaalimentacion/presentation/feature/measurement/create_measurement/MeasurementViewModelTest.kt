@@ -61,7 +61,7 @@ class MeasurementViewModelTest {
         email = "a@b.com",
         name = "Ana",
         lastName = "García",
-        role = "establishment_manager",
+        role = "field_worker",
         establishments = establishments,
     )
 

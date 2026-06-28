@@ -1,6 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.registration
 
-import ar.com.ingenieriaalimentacion.data.registration.dto.RegisterManagerRequest
+import ar.com.ingenieriaalimentacion.data.registration.dto.RegisterFieldWorkerRequest
 import ar.com.ingenieriaalimentacion.data.registration.dto.RegistrationResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -15,8 +15,8 @@ import io.ktor.http.contentType
  */
 class RegistrationApi(private val refreshClient: HttpClient) {
 
-    suspend fun registerManager(body: RegisterManagerRequest): RegistrationResponse =
-        refreshClient.post("api/v1/auth/register/establishment-manager") {
+    suspend fun registerFieldWorker(body: RegisterFieldWorkerRequest): RegistrationResponse =
+        refreshClient.post("api/v2/auth/register/field-worker") {
             contentType(ContentType.Application.Json)
             setBody(body)
         }.body()

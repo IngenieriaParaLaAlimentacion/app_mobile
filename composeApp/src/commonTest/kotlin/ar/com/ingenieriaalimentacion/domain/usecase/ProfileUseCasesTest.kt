@@ -20,7 +20,7 @@ class ProfileUseCasesTest {
 
     private val profile = Profile(
         id = "u1", email = "a@b.com", name = "Ana", lastName = "García",
-        role = "professional", establishments = null,
+        role = "analyst", establishments = null,
     )
 
     @Test

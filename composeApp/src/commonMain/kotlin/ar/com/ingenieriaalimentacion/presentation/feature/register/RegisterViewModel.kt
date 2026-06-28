@@ -3,9 +3,9 @@ package ar.com.ingenieriaalimentacion.presentation.feature.register
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ar.com.ingenieriaalimentacion.data.registration.RegistrationFailure
-import ar.com.ingenieriaalimentacion.domain.model.registration.ManagerRegistration
+import ar.com.ingenieriaalimentacion.domain.model.registration.FieldWorkerRegistration
 import ar.com.ingenieriaalimentacion.domain.model.registration.RegistrationError
-import ar.com.ingenieriaalimentacion.domain.usecase.registration.RegisterManagerUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.registration.RegisterFieldWorkerUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -15,7 +15,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class RegisterViewModel(
-    private val registerManager: RegisterManagerUseCase,
+    private val registerFieldWorker: RegisterFieldWorkerUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(RegisterState())
@@ -76,14 +76,14 @@ class RegisterViewModel(
 
         _state.update { it.copy(isSubmitting = true, submitError = null) }
         viewModelScope.launch {
-            val registration = ManagerRegistration(
+            val registration = FieldWorkerRegistration(
                 email = current.email.trim(),
                 password = current.password,
                 name = current.name.trim(),
                 lastName = current.lastName.trim(),
                 establishmentIds = current.selectedEstablishments.map { it.id },
             )
-            registerManager(registration).fold(
+            registerFieldWorker(registration).fold(
                 onSuccess = {
                     // Keep isSubmitting = true until navigation tears down this screen, so the
                     // button doesn't flash back to idle before the screen changes.

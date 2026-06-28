@@ -30,12 +30,12 @@ class ProfileViewModelTest {
 
     private val nonManager = Profile(
         id = "u1", email = "a@b.com", name = "Ana", lastName = "García",
-        role = "professional", establishments = null,
+        role = "analyst", establishments = null,
     )
 
     private val managerProfile = Profile(
         id = "u2", email = "m@b.com", name = "Beto", lastName = "López",
-        role = "establishment_manager",
+        role = "field_worker",
         establishments = listOf(
             EstablishmentWithStatus(
                 "e1", "Norte", "Calle 1", 0.0, 0.0, "p1", "Ciudad", "Provincia",
@@ -125,7 +125,7 @@ class ProfileViewModelTest {
             assertEquals("Ana", destination.name)
             assertEquals("García", destination.lastName)
             assertEquals("a@b.com", destination.email)
-            assertEquals("professional", destination.role)
+            assertEquals("analyst", destination.role)
             cancelAndIgnoreRemainingEvents()
         }
     }

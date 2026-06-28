@@ -1,7 +1,7 @@
 package ar.com.ingenieriaalimentacion.data.registration
 
 import ar.com.ingenieriaalimentacion.data.registration.mapper.toRequest
-import ar.com.ingenieriaalimentacion.domain.model.registration.ManagerRegistration
+import ar.com.ingenieriaalimentacion.domain.model.registration.FieldWorkerRegistration
 import ar.com.ingenieriaalimentacion.domain.model.registration.RegistrationError
 import ar.com.ingenieriaalimentacion.domain.model.registration.RegistrationResult
 import ar.com.ingenieriaalimentacion.domain.repository.RegistrationRepository
@@ -10,9 +10,9 @@ import io.ktor.client.plugins.ResponseException
 import io.ktor.http.HttpStatusCode
 
 class RegistrationRepositoryImpl(private val api: RegistrationApi) : RegistrationRepository {
-    override suspend fun registerManager(registration: ManagerRegistration): Result<RegistrationResult> =
+    override suspend fun registerFieldWorker(registration: FieldWorkerRegistration): Result<RegistrationResult> =
         runCatching {
-            val res = api.registerManager(registration.toRequest())
+            val res = api.registerFieldWorker(registration.toRequest())
             RegistrationResult(id = res.id, email = res.email, status = res.status)
         }.recoverCatching { throwable ->
             throw RegistrationFailure(mapToError(throwable), throwable)

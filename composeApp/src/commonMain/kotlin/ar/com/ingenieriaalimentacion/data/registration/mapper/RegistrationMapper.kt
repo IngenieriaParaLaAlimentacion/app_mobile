@@ -1,9 +1,9 @@
 package ar.com.ingenieriaalimentacion.data.registration.mapper
 
-import ar.com.ingenieriaalimentacion.data.registration.dto.RegisterManagerRequest
-import ar.com.ingenieriaalimentacion.domain.model.registration.ManagerRegistration
+import ar.com.ingenieriaalimentacion.data.registration.dto.RegisterFieldWorkerRequest
+import ar.com.ingenieriaalimentacion.domain.model.registration.FieldWorkerRegistration
 
-fun ManagerRegistration.toRequest() = RegisterManagerRequest(
+fun FieldWorkerRegistration.toRequest() = RegisterFieldWorkerRequest(
     email = email,
     password = password,
     name = name,

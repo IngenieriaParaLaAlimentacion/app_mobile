@@ -1,6 +1,6 @@
 package ar.com.ingenieriaalimentacion.domain.model.registration
 
-data class ManagerRegistration(
+data class FieldWorkerRegistration(
     val email: String,
     val password: String,
     val name: String,

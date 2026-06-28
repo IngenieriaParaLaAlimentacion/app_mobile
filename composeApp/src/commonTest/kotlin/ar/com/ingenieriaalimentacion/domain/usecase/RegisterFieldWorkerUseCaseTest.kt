@@ -1,16 +1,16 @@
 package ar.com.ingenieriaalimentacion.domain.usecase
 
-import ar.com.ingenieriaalimentacion.domain.model.registration.ManagerRegistration
+import ar.com.ingenieriaalimentacion.domain.model.registration.FieldWorkerRegistration
 import ar.com.ingenieriaalimentacion.domain.model.registration.RegistrationResult
-import ar.com.ingenieriaalimentacion.domain.usecase.registration.RegisterManagerUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.registration.RegisterFieldWorkerUseCase
 import ar.com.ingenieriaalimentacion.fake.FakeRegistrationRepository
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class RegisterManagerUseCaseTest {
+class RegisterFieldWorkerUseCaseTest {
 
-    private val registration = ManagerRegistration(
+    private val registration = FieldWorkerRegistration(
         email = "manager@example.com",
         password = "password123",
         name = "Ana",
@@ -23,7 +23,7 @@ class RegisterManagerUseCaseTest {
         val repo = FakeRegistrationRepository().apply {
             result = Result.success(RegistrationResult("id-9", "manager@example.com", "pending_validation"))
         }
-        val useCase = RegisterManagerUseCase(repo)
+        val useCase = RegisterFieldWorkerUseCase(repo)
 
         val result = useCase(registration)
 

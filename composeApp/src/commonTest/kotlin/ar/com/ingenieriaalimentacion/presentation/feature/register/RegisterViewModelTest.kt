@@ -5,7 +5,7 @@ import app.cash.turbine.test
 import ar.com.ingenieriaalimentacion.data.registration.RegistrationFailure
 import ar.com.ingenieriaalimentacion.domain.model.establishment.Establishment
 import ar.com.ingenieriaalimentacion.domain.model.registration.RegistrationError
-import ar.com.ingenieriaalimentacion.domain.usecase.registration.RegisterManagerUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.registration.RegisterFieldWorkerUseCase
 import ar.com.ingenieriaalimentacion.fake.FakeRegistrationRepository
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -47,7 +47,7 @@ class RegisterViewModelTest {
     private fun viewModel(
         registrationRepo: FakeRegistrationRepository = FakeRegistrationRepository(),
     ) = RegisterViewModel(
-        registerManager = RegisterManagerUseCase(registrationRepo),
+        registerFieldWorker = RegisterFieldWorkerUseCase(registrationRepo),
     )
 
     /** Awaits emissions (auto-advancing virtual time) until [predicate] holds, then returns that state. */

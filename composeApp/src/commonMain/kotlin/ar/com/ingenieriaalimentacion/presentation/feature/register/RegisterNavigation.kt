@@ -28,7 +28,13 @@ fun NavGraphBuilder.registerScreen(navController: NavController) {
     }
     composable<Route.RegisterSuccess> {
         RegisterSuccessScreen(
-            onLoginClick = { /* TODO: navigate to LoginScreen once implemented */ },
+            onLoginClick = {
+                navController.navigate(Route.Login) {
+                    // Drop the success screen so Back from Login returns to GetStarted,
+                    // not back into the just-completed registration flow.
+                    popUpTo(Route.RegisterSuccess) { inclusive = true }
+                }
+            },
         )
     }
 }

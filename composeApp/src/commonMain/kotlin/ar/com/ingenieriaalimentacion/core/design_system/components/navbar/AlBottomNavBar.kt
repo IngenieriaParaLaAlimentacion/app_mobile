@@ -27,7 +27,7 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.vectorResource
 
 enum class AlBottomNavTab(val label: String, val icon: DrawableResource) {
-    Home("Home", Res.drawable.ic_mingcute_home_line),
+    Home("Inicio", Res.drawable.ic_mingcute_home_line),
     History("Historial", Res.drawable.ic_mingcute_history_line),
     Profile("Perfil", Res.drawable.ic_mingcute_user_3_line),
 }

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,10 +22,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ingenieria_alimentacion.composeapp.generated.resources.Res
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_home_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_right_line
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.vectorResource
@@ -101,8 +104,13 @@ fun AlListRow(
             value?.let {
                 Text(
                     text = it,
-                    modifier = Modifier.weight(1f),
-                    style = AlTheme.typography.body,
+                    // No weight: the value hugs its own content and only takes the
+                    // space it needs, so the title/subtitle column (weight 1f above)
+                    // absorbs the rest instead of being capped at half the row.
+                    // widthIn caps a pathologically long value so it ellipsizes
+                    // rather than squeezing the title off-screen.
+                    modifier = Modifier.widthIn(max = 160.dp),
+                    style = AlTheme.typography.caption,
                     color = AlTheme.colors.textMuted,
                     textAlign = TextAlign.End,
                     maxLines = 1,
@@ -129,6 +137,44 @@ fun AlListRow(
                     .padding(horizontal = horizontalPadding)
                     .height(AlTheme.borders.thin)
                     .background(AlTheme.colors.border),
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun AlListRowPreview() {
+    AlTheme {
+        Column(modifier = Modifier.background(AlTheme.colors.surfaceBase)) {
+            // Navigable row with a leading icon and trailing chevron.
+            AlListRow(
+                title = "Inicio",
+                subtitle = "Resumen de actividad reciente",
+                leadingIcon = Res.drawable.ic_mingcute_home_line,
+                onClick = {},
+            )
+            // Info row with a trailing value, no chevron.
+            AlListRow(
+                title = "Peso",
+                value = "72,5 kg",
+            )
+            // Title-only navigable row.
+            AlListRow(
+                title = "Configuración",
+                onClick = {},
+            )
+            // Long value that ellipsizes against the title.
+            AlListRow(
+                title = "Establecimiento",
+                value = "Establecimiento Agropecuario La Esperanza del Sur",
+                onClick = {},
+            )
+            // Read-only row, last in the group, divider hidden.
+            AlListRow(
+                title = "Versión",
+                value = "1.0.0",
+                showDivider = false,
             )
         }
     }

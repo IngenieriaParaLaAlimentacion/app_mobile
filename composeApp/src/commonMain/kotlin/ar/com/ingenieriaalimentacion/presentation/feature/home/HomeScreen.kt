@@ -262,7 +262,7 @@ private fun RecentActivity(recent: List<RecentActivityUi>, onAction: (HomeAction
             Text(
                 text = "Ver todo",
                 style = AlTheme.typography.caption.copy(fontWeight = FontWeight.Medium),
-                color = AlTheme.colors.accent,
+                color = AlTheme.colors.textBase,
                 modifier = Modifier.clickable { onAction(HomeAction.SeeAllActivityClick) },
             )
         }

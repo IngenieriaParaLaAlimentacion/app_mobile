@@ -6,6 +6,7 @@ import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementUpload
 import ar.com.ingenieriaalimentacion.domain.model.profile.Profile
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectUpload
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
+import ar.com.ingenieriaalimentacion.presentation.feature.measurement.uploads.alertTypeLabel
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
@@ -84,7 +85,7 @@ private fun SubjectUpload.toRecentUi(): RecentActivityUi {
 private fun MeasurementUpload.toRecentUi(): RecentActivityUi {
     val topAlert = alerts.maxByOrNull { tonePriority(it.tone()) }
     val (label, tone) = if (topAlert != null) {
-        topAlert.alertType to topAlert.tone()
+        alertTypeLabel(topAlert.alertType) to topAlert.tone()
     } else {
         measurementSyncBadge(syncState)
     }

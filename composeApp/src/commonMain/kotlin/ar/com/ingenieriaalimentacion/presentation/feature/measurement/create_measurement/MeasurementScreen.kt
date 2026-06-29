@@ -25,10 +25,6 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,7 +53,6 @@ fun MeasurementScreenRoot(
     viewModel: MeasurementViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var hasRequestedSubject by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(state.destination) {
         state.destination?.let {
@@ -69,16 +64,7 @@ fun MeasurementScreenRoot(
     LaunchedEffect(pickedSubjectResult) {
         pickedSubjectResult?.let {
             viewModel.setSubjectFromResult(it)
-            hasRequestedSubject = true
             onResultConsumed()
-        }
-    }
-
-    // First entry with no subject: open the selector once so the relevador "enters with a subject".
-    LaunchedEffect(Unit) {
-        if (!hasRequestedSubject && state.subject == null) {
-            hasRequestedSubject = true
-            navigate(MeasurementDestination.NavigateToSelectSubject)
         }
     }
 

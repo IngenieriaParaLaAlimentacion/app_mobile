@@ -155,7 +155,7 @@ class MeasurementViewModel(
                             height = TextFieldState(),
                             isSubmitting = false,
                             submitError = null,
-                            successMessage = "Medición guardada. Se sincronizará automáticamente.",
+                            successMessage = "Medición guardada",
                             measuredAtDisplay = friendlyNow(),
                         )
                     }

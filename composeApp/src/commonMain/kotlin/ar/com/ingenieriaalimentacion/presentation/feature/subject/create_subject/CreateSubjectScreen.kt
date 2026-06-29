@@ -29,6 +29,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ar.com.ingenieriaalimentacion.core.design_system.components.banner.AlInlineBanner
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlInput
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.DateVisualTransformation
@@ -89,26 +90,10 @@ fun CreateSubjectScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     state.successMessage?.let { msg ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(styles.primary)
-                                .padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = msg,
-                                color = styles.primaryForeground,
-                                modifier = Modifier.weight(1f),
-                            )
-                            Text(
-                                text = "×",
-                                color = styles.primaryForeground,
-                                modifier = Modifier.clickable { onAction(CreateSubjectAction.DismissSuccess) },
-                            )
-                        }
+                        AlInlineBanner(
+                            message = msg,
+                            onDismiss = { onAction(CreateSubjectAction.DismissSuccess) },
+                        )
                     }
 
                     AlInput(

@@ -124,7 +124,7 @@ class CreateSubjectViewModel(
                 onSuccess = {
                     _state.update {
                         CreateSubjectState(
-                            successMessage = "Guardado. Se sincronizará automáticamente.",
+                            successMessage = "Sujeto guardado",
                         )
                     }
                     syncCoordinator.requestSync() // fire-and-forget; UI does not wait on the result

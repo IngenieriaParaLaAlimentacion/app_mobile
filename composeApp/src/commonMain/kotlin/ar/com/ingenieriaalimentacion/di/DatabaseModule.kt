@@ -12,6 +12,7 @@ val databaseModule = module {
     single { AppDatabase(get<DatabaseDriverFactory>().create()) }
     single { get<AppDatabase>().pendingSubjectQueries }
     single { get<AppDatabase>().pendingMeasurementQueries }
+    single { get<AppDatabase>().cachedEstablishmentQueries }
     single { AppScope() }
     single<List<SyncEngine>> {
         listOf(get<SubjectRepository>(), get<MeasurementRepository>())

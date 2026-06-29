@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.profile
 
+import ar.com.ingenieriaalimentacion.fake.FakeEstablishmentLocalStore
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentRequestError
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.ProfileError
@@ -38,7 +39,7 @@ class ProfileRepositoryImplTest {
             }
             defaultRequest { url("https://api.example.com/") }
         }
-        return ProfileRepositoryImpl(ProfileApi(client))
+        return ProfileRepositoryImpl(ProfileApi(client), FakeEstablishmentLocalStore())
     }
 
     private fun respondJson(scope: MockRequestHandleScope, body: String, status: HttpStatusCode = HttpStatusCode.OK) =

@@ -1,0 +1,23 @@
+CREATE TABLE CachedEstablishment (
+    id               TEXT NOT NULL PRIMARY KEY,
+    name             TEXT NOT NULL,
+    formattedAddress TEXT NOT NULL,
+    latitude         REAL NOT NULL,
+    longitude        REAL NOT NULL,
+    placeId          TEXT NOT NULL,
+    city             TEXT NOT NULL,
+    province         TEXT NOT NULL,
+    status           TEXT NOT NULL,   -- 'Approved'|'Pending'|'Rejected'|'Unknown'
+    updatedAt        INTEGER NOT NULL
+);
+
+selectAll:
+SELECT * FROM CachedEstablishment;
+
+insert:
+INSERT OR REPLACE INTO CachedEstablishment(id, name, formattedAddress, latitude, longitude,
+    placeId, city, province, status, updatedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+deleteAll:
+DELETE FROM CachedEstablishment;

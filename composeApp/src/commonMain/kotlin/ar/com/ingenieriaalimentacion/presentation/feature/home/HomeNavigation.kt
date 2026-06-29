@@ -29,5 +29,6 @@ internal fun navigate(
         HomeDestination.Back -> navController.popBackStack()
         HomeDestination.NavigateToCreateSubject -> navController.navigateToCreateSubject()
         HomeDestination.NavigateToCreateMeasurement -> navController.navigateToCreateMeasurement()
+        HomeDestination.NavigateToHistory -> navController.navigate(Route.History)
     }
 }

@@ -18,6 +18,7 @@ import ar.com.ingenieriaalimentacion.presentation.feature.subject.create_subject
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.select_subject.SelectSubjectViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.uploads.SubjectUploadsViewModel
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
+import kotlin.time.Clock
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
@@ -25,7 +26,16 @@ import org.koin.dsl.module
 val viewModelsModule = module {
     viewModelOf(::AppViewModel)
     viewModelOf(::GetStartedViewModel)
-    viewModelOf(::HomeViewModel)
+    viewModel {
+        HomeViewModel(
+            observeSubjectUploads = get(),
+            observeMeasurements = get(),
+            getMyProfile = get(),
+            syncCoordinator = get(),
+            connectivity = get(),
+            now = { Clock.System.now().toEpochMilliseconds() },
+        )
+    }
     viewModelOf(::RegisterViewModel)
     viewModelOf(::LoginViewModel)
     viewModelOf(::CreateSubjectViewModel)

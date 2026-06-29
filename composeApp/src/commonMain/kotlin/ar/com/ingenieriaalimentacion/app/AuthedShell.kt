@@ -8,7 +8,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.LifecycleStartEffect
+import ar.com.ingenieriaalimentacion.data.network.connectivity.ConnectivityObserver
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.RefreshMyEstablishmentsUseCase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import org.koin.compose.koinInject
@@ -81,6 +83,16 @@ fun AuthedShell(onSignOut: () -> Unit) {
                                 outerNav.navigateToCreateSubject()
                             HomeDestination.NavigateToCreateMeasurement ->
                                 outerNav.navigateToCreateMeasurement()
+                            HomeDestination.NavigateToHistory ->
+                                innerNav.navigate(Route.History) {
+                                    // Mirror the bottom bar's save/restore so the History tab's
+                                    // back stack + ViewModel are preserved across the switch.
+                                    popUpTo(innerNav.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                         }
                     },
                 )
@@ -102,10 +114,18 @@ fun AuthedShell(onSignOut: () -> Unit) {
  * crash recovery live in [SyncCoordinator.start]; this adds the lifecycle triggers.
  */
 @Composable
-private fun SyncTriggers(coordinator: SyncCoordinator = koinInject()) {
+private fun SyncTriggers(
+    coordinator: SyncCoordinator = koinInject(),
+    connectivity: ConnectivityObserver = koinInject(),
+    refreshMyEstablishments: RefreshMyEstablishmentsUseCase = koinInject(),
+) {
     LifecycleStartEffect(Unit) {
         coordinator.requestSync()                    // sync each time the app returns to foreground
         onStopOrDispose { }
+    }
+    LaunchedEffect(Unit) {
+        // One-shot: warm the establishment cache so the measurement picker works offline later.
+        if (connectivity.isOnline()) refreshMyEstablishments()
     }
     LaunchedEffect(Unit) {
         while (isActive) {                           // periodic backstop while foregrounded

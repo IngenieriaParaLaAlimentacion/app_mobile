@@ -10,6 +10,13 @@ import kotlinx.coroutines.flow.Flow
  */
 interface SubjectLocalStore {
     fun observeAll(): Flow<List<SubjectUpload>>
+
+    /** One-shot snapshot of every queued row, used by the subject picker union read. */
+    suspend fun all(): List<SubjectUpload>
+
+    /** Single queued row by its [localId], or null if no local row exists (pre-existing server subject). */
+    suspend fun find(localId: String): SubjectUpload?
+
     suspend fun insert(upload: SubjectUpload)
 
     /** All PENDING rows (fresh or auto-retrying); backoff gating is applied in Kotlin by the caller. */

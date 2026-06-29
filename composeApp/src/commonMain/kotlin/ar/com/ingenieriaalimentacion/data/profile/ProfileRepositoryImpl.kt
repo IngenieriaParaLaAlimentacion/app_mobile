@@ -2,6 +2,7 @@ package ar.com.ingenieriaalimentacion.data.profile
 
 import ar.com.ingenieriaalimentacion.data.profile.dto.RequestEstablishmentsRequest
 import ar.com.ingenieriaalimentacion.data.profile.dto.UpdateProfileRequest
+import ar.com.ingenieriaalimentacion.data.profile.local.EstablishmentLocalStore
 import ar.com.ingenieriaalimentacion.data.profile.mapper.toDomain
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentRequestError
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
@@ -14,7 +15,10 @@ import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ResponseException
 import io.ktor.http.HttpStatusCode
 
-class ProfileRepositoryImpl(private val api: ProfileApi) : ProfileRepository {
+class ProfileRepositoryImpl(
+    private val api: ProfileApi,
+    private val local: EstablishmentLocalStore,
+) : ProfileRepository {
 
     override suspend fun getMe(): Result<Profile> =
         runCatching { api.getMe().toDomain() }
@@ -25,7 +29,28 @@ class ProfileRepositoryImpl(private val api: ProfileApi) : ProfileRepository {
             api.updateMe(UpdateProfileRequest(update.name, update.lastName)).toDomain()
         }.recoverCatching { throw ProfileFailure(mapProfileError(it), it) }
 
-    override suspend fun getMyEstablishments(): Result<List<EstablishmentWithStatus>> =
+    override suspend fun getMyEstablishments(): Result<List<EstablishmentWithStatus>> {
+        // Cache-first: a warm cache wins so the picker works offline.
+        val cached = local.getAll()
+        if (cached.isNotEmpty()) return Result.success(cached)
+
+        // Cold cache → network. On success, warm the cache; on failure, propagate (the
+        // cache is empty here, so there is nothing to fall back to).
+        return fetchMyEstablishments()
+            .onSuccess { fresh -> local.replaceAll(fresh) }
+    }
+
+    override suspend fun refreshMyEstablishments(): Result<Unit> {
+        // Best-effort prefetch: overwrite the cache when the network succeeds; stay quiet offline.
+        fetchMyEstablishments().onSuccess { fresh -> local.replaceAll(fresh) }
+        return Result.success(Unit)
+    }
+
+    override suspend fun clearEstablishmentCache() {
+        local.clear()
+    }
+
+    private suspend fun fetchMyEstablishments(): Result<List<EstablishmentWithStatus>> =
         runCatching { api.getMyEstablishments().map { it.toDomain() } }
             .recoverCatching { t ->
                 // Non-managers get 403 here; surface that as "no establishments" to match

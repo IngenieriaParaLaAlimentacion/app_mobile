@@ -16,7 +16,7 @@ import io.ktor.http.contentType
 class RegistrationApi(private val refreshClient: HttpClient) {
 
     suspend fun registerFieldWorker(body: RegisterFieldWorkerRequest): RegistrationResponse =
-        refreshClient.post("api/v2/auth/register/field-worker") {
+        refreshClient.post("api/v1/auth/register/field-worker") {
             contentType(ContentType.Application.Json)
             setBody(body)
         }.body()

@@ -59,3 +59,6 @@ WHERE localId = ?;
 
 deleteById:
 DELETE FROM PendingSubject WHERE localId = ?;
+
+deleteAll:
+DELETE FROM PendingSubject;

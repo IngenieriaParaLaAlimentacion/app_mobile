@@ -62,3 +62,6 @@ DELETE FROM PendingMeasurement WHERE syncState = 'SYNCED' AND updatedAt < :cutof
 
 deleteById:
 DELETE FROM PendingMeasurement WHERE localId = ?;
+
+deleteAll:
+DELETE FROM PendingMeasurement;

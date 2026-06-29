@@ -14,6 +14,11 @@ class FakeAuthRepository : AuthRepository {
 
     var signOutCount: Int = 0
 
+    /** Drives the session-status flow from tests. */
+    fun emit(status: SessionStatus) {
+        _status.value = status
+    }
+
     override suspend fun bootstrap() = Unit
     override suspend fun signIn(credentials: Credentials): Result<UserSession> =
         Result.failure(IllegalStateException("not used"))

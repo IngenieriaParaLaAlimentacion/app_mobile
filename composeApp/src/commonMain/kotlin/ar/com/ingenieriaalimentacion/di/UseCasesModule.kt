@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.di
 
+import ar.com.ingenieriaalimentacion.domain.usecase.auth.ClearLocalDataUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.InitializeAuthUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.ObserveSessionStatusUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.RequestPasswordRecoveryUseCase
@@ -31,6 +32,7 @@ val useCasesModule = module {
     factory { InitializeAuthUseCase(get()) }
     factory { SignInUseCase(get()) }
     factory { SignOutUseCase(get()) }
+    factory { ClearLocalDataUseCase(get()) }
     factory { ResetPasswordUseCase(get()) }
     factory { RequestPasswordRecoveryUseCase(get()) }
     factory { ObserveSessionStatusUseCase(get()) }

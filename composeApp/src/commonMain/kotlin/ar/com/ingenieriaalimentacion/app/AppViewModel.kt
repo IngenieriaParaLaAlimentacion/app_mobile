@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.domain.model.auth.SessionStatus
+import ar.com.ingenieriaalimentacion.domain.usecase.auth.ClearLocalDataUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.InitializeAuthUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.ObserveSessionStatusUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.ClearEstablishmentCacheUseCase
@@ -18,6 +19,7 @@ class AppViewModel(
     observeSessionStatus: ObserveSessionStatusUseCase,
     syncCoordinator: SyncCoordinator,
     clearEstablishmentCache: ClearEstablishmentCacheUseCase,
+    clearLocalData: ClearLocalDataUseCase,
 ) : ViewModel() {
 
     val sessionStatus: StateFlow<SessionStatus> = observeSessionStatus()
@@ -31,12 +33,14 @@ class AppViewModel(
         viewModelScope.launch { initializeAuth() }
         // Start the offline-first sync engine: crash recovery, connectivity collector, cleanup loop.
         syncCoordinator.start()
-        // Drop the establishment cache whenever the session ends (explicit sign-out or
-        // refresh-failure logout both funnel into NotAuthenticated) so no user's data leaks.
+        // Explicit sign-out wipes ALL local data so the next user starts clean; a forced
+        // (refresh-failure) logout only drops the establishment cache, preserving un-synced uploads.
         viewModelScope.launch {
             sessionStatus
                 .filterIsInstance<SessionStatus.NotAuthenticated>()
-                .collect { clearEstablishmentCache() }
+                .collect { status ->
+                    if (status.isSignOut) clearLocalData() else clearEstablishmentCache()
+                }
         }
     }
 }

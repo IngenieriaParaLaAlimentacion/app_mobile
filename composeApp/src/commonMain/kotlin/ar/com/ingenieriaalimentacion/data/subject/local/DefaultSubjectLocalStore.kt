@@ -26,6 +26,14 @@ class DefaultSubjectLocalStore(
     override fun observeAll(): Flow<List<SubjectUpload>> =
         queries.selectAll().asFlow().mapToList(dispatcher).map { rows -> rows.map { it.toDomain() } }
 
+    override suspend fun all(): List<SubjectUpload> = withContext(dispatcher) {
+        queries.selectAll().executeAsList().map { it.toDomain() }
+    }
+
+    override suspend fun find(localId: String): SubjectUpload? = withContext(dispatcher) {
+        queries.selectById(localId).executeAsOneOrNull()?.toDomain()
+    }
+
     override suspend fun insert(upload: SubjectUpload): Unit = withContext(dispatcher) {
         queries.insert(
             localId = upload.localId,

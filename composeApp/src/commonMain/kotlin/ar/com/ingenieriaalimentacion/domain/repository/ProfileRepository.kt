@@ -9,8 +9,17 @@ interface ProfileRepository {
     suspend fun getMe(): Result<Profile>
     suspend fun updateMe(update: UpdateProfile): Result<Profile>
 
-    /** Manager-only. Returns the caller's establishments annotated with approval status. */
+    /**
+     * Manager-only. Returns the caller's establishments annotated with approval status.
+     * Cache-first: returns the local cache when warm, otherwise fetches and caches.
+     */
     suspend fun getMyEstablishments(): Result<List<EstablishmentWithStatus>>
+
+    /** Bypass the cache, fetch fresh, and overwrite the local cache. Best-effort (no-op offline). */
+    suspend fun refreshMyEstablishments(): Result<Unit>
+
+    /** Clear the establishment cache (call on logout so no previous user's data leaks). */
+    suspend fun clearEstablishmentCache()
     suspend fun getAvailableEstablishments(
         search: String?,
         page: Int,

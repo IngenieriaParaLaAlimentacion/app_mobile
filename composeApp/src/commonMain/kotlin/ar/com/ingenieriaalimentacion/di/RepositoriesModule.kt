@@ -8,6 +8,8 @@ import ar.com.ingenieriaalimentacion.data.measurement.MeasurementRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.measurement.local.DefaultMeasurementLocalStore
 import ar.com.ingenieriaalimentacion.data.measurement.local.MeasurementLocalStore
 import ar.com.ingenieriaalimentacion.data.profile.ProfileRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.profile.local.DefaultEstablishmentLocalStore
+import ar.com.ingenieriaalimentacion.data.profile.local.EstablishmentLocalStore
 import ar.com.ingenieriaalimentacion.data.registration.RegistrationRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.subject.SubjectQueryRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.subject.SubjectRepositoryImpl
@@ -57,7 +59,7 @@ val repositoriesModule = module {
             now = { Clock.System.now().toEpochMilliseconds() },
         )
     }
-    single<SubjectQueryRepository> { SubjectQueryRepositoryImpl(api = get()) }
+    single<SubjectQueryRepository> { SubjectQueryRepositoryImpl(api = get(), local = get()) }
     single<MeasurementLocalStore> {
         DefaultMeasurementLocalStore(queries = get(), now = { Clock.System.now().toEpochMilliseconds() })
     }
@@ -65,9 +67,13 @@ val repositoriesModule = module {
         MeasurementRepositoryImpl(
             api = get(),
             local = get(),
+            subjects = get(),
             idGenerator = get(),
             now = { Clock.System.now().toEpochMilliseconds() },
         )
     }
-    single<ProfileRepository> { ProfileRepositoryImpl(api = get()) }
+    single<EstablishmentLocalStore> {
+        DefaultEstablishmentLocalStore(queries = get(), now = { Clock.System.now().toEpochMilliseconds() })
+    }
+    single<ProfileRepository> { ProfileRepositoryImpl(api = get(), local = get()) }
 }

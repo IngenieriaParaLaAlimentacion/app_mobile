@@ -3,8 +3,12 @@ package ar.com.ingenieriaalimentacion.data.measurement
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementUpload
 import ar.com.ingenieriaalimentacion.domain.model.subject.MAX_SYNC_ATTEMPTS
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
+import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectUpload
+import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
 import ar.com.ingenieriaalimentacion.domain.util.IdGenerator
 import ar.com.ingenieriaalimentacion.fake.FakeMeasurementLocalStore
+import ar.com.ingenieriaalimentacion.fake.FakeSubjectLocalStore
+import kotlinx.datetime.LocalDate
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -44,9 +48,12 @@ class MeasurementSyncEngineTest {
         MeasurementApi(client)
     }
 
+    private val subjectStore = FakeSubjectLocalStore(now)
+
     private val repo = MeasurementRepositoryImpl(
         api = api,
         local = store,
+        subjects = subjectStore,
         idGenerator = object : IdGenerator { override fun newId() = "generated" },
         now = now,
     )
@@ -212,5 +219,112 @@ class MeasurementSyncEngineTest {
         repo.resetStuckSyncing()
 
         assertEquals(SyncState.Pending, store.current("r1")?.syncState)
+    }
+
+    // --- Phase 3: resolve-at-read gating against the subject queue ---
+
+    private fun subjectRow(
+        localId: String,
+        syncState: SyncState,
+        canonicalId: String? = null,
+    ) = SubjectUpload(
+        localId = localId,
+        dni = 42,
+        sex = Sex.Male,
+        name = "Ana",
+        lastName = "García",
+        birthDate = LocalDate(2000, 1, 1),
+        isRural = false,
+        isIndigenous = false,
+        syncState = syncState,
+        canonicalId = canonicalId,
+        errorMessage = null,
+        attemptCount = 0,
+        createdAt = 0,
+        updatedAt = 0,
+    )
+
+    /** Captures the `subject_id` field POSTed to the measurements endpoint. */
+    private var capturedBody: String? = null
+
+    private fun capturingSuccess(id: String): suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData =
+        { req ->
+            capturedBody = (req.body as? io.ktor.http.content.TextContent)?.text
+            respond(successBody(id), HttpStatusCode.Created, jsonHeaders())
+        }
+
+    @Test
+    fun `no subject row posts subjectId unchanged`() = runTest {
+        store.insert(row("r1")) // subjectId = "s", no local subject row
+        responder = capturingSuccess("r1")
+
+        repo.syncPending()
+
+        assertEquals(SyncState.Synced, store.current("r1")?.syncState)
+        assertTrue(capturedBody?.contains("\"subject_id\":\"s\"") == true, "body: $capturedBody")
+    }
+
+    @Test
+    fun `synced subject posts its localId`() = runTest {
+        subjectStore.insert(subjectRow("s", SyncState.Synced, canonicalId = "s"))
+        store.insert(row("r1"))
+        responder = capturingSuccess("r1")
+
+        repo.syncPending()
+
+        assertEquals(SyncState.Synced, store.current("r1")?.syncState)
+        assertTrue(capturedBody?.contains("\"subject_id\":\"s\"") == true, "body: $capturedBody")
+    }
+
+    @Test
+    fun `merged subject posts the canonical id`() = runTest {
+        subjectStore.insert(subjectRow("s", SyncState.Merged, canonicalId = "canonical-x"))
+        store.insert(row("r1"))
+        responder = capturingSuccess("r1")
+
+        repo.syncPending()
+
+        assertEquals(SyncState.Synced, store.current("r1")?.syncState)
+        assertTrue(capturedBody?.contains("\"subject_id\":\"canonical-x\"") == true, "body: $capturedBody")
+    }
+
+    @Test
+    fun `pending subject holds the measurement without attempting`() = runTest {
+        subjectStore.insert(subjectRow("s", SyncState.Pending))
+        store.insert(row("r1"))
+        val callsBefore = apiCalls
+
+        val summary = repo.syncPending()
+
+        assertEquals(callsBefore, apiCalls) // no POST attempted
+        assertEquals(SyncState.Pending, store.current("r1")?.syncState)
+        assertEquals(0, store.current("r1")?.attemptCount)
+        assertEquals(1, summary.stillPending)
+    }
+
+    @Test
+    fun `syncing subject holds the measurement without attempting`() = runTest {
+        subjectStore.insert(subjectRow("s", SyncState.Syncing))
+        store.insert(row("r1"))
+        val callsBefore = apiCalls
+
+        repo.syncPending()
+
+        assertEquals(callsBefore, apiCalls)
+        assertEquals(SyncState.Pending, store.current("r1")?.syncState)
+    }
+
+    @Test
+    fun `failed subject dead-letters the dependent measurement`() = runTest {
+        subjectStore.insert(subjectRow("s", SyncState.Failed))
+        store.insert(row("r1"))
+        val callsBefore = apiCalls
+
+        val summary = repo.syncPending()
+
+        assertEquals(callsBefore, apiCalls)
+        assertEquals(SyncState.Failed, store.current("r1")?.syncState)
+        assertEquals("El sujeto no se pudo sincronizar.", store.current("r1")?.errorMessage)
+        assertEquals(1, summary.failed)
     }
 }

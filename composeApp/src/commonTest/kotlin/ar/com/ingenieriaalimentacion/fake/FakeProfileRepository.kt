@@ -45,6 +45,18 @@ class FakeProfileRepository : ProfileRepository {
         return myEstablishmentsResult
     }
 
+    var refreshCount: Int = 0
+    var clearCacheCount: Int = 0
+
+    override suspend fun refreshMyEstablishments(): Result<Unit> {
+        refreshCount++
+        return Result.success(Unit)
+    }
+
+    override suspend fun clearEstablishmentCache() {
+        clearCacheCount++
+    }
+
     override suspend fun getAvailableEstablishments(
         search: String?,
         page: Int,

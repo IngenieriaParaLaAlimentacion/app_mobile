@@ -8,7 +8,9 @@ import ar.com.ingenieriaalimentacion.data.measurement.mapper.toRequest
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementUpload
 import ar.com.ingenieriaalimentacion.domain.model.measurement.NewMeasurement
 import ar.com.ingenieriaalimentacion.domain.model.measurement.isEligibleAt
+import ar.com.ingenieriaalimentacion.data.subject.local.SubjectLocalStore
 import ar.com.ingenieriaalimentacion.domain.model.subject.MAX_SYNC_ATTEMPTS
+import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncSummary
 import ar.com.ingenieriaalimentacion.domain.repository.MeasurementRepository
 import ar.com.ingenieriaalimentacion.domain.util.IdGenerator
@@ -25,6 +27,7 @@ import kotlin.time.Instant
 class MeasurementRepositoryImpl(
     private val api: MeasurementApi,
     private val local: MeasurementLocalStore,
+    private val subjects: SubjectLocalStore,
     private val idGenerator: IdGenerator,
     private val now: () -> Long,
 ) : MeasurementRepository {
@@ -45,8 +48,29 @@ class MeasurementRepositoryImpl(
         var pending = 0
         // Backoff: read all PENDING, then keep only rows whose backoff window has elapsed.
         local.syncable().filter { it.isEligibleAt(now()) }.forEach { upload ->
+            // Resolve/gate against the subject's queue state (no schema JOIN): a measurement must
+            // not be POSTed before its subject lands server-side, or it dead-letters on a sure 404.
+            val subject = subjects.find(upload.subjectId)
+            val resolvedSubjectId = when {
+                // Pre-existing server subject (no local row) → POST as-is.
+                subject == null -> upload.subjectId
+                // Subject landed: happy path keeps localId; a 409 DNI-merge swaps in the canonical id.
+                subject.syncState == SyncState.Synced || subject.syncState == SyncState.Merged ->
+                    subject.canonicalId ?: upload.subjectId
+                // Subject dead-lettered → the FK can never resolve; dead-letter the measurement too.
+                subject.syncState == SyncState.Failed -> {
+                    local.markFailed(upload.localId, "El sujeto no se pudo sincronizar.")
+                    failed++
+                    return@forEach
+                }
+                // Subject still PENDING/SYNCING → hold; a later pass retries once it lands.
+                else -> {
+                    pending++
+                    return@forEach
+                }
+            }
             local.markSyncing(upload.localId)
-            when (val outcome = api.create(upload.toRequest())) {
+            when (val outcome = api.create(upload.copy(subjectId = resolvedSubjectId).toRequest())) {
                 is MeasurementUploadOutcome.Created -> {
                     val alertsJson = encodeAlerts(outcome.response.alerts.map { it.toDomain() })
                     local.markSynced(upload.localId, outcome.response.bmi, alertsJson)

@@ -1,0 +1,18 @@
+-- Migrate schema v2 -> v3.
+-- Adds CachedEstablishment, a read-through reference cache for the measurement
+-- screen's establishment picker so it works offline. Starts empty and warms on the
+-- first online authed-shell entry; cleared on logout.
+-- IF NOT EXISTS keeps the migration idempotent for dev databases that already
+-- received the table via create() while still pinned at v2.
+CREATE TABLE IF NOT EXISTS CachedEstablishment (
+    id               TEXT NOT NULL PRIMARY KEY,
+    name             TEXT NOT NULL,
+    formattedAddress TEXT NOT NULL,
+    latitude         REAL NOT NULL,
+    longitude        REAL NOT NULL,
+    placeId          TEXT NOT NULL,
+    city             TEXT NOT NULL,
+    province         TEXT NOT NULL,
+    status           TEXT NOT NULL,
+    updatedAt        INTEGER NOT NULL
+);

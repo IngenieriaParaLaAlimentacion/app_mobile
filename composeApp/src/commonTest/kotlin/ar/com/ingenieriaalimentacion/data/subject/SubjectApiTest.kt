@@ -42,7 +42,7 @@ class SubjectApiTest {
             install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
             defaultRequest { url("https://api.example.com/") }
         }
-        return SubjectQueryRepositoryImpl(SubjectApi(client))
+        return SubjectQueryRepositoryImpl(SubjectApi(client), ar.com.ingenieriaalimentacion.fake.FakeSubjectLocalStore())
     }
 
     @Test

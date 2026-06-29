@@ -15,13 +15,19 @@ class FakeSubjectLocalStore(private val now: () -> Long = { 0L }) : SubjectLocal
     private val rows = MutableStateFlow<List<SubjectUpload>>(emptyList())
 
     fun current(localId: String): SubjectUpload? = rows.value.firstOrNull { it.localId == localId }
-    fun all(): List<SubjectUpload> = rows.value
+
+    /** Synchronous snapshot for assertions (distinct from the suspend interface [all]). */
+    fun snapshot(): List<SubjectUpload> = rows.value
 
     private fun mutate(localId: String, transform: (SubjectUpload) -> SubjectUpload) {
         rows.value = rows.value.map { if (it.localId == localId) transform(it) else it }
     }
 
     override fun observeAll(): Flow<List<SubjectUpload>> = rows
+
+    override suspend fun all(): List<SubjectUpload> = rows.value
+
+    override suspend fun find(localId: String): SubjectUpload? = current(localId)
 
     override suspend fun insert(upload: SubjectUpload) {
         rows.value = rows.value + upload

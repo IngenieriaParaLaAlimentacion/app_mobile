@@ -4,6 +4,7 @@ import ar.com.ingenieriaalimentacion.data.db.PendingSubject
 import ar.com.ingenieriaalimentacion.data.subject.dto.SubjectRequest
 import ar.com.ingenieriaalimentacion.domain.model.subject.NewSubject
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
+import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectUpload
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import kotlinx.datetime.LocalDate
@@ -42,6 +43,19 @@ internal fun NewSubject.toPendingUpload(id: String, now: Long): SubjectUpload = 
     attemptCount = 0,
     createdAt = now,
     updatedAt = now,
+)
+
+/**
+ * Queued upload → picker summary. Bridges the only diverging field: `id`. In the happy path the
+ * client-supplied [localId] is the server PK (idempotent replay), so a SYNCED row's id equals the
+ * remote id and dedup-by-id is exact; on a 409 DNI-merge the server hands back a [canonicalId].
+ */
+internal fun SubjectUpload.toSummary(): SubjectSummary = SubjectSummary(
+    id = canonicalId ?: localId,
+    dni = dni,
+    name = name,
+    lastName = lastName,
+    sex = sex,
 )
 
 /** Queued upload → POST body. The [SubjectUpload.localId] doubles as the idempotency `id`. */

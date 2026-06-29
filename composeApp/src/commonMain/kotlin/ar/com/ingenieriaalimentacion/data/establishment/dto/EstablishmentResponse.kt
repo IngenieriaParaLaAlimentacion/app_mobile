@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 data class EstablishmentResponse(
     val id: String,
     val name: String,
-    val address: String,
+    @SerialName("formatted_address") val address: String,
 )
 
 @Serializable

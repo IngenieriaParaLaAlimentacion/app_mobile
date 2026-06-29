@@ -83,6 +83,16 @@ fun AuthedShell(onSignOut: () -> Unit) {
                                 outerNav.navigateToCreateSubject()
                             HomeDestination.NavigateToCreateMeasurement ->
                                 outerNav.navigateToCreateMeasurement()
+                            HomeDestination.NavigateToHistory ->
+                                innerNav.navigate(Route.History) {
+                                    // Mirror the bottom bar's save/restore so the History tab's
+                                    // back stack + ViewModel are preserved across the switch.
+                                    popUpTo(innerNav.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                         }
                     },
                 )

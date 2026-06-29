@@ -39,7 +39,9 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlSc
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ingenieria_alimentacion.composeapp.generated.resources.Res
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_alert_line
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_check_circle
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_ruler_line
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_time
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_upload_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_user_3_line
 import org.jetbrains.compose.resources.DrawableResource
@@ -101,14 +103,14 @@ private fun SyncStatusCard(sync: SyncStatusUi, onAction: (HomeAction) -> Unit) {
         is SyncStatusUi.AllSynced -> AlInfoCard(
             title = "Todo sincronizado",
             description = sync.lastSyncedLabel,
-            leadingIcon = Res.drawable.ic_mingcute_upload_line,
+            leadingIcon = Res.drawable.ic_mingcute_check_circle,
             leadingIconTint = AlTheme.colors.accent,
         )
 
         SyncStatusUi.OfflineClean -> AlInfoCard(
             title = "Sin conexión",
             description = "Todo guardado en el dispositivo",
-            leadingIcon = Res.drawable.ic_mingcute_upload_line,
+            leadingIcon = Res.drawable.ic_mingcute_check_circle,
             leadingIconTint = AlTheme.colors.textMuted,
         )
 
@@ -122,7 +124,7 @@ private fun SyncStatusCard(sync: SyncStatusUi, onAction: (HomeAction) -> Unit) {
         is SyncStatusUi.PendingOnline -> AlInfoCard(
             title = "${sync.count} sin subir",
             description = "Tocá para sincronizar",
-            leadingIcon = Res.drawable.ic_mingcute_upload_line,
+            leadingIcon = Res.drawable.ic_mingcute_time,
             leadingIconTint = AlTheme.colors.warning,
             trailing = {
                 AlButton(
@@ -135,7 +137,7 @@ private fun SyncStatusCard(sync: SyncStatusUi, onAction: (HomeAction) -> Unit) {
         is SyncStatusUi.PendingOffline -> AlInfoCard(
             title = "Sin conexión",
             description = "${sync.count} se subirán al reconectar",
-            leadingIcon = Res.drawable.ic_mingcute_upload_line,
+            leadingIcon = Res.drawable.ic_mingcute_time,
             leadingIconTint = AlTheme.colors.textMuted,
         )
 

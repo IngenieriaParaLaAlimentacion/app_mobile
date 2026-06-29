@@ -6,11 +6,10 @@ import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.di.AppScope
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
-import ar.com.ingenieriaalimentacion.domain.model.profile.Profile
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.CreateMeasurementUseCase
-import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyProfileUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.fake.FakeConnectivityObserver
 import ar.com.ingenieriaalimentacion.fake.FakeMeasurementRepository
 import ar.com.ingenieriaalimentacion.fake.FakeProfileRepository
@@ -56,15 +55,6 @@ class MeasurementViewModelTest {
         status = status,
     )
 
-    private fun profile(establishments: List<EstablishmentWithStatus>?) = Profile(
-        id = "u1",
-        email = "a@b.com",
-        name = "Ana",
-        lastName = "García",
-        role = "field_worker",
-        establishments = establishments,
-    )
-
     private fun viewModel(
         measRepo: FakeMeasurementRepository = FakeMeasurementRepository(),
         profileRepo: FakeProfileRepository,
@@ -72,7 +62,7 @@ class MeasurementViewModelTest {
         val coordinator = SyncCoordinator(listOf(measRepo), FakeConnectivityObserver(), AppScope())
         return MeasurementViewModel(
             createMeasurement = CreateMeasurementUseCase(measRepo),
-            getMyProfile = GetMyProfileUseCase(profileRepo),
+            getMyEstablishments = GetMyEstablishmentsUseCase(profileRepo),
             syncCoordinator = coordinator,
         )
     }
@@ -89,12 +79,10 @@ class MeasurementViewModelTest {
     @Test
     fun `profile load filters to Approved and auto-selects when exactly one`() = runTest(dispatcher) {
         val profileRepo = FakeProfileRepository().apply {
-            meResult = Result.success(
-                profile(
-                    listOf(
-                        establishment("a", EstablishmentStatus.Approved),
-                        establishment("b", EstablishmentStatus.Pending),
-                    ),
+            myEstablishmentsResult = Result.success(
+                listOf(
+                    establishment("a", EstablishmentStatus.Approved),
+                    establishment("b", EstablishmentStatus.Pending),
                 ),
             )
         }
@@ -111,12 +99,10 @@ class MeasurementViewModelTest {
     @Test
     fun `two approved establishments are not auto-selected`() = runTest(dispatcher) {
         val profileRepo = FakeProfileRepository().apply {
-            meResult = Result.success(
-                profile(
-                    listOf(
-                        establishment("a", EstablishmentStatus.Approved),
-                        establishment("b", EstablishmentStatus.Approved),
-                    ),
+            myEstablishmentsResult = Result.success(
+                listOf(
+                    establishment("a", EstablishmentStatus.Approved),
+                    establishment("b", EstablishmentStatus.Approved),
                 ),
             )
         }
@@ -134,7 +120,7 @@ class MeasurementViewModelTest {
     fun `enqueue success resets peso and talla but keeps subject and establishment`() = runTest(dispatcher) {
         val measRepo = FakeMeasurementRepository()
         val profileRepo = FakeProfileRepository().apply {
-            meResult = Result.success(profile(listOf(establishment("a", EstablishmentStatus.Approved))))
+            myEstablishmentsResult = Result.success(listOf(establishment("a", EstablishmentStatus.Approved)))
         }
         val vm = viewModel(measRepo = measRepo, profileRepo = profileRepo)
 
@@ -165,7 +151,7 @@ class MeasurementViewModelTest {
     fun `submit without establishment blocks enqueue and shows the establishment error`() = runTest(dispatcher) {
         val measRepo = FakeMeasurementRepository()
         val profileRepo = FakeProfileRepository().apply {
-            meResult = Result.success(profile(emptyList())) // manager with no approved establishments
+            myEstablishmentsResult = Result.success(emptyList()) // field worker with no approved establishments
         }
         val vm = viewModel(measRepo = measRepo, profileRepo = profileRepo)
 
@@ -188,7 +174,7 @@ class MeasurementViewModelTest {
     fun `out-of-range peso blocks enqueue and surfaces the error on submit`() = runTest(dispatcher) {
         val measRepo = FakeMeasurementRepository()
         val profileRepo = FakeProfileRepository().apply {
-            meResult = Result.success(profile(listOf(establishment("a", EstablishmentStatus.Approved))))
+            myEstablishmentsResult = Result.success(listOf(establishment("a", EstablishmentStatus.Approved)))
         }
         val vm = viewModel(measRepo = measRepo, profileRepo = profileRepo)
 
@@ -210,7 +196,7 @@ class MeasurementViewModelTest {
     @Test
     fun `subject result is reflected in state`() = runTest(dispatcher) {
         val profileRepo = FakeProfileRepository().apply {
-            meResult = Result.success(profile(emptyList()))
+            myEstablishmentsResult = Result.success(emptyList())
         }
         val vm = viewModel(profileRepo = profileRepo)
 

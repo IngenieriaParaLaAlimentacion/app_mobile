@@ -13,7 +13,7 @@ import ar.com.ingenieriaalimentacion.domain.model.measurement.NewMeasurement
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.CreateMeasurementUseCase
-import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyProfileUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -25,7 +25,7 @@ import kotlin.time.Clock
 
 class MeasurementViewModel(
     private val createMeasurement: CreateMeasurementUseCase,
-    private val getMyProfile: GetMyProfileUseCase,
+    private val getMyEstablishments: GetMyEstablishmentsUseCase,
     private val syncCoordinator: SyncCoordinator,
 ) : ViewModel() {
 
@@ -37,7 +37,7 @@ class MeasurementViewModel(
     )
 
     init {
-        loadProfile()
+        loadEstablishments()
     }
 
     fun onAction(action: MeasurementAction) {
@@ -88,7 +88,7 @@ class MeasurementViewModel(
 
             MeasurementAction.Submit -> submit()
             MeasurementAction.DismissSuccess -> _state.update { it.copy(successMessage = null) }
-            MeasurementAction.RetryProfile -> loadProfile()
+            MeasurementAction.RetryProfile -> loadEstablishments()
             MeasurementAction.BackClick ->
                 _state.update { it.copy(destination = MeasurementDestination.Back) }
         }
@@ -103,14 +103,12 @@ class MeasurementViewModel(
         onAction(MeasurementAction.SubjectSelected(subject))
     }
 
-    private fun loadProfile() {
+    private fun loadEstablishments() {
         _state.update { it.copy(isLoadingProfile = true, profileError = null) }
         viewModelScope.launch {
-            getMyProfile().fold(
-                onSuccess = { profile ->
-                    val approved = profile.establishments
-                        ?.filter { it.status == EstablishmentStatus.Approved }
-                        ?: emptyList()
+            getMyEstablishments().fold(
+                onSuccess = { establishments ->
+                    val approved = establishments.filter { it.status == EstablishmentStatus.Approved }
                     _state.update {
                         it.copy(
                             isLoadingProfile = false,
@@ -124,7 +122,7 @@ class MeasurementViewModel(
                     _state.update {
                         it.copy(
                             isLoadingProfile = false,
-                            profileError = "No se pudo cargar el perfil. Intentá nuevamente.",
+                            profileError = "No se pudieron cargar los establecimientos. Intentá nuevamente.",
                         )
                     }
                 },

@@ -83,7 +83,7 @@ class MeasurementUploadUiTest {
     }
 
     @Test
-    fun `synced row with bmi and alerts localizes labels and derives tones`() {
+    fun `synced row surfaces only the primary alert as the category, localized and toned`() {
         val ui = upload(
             SyncState.Synced,
             bmi = 23.7,
@@ -94,45 +94,42 @@ class MeasurementUploadUiTest {
             ),
         ).toUi()
         assertEquals("23,7", ui.bmiValue)
-        assertEquals(3, ui.alerts.size)
-        assertEquals("Sobrepeso", ui.alerts[0].label)
-        assertEquals("Sobrepeso", ui.alerts[0].detail)
-        assertEquals(AlPillTone.Danger, ui.alerts[0].tone)   // high
-        assertEquals("Bajo peso", ui.alerts[1].label)
-        assertEquals(AlPillTone.Warning, ui.alerts[1].tone)  // medium
-        assertEquals("Obesidad", ui.alerts[2].label)
-        assertEquals(AlPillTone.Danger, ui.alerts[2].tone)   // critical
+        // Only the first alert is the clinical anchor; the rest no longer surface on the card.
+        assertEquals("Sobrepeso", ui.bmiCategory)
+        assertEquals(AlPillTone.Danger, ui.bmiCategoryTone)   // high
     }
 
     @Test
-    fun `unknown alert type and severity fall back to readable label and neutral tone`() {
+    fun `unknown alert type and severity fall back to a readable category and neutral tone`() {
         val ui = upload(
             SyncState.Synced,
             bmi = 23.7,
             alerts = listOf(ClinicalAlert(alertType = "future_code", severity = "weird", detail = "x")),
         ).toUi()
-        assertEquals("Future code", ui.alerts[0].label)
-        assertEquals(AlPillTone.Neutral, ui.alerts[0].tone)
+        assertEquals("Future code", ui.bmiCategory)
+        assertEquals(AlPillTone.Neutral, ui.bmiCategoryTone)
     }
 
     @Test
-    fun `synced row with no alert derives Normal category`() {
+    fun `synced row with no alert derives a Normal category with a success tone`() {
         val ui = upload(SyncState.Synced, bmi = 23.7).toUi()
         assertEquals("Normal", ui.bmiCategory)
+        assertEquals(AlPillTone.Success, ui.bmiCategoryTone)
     }
 
     @Test
-    fun `synced row with an alert uses the primary alert as category`() {
+    fun `synced row with an alert uses the primary alert as category with its severity tone`() {
         val ui = upload(
             SyncState.Synced,
             bmi = 28.0,
             alerts = listOf(ClinicalAlert(alertType = "overweight", severity = "high", detail = "Sobrepeso")),
         ).toUi()
         assertEquals("Sobrepeso", ui.bmiCategory)
+        assertEquals(AlPillTone.Danger, ui.bmiCategoryTone)
     }
 
     @Test
-    fun `non-synced row never shows bmi, category or alerts even when present`() {
+    fun `non-synced row never shows bmi or category even when present`() {
         val ui = upload(
             SyncState.Pending,
             bmi = 23.7,
@@ -140,7 +137,7 @@ class MeasurementUploadUiTest {
         ).toUi()
         assertNull(ui.bmiValue)
         assertNull(ui.bmiCategory)
-        assertTrue(ui.alerts.isEmpty())
+        assertNull(ui.bmiCategoryTone)
     }
 
     @Test

@@ -32,6 +32,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.card.AlCard
 import ar.com.ingenieriaalimentacion.core.design_system.components.dialog.AlConfirmDialog
 import ar.com.ingenieriaalimentacion.core.design_system.components.dialog.AlConfirmTone
 import ar.com.ingenieriaalimentacion.core.design_system.components.pill.AlPill
+import ar.com.ingenieriaalimentacion.core.design_system.components.pill.AlPillTone
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ingenieria_alimentacion.composeapp.generated.resources.Res
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_check_line
@@ -155,7 +156,8 @@ private fun MeasurementUploadRow(
                 }
             }
 
-            // Clinical anchor: when synced with a BMI, the reading leads; inputs/date recede.
+            // Clinical anchor: when synced with a BMI, the reading + its category lead;
+            // raw inputs and the date recede on the right.
             if (upload.bmiValue != null) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -164,18 +166,17 @@ private fun MeasurementUploadRow(
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs),
+                        horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
                     ) {
                         Text(
                             text = "IMC ${upload.bmiValue}",
-                            style = AlTheme.typography.body.copy(fontWeight = FontWeight.SemiBold),
+                            style = AlTheme.typography.body.copy(fontWeight = FontWeight.Medium),
                             color = AlTheme.colors.textBase,
                         )
-                        upload.bmiCategory?.let {
-                            Text(
-                                text = "· $it",
-                                style = AlTheme.typography.caption,
-                                color = AlTheme.colors.textMuted,
+                        upload.bmiCategory?.let { category ->
+                            AlPill(
+                                text = category,
+                                tone = upload.bmiCategoryTone ?: AlPillTone.Neutral,
                             )
                         }
                     }
@@ -206,17 +207,6 @@ private fun MeasurementUploadRow(
                     style = AlTheme.typography.caption,
                     color = AlTheme.colors.danger,
                 )
-            }
-
-            upload.alerts.forEach { alert ->
-                Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
-                    AlPill(text = alert.label, tone = alert.tone)
-                    Text(
-                        text = alert.detail,
-                        style = AlTheme.typography.caption,
-                        color = AlTheme.colors.textMuted,
-                    )
-                }
             }
 
             if (upload.canRetry) {

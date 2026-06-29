@@ -2,7 +2,6 @@ package ar.com.ingenieriaalimentacion.presentation.feature.measurement.uploads
 
 import ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlBadgeTone
 import ar.com.ingenieriaalimentacion.core.design_system.components.pill.AlPillTone
-import ar.com.ingenieriaalimentacion.domain.model.measurement.ClinicalAlert
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementUpload
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import kotlinx.datetime.TimeZone
@@ -11,10 +10,7 @@ import kotlin.math.abs
 import kotlin.math.round
 import kotlin.time.Instant
 
-/** One clinical alert ready to render: a toned pill label plus its detail line. */
-data class ClinicalAlertUi(val label: String, val detail: String, val tone: AlPillTone)
-
-/** Display model for one measurement row: domain data plus localized badge, BMI, alerts and actions. */
+/** Display model for one measurement row: domain data plus localized badge, BMI and actions. */
 data class MeasurementUploadUi(
     val localId: String,
     val title: String,            // "Nombre Apellido"
@@ -26,9 +22,9 @@ data class MeasurementUploadUi(
     val badgeTone: AlBadgeTone,
     val isSynced: Boolean,        // drives quiet-status vs loud-badge in the UI
     val showSpinner: Boolean,
-    val bmiValue: String?,        // "23,7" when Synced & bmi != null
-    val bmiCategory: String?,     // primary alert's Spanish label, else "Normal"
-    val alerts: List<ClinicalAlertUi>, // only populated on Synced
+    val bmiValue: String?,             // "23,7" when Synced & bmi != null
+    val bmiCategory: String?,          // primary alert's Spanish label, else "Normal"
+    val bmiCategoryTone: AlPillTone?,  // severity tone for the category pill (Success when "Normal")
     val canRetry: Boolean,
     val canDelete: Boolean,
 )
@@ -43,6 +39,7 @@ internal fun MeasurementUpload.toUi(): MeasurementUploadUi {
     }
     val synced = syncState == SyncState.Synced
     val bmiValue = bmi?.takeIf { synced }?.let { formatBmi(it) }
+    val primaryAlert = alerts.firstOrNull()
     return MeasurementUploadUi(
         localId = localId,
         title = "$subjectName $subjectLastName",
@@ -58,21 +55,21 @@ internal fun MeasurementUpload.toUi(): MeasurementUploadUi {
         // "Normal" is derived when the server flags no alert on a present BMI — a reassuring
         // positive state for the field worker; documented as derived, not server-sent.
         bmiCategory = if (bmiValue != null) {
-            alerts.firstOrNull()?.let { alertTypeLabel(it.alertType) } ?: "Normal"
+            primaryAlert?.let { alertTypeLabel(it.alertType) } ?: "Normal"
         } else {
             null
         },
-        alerts = if (synced) alerts.map { it.toUi() } else emptyList(),
+        // No alert on a present BMI is the healthy "Normal" case → green; otherwise the
+        // alert's severity drives the tone (Danger/Warning).
+        bmiCategoryTone = if (bmiValue != null) {
+            primaryAlert?.let { severityTone(it.severity) } ?: AlPillTone.Success
+        } else {
+            null
+        },
         canRetry = syncState == SyncState.Failed,
         canDelete = syncState == SyncState.Pending || syncState == SyncState.Failed || synced,
     )
 }
-
-private fun ClinicalAlert.toUi() = ClinicalAlertUi(
-    label = alertTypeLabel(alertType),
-    detail = detail,
-    tone = severityTone(severity),
-)
 
 /** Canonical backend `alert_type` (lowercase enum .value) → Spanish clinical label. */
 internal fun alertTypeLabel(raw: String): String = when (raw.trim().lowercase()) {

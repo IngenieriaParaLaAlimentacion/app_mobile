@@ -300,6 +300,9 @@ private fun SubjectRow(
         )
     } else {
         AlListRow(
+            // No inner horizontal inset here: the row lives inside the lg-padded
+            // MeasurementForm, so it must align flush with the inputs/selects.
+            horizontalPadding = 0.dp,
             title = "${subject.name} ${subject.lastName}",
             subtitle = "DNI ${subject.dni}",
             value = "Cambiar",

@@ -136,6 +136,9 @@ fun SelectSubjectScreen(
                         ) {
                             items(items = state.results, key = { it.id }) { subject ->
                                 AlListRow(
+                                    // The list lives inside the 24.dp-padded column, so drop the
+                                    // row's own inset to keep titles flush with the search input.
+                                    horizontalPadding = 0.dp,
                                     title = "${subject.name} ${subject.lastName}",
                                     subtitle = "DNI ${subject.dni} · ${sexLabel(subject.sex)}",
                                     onClick = {

@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ingenieria_alimentacion.composeapp.generated.resources.Res
@@ -49,6 +50,7 @@ fun AlListRow(
     onClick: (() -> Unit)? = null,
     showChevron: Boolean = onClick != null,
     showDivider: Boolean = true,
+    horizontalPadding: Dp = AlTheme.spacing.md,
     trailing: (@Composable RowScope.() -> Unit)? = null,
 ) {
     Column(
@@ -61,7 +63,7 @@ fun AlListRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .defaultMinSize(minHeight = 56.dp)
-                .padding(horizontal = AlTheme.spacing.md, vertical = AlTheme.spacing.sm),
+                .padding(horizontal = horizontalPadding, vertical = AlTheme.spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
         ) {
@@ -124,7 +126,7 @@ fun AlListRow(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = AlTheme.spacing.md)
+                    .padding(horizontal = horizontalPadding)
                     .height(AlTheme.borders.thin)
                     .background(AlTheme.colors.border),
             )

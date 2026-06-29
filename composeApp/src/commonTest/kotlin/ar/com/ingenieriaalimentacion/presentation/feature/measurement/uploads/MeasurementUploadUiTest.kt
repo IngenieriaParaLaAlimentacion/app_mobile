@@ -46,6 +46,7 @@ class MeasurementUploadUiTest {
         val ui = upload(SyncState.Pending).toUi()
         assertEquals("Pendiente", ui.badgeLabel)
         assertEquals(AlBadgeTone.Neutral, ui.badgeTone)
+        assertFalse(ui.isSynced)
         assertFalse(ui.showSpinner)
         assertFalse(ui.canRetry)
         assertTrue(ui.canDelete)
@@ -56,6 +57,7 @@ class MeasurementUploadUiTest {
         val ui = upload(SyncState.Syncing).toUi()
         assertEquals("Sincronizando", ui.badgeLabel)
         assertEquals(AlBadgeTone.Neutral, ui.badgeTone)
+        assertFalse(ui.isSynced)
         assertTrue(ui.showSpinner)
         assertFalse(ui.canRetry)
         assertFalse(ui.canDelete)
@@ -66,6 +68,7 @@ class MeasurementUploadUiTest {
         val ui = upload(SyncState.Synced, bmi = 23.7).toUi()
         assertEquals("Sincronizado", ui.badgeLabel)
         assertEquals(AlBadgeTone.Success, ui.badgeTone)
+        assertTrue(ui.isSynced)
         assertFalse(ui.canRetry)
         assertTrue(ui.canDelete)
     }
@@ -80,62 +83,92 @@ class MeasurementUploadUiTest {
     }
 
     @Test
-    fun `synced row with bmi and alerts populates bmiLabel and alerts`() {
+    fun `synced row with bmi and alerts localizes labels and derives tones`() {
         val ui = upload(
             SyncState.Synced,
             bmi = 23.7,
             alerts = listOf(
-                ClinicalAlert(alertType = "BMI", severity = "high", detail = "Sobrepeso"),
-                ClinicalAlert(alertType = "BMI", severity = "moderate", detail = "Vigilar"),
-                ClinicalAlert(alertType = "BMI", severity = "info", detail = "Nota"),
+                ClinicalAlert(alertType = "overweight", severity = "high", detail = "Sobrepeso"),
+                ClinicalAlert(alertType = "underweight", severity = "medium", detail = "Vigilar"),
+                ClinicalAlert(alertType = "obese", severity = "critical", detail = "Derivar"),
             ),
         ).toUi()
-        assertEquals("IMC 23,7", ui.bmiLabel)
+        assertEquals("23,7", ui.bmiValue)
         assertEquals(3, ui.alerts.size)
-        assertEquals("BMI · high", ui.alerts[0].label)
+        assertEquals("Sobrepeso", ui.alerts[0].label)
         assertEquals("Sobrepeso", ui.alerts[0].detail)
-        assertEquals(AlPillTone.Danger, ui.alerts[0].tone)
-        assertEquals(AlPillTone.Warning, ui.alerts[1].tone)
-        assertEquals(AlPillTone.Neutral, ui.alerts[2].tone)
+        assertEquals(AlPillTone.Danger, ui.alerts[0].tone)   // high
+        assertEquals("Bajo peso", ui.alerts[1].label)
+        assertEquals(AlPillTone.Warning, ui.alerts[1].tone)  // medium
+        assertEquals("Obesidad", ui.alerts[2].label)
+        assertEquals(AlPillTone.Danger, ui.alerts[2].tone)   // critical
     }
 
     @Test
-    fun `non-synced row never shows bmi or alerts even when present`() {
+    fun `unknown alert type and severity fall back to readable label and neutral tone`() {
+        val ui = upload(
+            SyncState.Synced,
+            bmi = 23.7,
+            alerts = listOf(ClinicalAlert(alertType = "future_code", severity = "weird", detail = "x")),
+        ).toUi()
+        assertEquals("Future code", ui.alerts[0].label)
+        assertEquals(AlPillTone.Neutral, ui.alerts[0].tone)
+    }
+
+    @Test
+    fun `synced row with no alert derives Normal category`() {
+        val ui = upload(SyncState.Synced, bmi = 23.7).toUi()
+        assertEquals("Normal", ui.bmiCategory)
+    }
+
+    @Test
+    fun `synced row with an alert uses the primary alert as category`() {
+        val ui = upload(
+            SyncState.Synced,
+            bmi = 28.0,
+            alerts = listOf(ClinicalAlert(alertType = "overweight", severity = "high", detail = "Sobrepeso")),
+        ).toUi()
+        assertEquals("Sobrepeso", ui.bmiCategory)
+    }
+
+    @Test
+    fun `non-synced row never shows bmi, category or alerts even when present`() {
         val ui = upload(
             SyncState.Pending,
             bmi = 23.7,
-            alerts = listOf(ClinicalAlert("BMI", "high", "Sobrepeso")),
+            alerts = listOf(ClinicalAlert("overweight", "high", "Sobrepeso")),
         ).toUi()
-        assertNull(ui.bmiLabel)
+        assertNull(ui.bmiValue)
+        assertNull(ui.bmiCategory)
         assertTrue(ui.alerts.isEmpty())
     }
 
     @Test
-    fun `subtitle carries dni, weight, height and date`() {
+    fun `identity, measurements and date are split into discrete fields`() {
         val ui = upload(SyncState.Pending).toUi()
-        assertTrue(ui.subtitle.startsWith("DNI 42 · 70 kg · 172 cm · "))
-        // 18:30 UTC; date/time portion depends on TZ but the dd/MM HH:mm shape is present.
-        assertTrue(Regex("""\d{2}/\d{2} \d{2}:\d{2}""").containsMatchIn(ui.subtitle))
+        assertEquals("DNI 42", ui.identity)
+        assertEquals("70 kg · 172 cm", ui.measurements)
+        // 18:30 UTC; the date/time portion depends on TZ but the dd/MM HH:mm shape is present.
+        assertTrue(Regex("""\d{2}/\d{2} \d{2}:\d{2}""").matches(ui.measuredAtLabel))
     }
 
     @Test
-    fun `subtitle appends error only on failed rows`() {
+    fun `error message is populated only on failed rows`() {
         val failed = upload(SyncState.Failed, errorMessage = "boom").toUi()
-        assertTrue(failed.subtitle.endsWith("· boom"))
+        assertEquals("boom", failed.errorMessage)
         val syncedWithError = upload(SyncState.Synced, errorMessage = "boom").toUi()
-        assertFalse(syncedWithError.subtitle.contains("boom"))
+        assertNull(syncedWithError.errorMessage)
     }
 
     @Test
     fun `decimal weights format with comma and drop trailing zeros`() {
         val ui = upload(SyncState.Pending, weightKg = 72.5, heightCm = 170.0).toUi()
-        assertTrue(ui.subtitle.contains("72,5 kg"))
-        assertTrue(ui.subtitle.contains("170 cm"))
+        assertEquals("72,5 kg · 170 cm", ui.measurements)
     }
 
     @Test
     fun `garbage measuredAt falls back to the raw string`() {
         val ui = upload(SyncState.Pending, measuredAt = "not-a-date").toUi()
-        assertTrue(ui.subtitle.contains("not-a-date"))
+        assertEquals("not-a-date", ui.measuredAtLabel)
     }
 }

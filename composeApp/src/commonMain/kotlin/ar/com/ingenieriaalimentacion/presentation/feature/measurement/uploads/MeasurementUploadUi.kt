@@ -17,12 +17,17 @@ data class ClinicalAlertUi(val label: String, val detail: String, val tone: AlPi
 /** Display model for one measurement row: domain data plus localized badge, BMI, alerts and actions. */
 data class MeasurementUploadUi(
     val localId: String,
-    val title: String,                 // "Nombre Apellido"
-    val subtitle: String,              // "DNI … · 70 kg · 172 cm · 21/06 18:30" (+ error on Failed)
+    val title: String,            // "Nombre Apellido"
+    val identity: String,         // "DNI 42"
+    val measurements: String,     // "70 kg · 172 cm"
+    val measuredAtLabel: String,  // "21/06 18:30"
+    val errorMessage: String?,    // shown only on Failed
     val badgeLabel: String,
     val badgeTone: AlBadgeTone,
+    val isSynced: Boolean,        // drives quiet-status vs loud-badge in the UI
     val showSpinner: Boolean,
-    val bmiLabel: String?,             // "IMC 23,7" when Synced & bmi != null
+    val bmiValue: String?,        // "23,7" when Synced & bmi != null
+    val bmiCategory: String?,     // primary alert's Spanish label, else "Normal"
     val alerts: List<ClinicalAlertUi>, // only populated on Synced
     val canRetry: Boolean,
     val canDelete: Boolean,
@@ -36,31 +41,27 @@ internal fun MeasurementUpload.toUi(): MeasurementUploadUi {
         SyncState.Failed -> "Error" to AlBadgeTone.Danger
         SyncState.Merged -> "Sincronizado" to AlBadgeTone.Success // unreachable for measurements
     }
-    val subtitle = buildString {
-        append("DNI ")
-        append(subjectDni)
-        append(" · ")
-        append(formatKg(weightKg))
-        append(" kg")
-        append(" · ")
-        append(formatCm(heightCm))
-        append(" cm")
-        append(" · ")
-        append(formatMeasuredAt(measuredAt))
-        if (syncState == SyncState.Failed && !errorMessage.isNullOrBlank()) {
-            append(" · ")
-            append(errorMessage)
-        }
-    }
     val synced = syncState == SyncState.Synced
+    val bmiValue = bmi?.takeIf { synced }?.let { formatBmi(it) }
     return MeasurementUploadUi(
         localId = localId,
         title = "$subjectName $subjectLastName",
-        subtitle = subtitle,
+        identity = "DNI $subjectDni",
+        measurements = "${formatKg(weightKg)} kg · ${formatCm(heightCm)} cm",
+        measuredAtLabel = formatMeasuredAt(measuredAt),
+        errorMessage = errorMessage.takeIf { syncState == SyncState.Failed && !it.isNullOrBlank() },
         badgeLabel = label,
         badgeTone = tone,
+        isSynced = synced,
         showSpinner = syncState == SyncState.Syncing,
-        bmiLabel = bmi?.takeIf { synced }?.let { "IMC ${formatBmi(it)}" },
+        bmiValue = bmiValue,
+        // "Normal" is derived when the server flags no alert on a present BMI — a reassuring
+        // positive state for the field worker; documented as derived, not server-sent.
+        bmiCategory = if (bmiValue != null) {
+            alerts.firstOrNull()?.let { alertTypeLabel(it.alertType) } ?: "Normal"
+        } else {
+            null
+        },
         alerts = if (synced) alerts.map { it.toUi() } else emptyList(),
         canRetry = syncState == SyncState.Failed,
         canDelete = syncState == SyncState.Pending || syncState == SyncState.Failed || synced,
@@ -68,14 +69,29 @@ internal fun MeasurementUpload.toUi(): MeasurementUploadUi {
 }
 
 private fun ClinicalAlert.toUi() = ClinicalAlertUi(
-    label = "$alertType · $severity",
+    label = alertTypeLabel(alertType),
     detail = detail,
-    tone = when (severity.trim().lowercase()) {
-        "critical", "severe", "high", "alta", "critica", "crítica" -> AlPillTone.Danger
-        "moderate", "medium", "warning", "media", "moderada" -> AlPillTone.Warning
-        else -> AlPillTone.Neutral
-    },
+    tone = severityTone(severity),
 )
+
+/** Canonical backend `alert_type` (lowercase enum .value) → Spanish clinical label. */
+internal fun alertTypeLabel(raw: String): String = when (raw.trim().lowercase()) {
+    "severely_wasted" -> "Emaciación grave"
+    "wasted" -> "Emaciación"
+    "underweight" -> "Bajo peso"
+    "severe_underweight" -> "Bajo peso grave"
+    "overweight" -> "Sobrepeso"
+    "obese" -> "Obesidad"
+    // Defensive: future/unknown codes render readably instead of leaking raw enums.
+    else -> raw.trim().replace('_', ' ').replaceFirstChar { it.uppercase() }
+}
+
+/** Canonical backend `severity` (critical|high|medium) → pill tone; tone encodes severity. */
+private fun severityTone(raw: String): AlPillTone = when (raw.trim().lowercase()) {
+    "critical", "high" -> AlPillTone.Danger
+    "medium" -> AlPillTone.Warning
+    else -> AlPillTone.Neutral
+}
 
 private fun formatBmi(v: Double): String = formatDecimal(v, 1)            // "23,7"
 private fun formatKg(v: Double): String = formatDecimal(v, 1)

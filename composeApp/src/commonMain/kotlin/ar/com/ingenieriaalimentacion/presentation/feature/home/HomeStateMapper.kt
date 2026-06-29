@@ -93,7 +93,7 @@ private fun MeasurementUpload.toRecentUi(): RecentActivityUi {
         id = localId,
         kind = RecentActivityUi.Kind.Measurement,
         title = "$subjectName $subjectLastName",
-        subtitle = null,
+        subtitle = "Talla: ${formatMeasure(heightCm)} cm, Peso: ${formatMeasure(weightKg)} kg",
         value = bmi?.takeIf { synced }?.let { "IMC ${formatBmi(it)}" },
         badgeText = label,
         badgeTone = tone,
@@ -151,7 +151,10 @@ private fun formatLastSynced(epochMillis: Long, timeZone: TimeZone): String {
     return "Última subida: $dd/$mm $hh:$min"
 }
 
-private fun formatBmi(v: Double): String {
+private fun formatBmi(v: Double): String = formatMeasure(v)
+
+/** One-decimal, comma-separated number; drops a trailing `,0` (e.g. `175`, `70,5`). */
+private fun formatMeasure(v: Double): String {
     val scaled = round(abs(v) * 10).toLong()
     val intPart = scaled / 10
     val fracPart = scaled % 10

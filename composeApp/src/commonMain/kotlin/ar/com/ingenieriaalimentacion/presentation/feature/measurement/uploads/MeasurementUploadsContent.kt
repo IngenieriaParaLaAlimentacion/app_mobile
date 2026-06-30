@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,7 +23,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import ar.com.ingenieriaalimentacion.core.design_system.components.EmptyState
-import ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlStatusBadge
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButtonVariant
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlIconButton
@@ -35,9 +33,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.pill.AlPill
 import ar.com.ingenieriaalimentacion.core.design_system.components.pill.AlPillTone
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ingenieria_alimentacion.composeapp.generated.resources.Res
-import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_check_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_delete
-import org.jetbrains.compose.resources.vectorResource
 
 @Composable
 fun MeasurementUploadsContent(
@@ -126,76 +122,63 @@ private fun MeasurementUploadRow(
                         color = AlTheme.colors.textMuted,
                     )
                 }
-                if (upload.isSynced) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs),
-                    ) {
-                        Icon(
-                            imageVector = vectorResource(Res.drawable.ic_mingcute_check_line),
-                            contentDescription = null,
-                            tint = AlTheme.colors.accent,
-                            modifier = Modifier.size(14.dp),
-                        )
-                        Text(
-                            text = upload.badgeLabel,
-                            style = AlTheme.typography.caption,
-                            color = AlTheme.colors.textMuted,
-                        )
-                    }
-                } else {
-                    AlStatusBadge(text = upload.badgeLabel, tone = upload.badgeTone)
-                }
+                AlPill(text = upload.badgeLabel, tone = upload.badgeTone)
                 if (upload.canDelete) {
                     AlIconButton(
                         icon = Res.drawable.ic_mingcute_delete,
                         contentDescription = "Eliminar",
                         onClick = { onRequestDelete(upload) },
-                        tint = AlTheme.colors.danger,
+                        tint = AlTheme.colors.textBase,
                     )
                 }
             }
 
-            // Clinical anchor: when synced with a BMI, the reading + its category lead;
-            // raw inputs and the date recede on the right.
-            if (upload.bmiValue != null) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+            // Metrics group: the clinical reading (IMC + category) and the raw
+            // weight/height belong together as one block; the date is metadata
+            // and recedes to the right.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top,
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs),
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
-                    ) {
-                        Text(
-                            text = "IMC ${upload.bmiValue}",
-                            style = AlTheme.typography.body.copy(fontWeight = FontWeight.Medium),
-                            color = AlTheme.colors.textBase,
-                        )
-                        upload.bmiCategory?.let { category ->
-                            AlPill(
-                                text = category,
-                                tone = upload.bmiCategoryTone ?: AlPillTone.Neutral,
+                    if (upload.bmiValue != null) {
+                        // Synced: IMC + its category lead, weight/height support beneath.
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
+                        ) {
+                            Text(
+                                text = "IMC ${upload.bmiValue}",
+                                style = AlTheme.typography.body.copy(fontWeight = FontWeight.Medium),
+                                color = AlTheme.colors.textBase,
                             )
+                            upload.bmiCategory?.let { category ->
+                                AlPill(
+                                    text = category,
+                                    tone = upload.bmiCategoryTone ?: AlPillTone.Neutral,
+                                )
+                            }
                         }
-                    }
-                    Column(horizontalAlignment = Alignment.End) {
                         Text(
                             text = upload.measurements,
                             style = AlTheme.typography.caption,
                             color = AlTheme.colors.textMuted,
                         )
+                    } else {
+                        // No reading yet: the raw weight/height is the headline.
                         Text(
-                            text = upload.measuredAtLabel,
-                            style = AlTheme.typography.caption,
-                            color = AlTheme.colors.textMuted,
+                            text = upload.measurements,
+                            style = AlTheme.typography.body.copy(fontWeight = FontWeight.Medium),
+                            color = AlTheme.colors.textBase,
                         )
                     }
                 }
-            } else {
                 Text(
-                    text = "${upload.measurements} · ${upload.measuredAtLabel}",
+                    text = upload.measuredAtLabel,
                     style = AlTheme.typography.caption,
                     color = AlTheme.colors.textMuted,
                 )

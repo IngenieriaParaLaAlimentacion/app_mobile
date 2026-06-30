@@ -1,6 +1,5 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.measurement.uploads
 
-import ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlBadgeTone
 import ar.com.ingenieriaalimentacion.core.design_system.components.pill.AlPillTone
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementUpload
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
@@ -19,8 +18,8 @@ data class MeasurementUploadUi(
     val measuredAtLabel: String,  // "21/06 18:30"
     val errorMessage: String?,    // shown only on Failed
     val badgeLabel: String,
-    val badgeTone: AlBadgeTone,
-    val isSynced: Boolean,        // drives quiet-status vs loud-badge in the UI
+    val badgeTone: AlPillTone,
+    val isSynced: Boolean,        // true only when the upload reached the server
     val showSpinner: Boolean,
     val bmiValue: String?,             // "23,7" when Synced & bmi != null
     val bmiCategory: String?,          // primary alert's Spanish label, else "Normal"
@@ -31,11 +30,11 @@ data class MeasurementUploadUi(
 
 internal fun MeasurementUpload.toUi(): MeasurementUploadUi {
     val (label, tone) = when (syncState) {
-        SyncState.Pending -> "Pendiente" to AlBadgeTone.Neutral
-        SyncState.Syncing -> "Sincronizando" to AlBadgeTone.Neutral
-        SyncState.Synced -> "Sincronizado" to AlBadgeTone.Success
-        SyncState.Failed -> "Error" to AlBadgeTone.Danger
-        SyncState.Merged -> "Sincronizado" to AlBadgeTone.Success // unreachable for measurements
+        SyncState.Pending -> "Pendiente" to AlPillTone.Warning
+        SyncState.Syncing -> "Sincronizando" to AlPillTone.Neutral
+        SyncState.Synced -> "Sincronizado" to AlPillTone.Success
+        SyncState.Failed -> "Error" to AlPillTone.Danger
+        SyncState.Merged -> "Sincronizado" to AlPillTone.Success // unreachable for measurements
     }
     val synced = syncState == SyncState.Synced
     val bmiValue = bmi?.takeIf { synced }?.let { formatBmi(it) }

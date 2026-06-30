@@ -1,6 +1,5 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.measurement.uploads
 
-import ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlBadgeTone
 import ar.com.ingenieriaalimentacion.core.design_system.components.pill.AlPillTone
 import ar.com.ingenieriaalimentacion.domain.model.measurement.ClinicalAlert
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementUpload
@@ -42,10 +41,10 @@ class MeasurementUploadUiTest {
     )
 
     @Test
-    fun `pending maps to neutral badge with no actions but delete`() {
+    fun `pending maps to warning pill with no actions but delete`() {
         val ui = upload(SyncState.Pending).toUi()
         assertEquals("Pendiente", ui.badgeLabel)
-        assertEquals(AlBadgeTone.Neutral, ui.badgeTone)
+        assertEquals(AlPillTone.Warning, ui.badgeTone)
         assertFalse(ui.isSynced)
         assertFalse(ui.showSpinner)
         assertFalse(ui.canRetry)
@@ -53,10 +52,10 @@ class MeasurementUploadUiTest {
     }
 
     @Test
-    fun `syncing maps to neutral badge with spinner and no actions`() {
+    fun `syncing maps to neutral pill with spinner and no actions`() {
         val ui = upload(SyncState.Syncing).toUi()
         assertEquals("Sincronizando", ui.badgeLabel)
-        assertEquals(AlBadgeTone.Neutral, ui.badgeTone)
+        assertEquals(AlPillTone.Neutral, ui.badgeTone)
         assertFalse(ui.isSynced)
         assertTrue(ui.showSpinner)
         assertFalse(ui.canRetry)
@@ -64,20 +63,20 @@ class MeasurementUploadUiTest {
     }
 
     @Test
-    fun `synced maps to success badge, allows delete, no retry`() {
+    fun `synced maps to success pill, allows delete, no retry`() {
         val ui = upload(SyncState.Synced, bmi = 23.7).toUi()
         assertEquals("Sincronizado", ui.badgeLabel)
-        assertEquals(AlBadgeTone.Success, ui.badgeTone)
+        assertEquals(AlPillTone.Success, ui.badgeTone)
         assertTrue(ui.isSynced)
         assertFalse(ui.canRetry)
         assertTrue(ui.canDelete)
     }
 
     @Test
-    fun `failed maps to danger badge, allows retry and delete`() {
+    fun `failed maps to danger pill, allows retry and delete`() {
         val ui = upload(SyncState.Failed, errorMessage = "422 Unprocessable").toUi()
         assertEquals("Error", ui.badgeLabel)
-        assertEquals(AlBadgeTone.Danger, ui.badgeTone)
+        assertEquals(AlPillTone.Danger, ui.badgeTone)
         assertTrue(ui.canRetry)
         assertTrue(ui.canDelete)
     }

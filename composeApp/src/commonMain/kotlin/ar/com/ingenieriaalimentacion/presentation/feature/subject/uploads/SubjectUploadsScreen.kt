@@ -26,7 +26,10 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.EmptyState
 import ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlStatusBadge
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButtonVariant
+import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlIconButton
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
+import ingenieria_alimentacion.composeapp.generated.resources.Res
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_delete
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -106,25 +109,23 @@ private fun SubjectUploadRow(
                 )
             }
             AlStatusBadge(text = upload.badgeLabel, tone = upload.badgeTone)
+            if (upload.canDelete) {
+                AlIconButton(
+                    icon = Res.drawable.ic_mingcute_delete,
+                    contentDescription = "Eliminar",
+                    onClick = { onAction(SubjectUploadsAction.Delete(upload.localId)) },
+                    tint = AlTheme.colors.textBase,
+                )
+            }
         }
 
-        if (upload.canRetry || upload.canDelete) {
+        if (upload.canRetry) {
             Row(horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
-                if (upload.canRetry) {
-                    AlButton(
-                        onClick = { onAction(SubjectUploadsAction.Retry(upload.localId)) },
-                        variant = AlButtonVariant.Outline,
-                    ) {
-                        Text("Reintentar")
-                    }
-                }
-                if (upload.canDelete) {
-                    AlButton(
-                        onClick = { onAction(SubjectUploadsAction.Delete(upload.localId)) },
-                        variant = AlButtonVariant.Destructive,
-                    ) {
-                        Text("Eliminar")
-                    }
+                AlButton(
+                    onClick = { onAction(SubjectUploadsAction.Retry(upload.localId)) },
+                    variant = AlButtonVariant.Outline,
+                ) {
+                    Text("Reintentar")
                 }
             }
         }

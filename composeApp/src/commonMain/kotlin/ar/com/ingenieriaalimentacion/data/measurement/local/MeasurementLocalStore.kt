@@ -10,6 +10,10 @@ import kotlinx.coroutines.flow.Flow
  */
 interface MeasurementLocalStore {
     fun observeAll(): Flow<List<MeasurementUpload>>
+
+    /** One-shot snapshot of every queued row, used by the history repository union read. */
+    suspend fun all(): List<MeasurementUpload>
+
     suspend fun insert(upload: MeasurementUpload)
 
     /** All PENDING rows (fresh or auto-retrying); backoff gating is applied in Kotlin by the caller. */

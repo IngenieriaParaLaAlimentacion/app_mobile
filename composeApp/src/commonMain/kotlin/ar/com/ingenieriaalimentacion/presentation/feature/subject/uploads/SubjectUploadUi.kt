@@ -1,7 +1,7 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.subject.uploads
 
 import ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlBadgeTone
-import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectUpload
+import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 
 /** Display model for one upload row: domain data plus a localized badge and allowed actions. */
@@ -16,7 +16,7 @@ data class SubjectUploadUi(
     val canDelete: Boolean,
 )
 
-internal fun SubjectUpload.toUi(): SubjectUploadUi {
+internal fun SubjectHistoryEntry.toUi(): SubjectUploadUi {
     val (label, tone) = when (syncState) {
         SyncState.Pending -> "Pendiente" to AlBadgeTone.Neutral
         SyncState.Syncing -> "Sincronizando" to AlBadgeTone.Neutral
@@ -39,15 +39,17 @@ internal fun SubjectUpload.toUi(): SubjectUploadUi {
         }
     }
     return SubjectUploadUi(
-        localId = localId,
+        localId = id,
         title = "$name $lastName",
         subtitle = detail,
         badgeLabel = label,
         badgeTone = tone,
         showSpinner = syncState == SyncState.Syncing,
-        canRetry = syncState == SyncState.Failed,
-        canDelete = syncState == SyncState.Pending ||
-            syncState == SyncState.Failed ||
-            syncState == SyncState.Merged,
+        canRetry = isLocal && syncState == SyncState.Failed,
+        canDelete = isLocal && (
+            syncState == SyncState.Pending ||
+                syncState == SyncState.Failed ||
+                syncState == SyncState.Merged
+            ),
     )
 }

@@ -81,7 +81,7 @@ class FakeSubjectLocalStore(private val now: () -> Long = { 0L }) : SubjectLocal
 
     override suspend fun pruneTerminalOlderThan(cutoff: Long) {
         rows.value = rows.value.filterNot {
-            (it.syncState == SyncState.Synced || it.syncState == SyncState.Merged) && it.updatedAt < cutoff
+            it.syncState == SyncState.Synced && it.updatedAt < cutoff
         }
     }
 }

@@ -1,9 +1,12 @@
 package ar.com.ingenieriaalimentacion.di
 
+import ar.com.ingenieriaalimentacion.data.activity.local.ActivityLocalStore
+import ar.com.ingenieriaalimentacion.data.activity.local.DefaultActivityLocalStore
 import ar.com.ingenieriaalimentacion.data.auth.AuthRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.auth.storage.TokenStoreSessionManager
 import ar.com.ingenieriaalimentacion.data.device.DeviceIdProvider
 import ar.com.ingenieriaalimentacion.data.establishment.EstablishmentRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.measurement.MeasurementHistoryRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.measurement.MeasurementRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.measurement.local.DefaultMeasurementLocalStore
 import ar.com.ingenieriaalimentacion.data.measurement.local.MeasurementLocalStore
@@ -11,16 +14,19 @@ import ar.com.ingenieriaalimentacion.data.profile.ProfileRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.profile.local.DefaultEstablishmentLocalStore
 import ar.com.ingenieriaalimentacion.data.profile.local.EstablishmentLocalStore
 import ar.com.ingenieriaalimentacion.data.registration.RegistrationRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.subject.SubjectHistoryRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.subject.SubjectQueryRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.subject.SubjectRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.subject.local.DefaultSubjectLocalStore
 import ar.com.ingenieriaalimentacion.data.subject.local.SubjectLocalStore
 import ar.com.ingenieriaalimentacion.domain.repository.AuthRepository
 import ar.com.ingenieriaalimentacion.domain.repository.EstablishmentRepository
+import ar.com.ingenieriaalimentacion.domain.repository.MeasurementHistoryRepository
 import ar.com.ingenieriaalimentacion.domain.repository.ProfileRepository
 import ar.com.ingenieriaalimentacion.domain.repository.MeasurementRepository
 import ar.com.ingenieriaalimentacion.domain.repository.RegistrationRepository
 import ar.com.ingenieriaalimentacion.domain.repository.SessionManager
+import ar.com.ingenieriaalimentacion.domain.repository.SubjectHistoryRepository
 import ar.com.ingenieriaalimentacion.domain.repository.SubjectQueryRepository
 import ar.com.ingenieriaalimentacion.domain.repository.SubjectRepository
 import ar.com.ingenieriaalimentacion.domain.util.IdGenerator
@@ -76,4 +82,11 @@ val repositoriesModule = module {
         DefaultEstablishmentLocalStore(queries = get(), now = { Clock.System.now().toEpochMilliseconds() })
     }
     single<ProfileRepository> { ProfileRepositoryImpl(api = get(), local = get()) }
+    single<ActivityLocalStore> { DefaultActivityLocalStore(queries = get()) }
+    single<SubjectHistoryRepository> {
+        SubjectHistoryRepositoryImpl(api = get(), cache = get(), queue = get(), json = get(named("auth")))
+    }
+    single<MeasurementHistoryRepository> {
+        MeasurementHistoryRepositoryImpl(api = get(), cache = get(), queue = get(), json = get(named("auth")))
+    }
 }

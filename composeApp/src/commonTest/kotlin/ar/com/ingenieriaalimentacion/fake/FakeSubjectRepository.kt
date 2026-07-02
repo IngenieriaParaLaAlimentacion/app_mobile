@@ -10,6 +10,8 @@ import kotlin.time.Duration
 
 class FakeSubjectRepository : SubjectRepository {
     val enqueued = mutableListOf<NewSubject>()
+    val retried = mutableListOf<String>()
+    val deleted = mutableListOf<String>()
     var enqueueResult: Result<Unit> = Result.success(Unit)
     var syncSummary: SyncSummary = SyncSummary()
     val uploads = MutableStateFlow<List<SubjectUpload>>(emptyList())
@@ -23,9 +25,15 @@ class FakeSubjectRepository : SubjectRepository {
 
     override suspend fun syncPending(): SyncSummary = syncSummary
 
-    override suspend fun retry(localId: String): Result<Unit> = Result.success(Unit)
+    override suspend fun retry(localId: String): Result<Unit> {
+        retried += localId
+        return Result.success(Unit)
+    }
 
-    override suspend fun delete(localId: String): Result<Unit> = Result.success(Unit)
+    override suspend fun delete(localId: String): Result<Unit> {
+        deleted += localId
+        return Result.success(Unit)
+    }
 
     override suspend fun resetStuckSyncing() = Unit
 

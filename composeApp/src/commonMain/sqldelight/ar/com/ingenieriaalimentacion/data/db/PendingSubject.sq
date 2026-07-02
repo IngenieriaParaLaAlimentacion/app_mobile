@@ -39,8 +39,8 @@ UPDATE PendingSubject SET syncState = 'PENDING', attemptCount = attemptCount + 1
 resetSyncingToPending:                            -- CRASH RECOVERY: run once on SyncCoordinator.start().
 UPDATE PendingSubject SET syncState = 'PENDING', updatedAt = ? WHERE syncState = 'SYNCING';
 
-pruneTerminalOlderThan:                           -- GC SYNCED/MERGED rows older than a cutoff (epoch ms).
-DELETE FROM PendingSubject WHERE syncState IN ('SYNCED', 'MERGED') AND updatedAt < :cutoff;
+pruneTerminalOlderThan:                           -- GC SYNCED rows older than a cutoff (epoch ms).
+DELETE FROM PendingSubject WHERE syncState = 'SYNCED' AND updatedAt < :cutoff;
 
 markState:
 UPDATE PendingSubject SET syncState = ?, updatedAt = ? WHERE localId = ?;

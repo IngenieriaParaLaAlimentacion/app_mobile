@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.di
 
+import ar.com.ingenieriaalimentacion.data.activity.ActivityApi
 import ar.com.ingenieriaalimentacion.data.auth.AuthApi
 import ar.com.ingenieriaalimentacion.data.establishment.EstablishmentApi
 import ar.com.ingenieriaalimentacion.data.measurement.MeasurementApi
@@ -46,4 +47,5 @@ val clientsModule = module {
     single { SubjectApi(client = get()) }
     single { MeasurementApi(client = get()) }
     single { ProfileApi(client = get()) }
+    single { ActivityApi(client = get()) }
 }

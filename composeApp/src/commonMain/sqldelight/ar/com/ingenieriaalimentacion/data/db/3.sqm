@@ -1,0 +1,8 @@
+-- v3 -> v4: adds CachedActivityItem, a capped rolling cache for /me/activity history.
+CREATE TABLE IF NOT EXISTS CachedActivityItem (
+    id               TEXT    NOT NULL PRIMARY KEY,
+    type             TEXT    NOT NULL,
+    occurredAtMillis INTEGER NOT NULL,
+    payloadJson      TEXT    NOT NULL
+);
+CREATE INDEX IF NOT EXISTS CachedActivityItem_type_occurred ON CachedActivityItem(type, occurredAtMillis DESC);

@@ -2,11 +2,10 @@ package ar.com.ingenieriaalimentacion.presentation.feature.home
 
 import ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlBadgeTone
 import ar.com.ingenieriaalimentacion.domain.model.measurement.ClinicalAlert
-import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementUpload
+import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
-import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectUpload
+import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -30,19 +29,16 @@ class HomeStateMapperTest {
         name: String = "Ana",
         lastName: String = "García",
         dni: Int = 42,
-    ) = SubjectUpload(
-        localId = localId,
+    ) = SubjectHistoryEntry(
+        id = localId,
         dni = dni,
         sex = Sex.Female,
         name = name,
         lastName = lastName,
-        birthDate = LocalDate(2000, 1, 1),
-        isRural = false,
-        isIndigenous = false,
         syncState = syncState,
         canonicalId = null,
         errorMessage = null,
-        attemptCount = 0,
+        isLocal = true,
         createdAt = createdAt,
         updatedAt = updatedAt,
     )
@@ -56,22 +52,20 @@ class HomeStateMapperTest {
         alerts: List<ClinicalAlert> = emptyList(),
         subjectName: String = "Juan",
         subjectLastName: String = "Pérez",
-    ) = MeasurementUpload(
-        localId = localId,
-        subjectId = "s1",
+    ) = MeasurementHistoryEntry(
+        id = localId,
         subjectName = subjectName,
         subjectLastName = subjectLastName,
         subjectDni = 42,
-        establishmentId = "e1",
         establishmentName = "Escuela 1",
         weightKg = 70.0,
         heightCm = 172.0,
         measuredAt = "2026-06-29T10:00:00Z",
         syncState = syncState,
         errorMessage = null,
-        attemptCount = 0,
         bmi = bmi,
         alerts = alerts,
+        isLocal = true,
         createdAt = createdAt,
         updatedAt = updatedAt,
     )
@@ -226,6 +220,21 @@ class HomeStateMapperTest {
         assertNull(row.value)
         assertEquals("Ya existía", row.badgeText)
         assertEquals(AlBadgeTone.Warning, row.badgeTone)
+    }
+
+    @Test
+    fun `a remote-sourced entry older than the 7-day prune window still appears in recent`() {
+        val sevenDaysMs = 7L * 24 * 60 * 60 * 1000
+        val old = subject(localId = "old-remote", syncState = SyncState.Synced, createdAt = now - sevenDaysMs - 1_000)
+            .copy(isLocal = false)
+        val state = deriveState(
+            subjects = listOf(old),
+            measurements = emptyList(),
+            online = true,
+            now = now,
+            timeZone = tz,
+        )
+        assertEquals(listOf("old-remote"), state.recent.map { it.id })
     }
 
     private fun alert(severity: String, type: String = "IMC") =

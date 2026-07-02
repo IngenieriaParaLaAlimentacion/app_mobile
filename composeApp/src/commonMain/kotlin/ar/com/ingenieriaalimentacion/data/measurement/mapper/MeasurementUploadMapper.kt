@@ -2,6 +2,7 @@ package ar.com.ingenieriaalimentacion.data.measurement.mapper
 
 import ar.com.ingenieriaalimentacion.data.db.PendingMeasurement
 import ar.com.ingenieriaalimentacion.domain.model.measurement.ClinicalAlert
+import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementUpload
 import ar.com.ingenieriaalimentacion.domain.model.measurement.NewMeasurement
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
@@ -57,6 +58,24 @@ internal fun NewMeasurement.toPendingUpload(id: String, measuredAt: String, now:
 
 /** Serialize alerts for the `alertsJson` column. */
 internal fun encodeAlerts(alerts: List<ClinicalAlert>): String = alertsCodec.encodeToString(alerts)
+
+internal fun MeasurementUpload.toHistoryEntry(): MeasurementHistoryEntry = MeasurementHistoryEntry(
+    id = localId,
+    subjectName = subjectName,
+    subjectLastName = subjectLastName,
+    subjectDni = subjectDni,
+    establishmentName = establishmentName,
+    weightKg = weightKg,
+    heightCm = heightCm,
+    measuredAt = measuredAt,
+    syncState = syncState,
+    errorMessage = errorMessage,
+    bmi = bmi,
+    alerts = alerts,
+    isLocal = true,
+    createdAt = createdAt,
+    updatedAt = updatedAt,
+)
 
 private fun Json.decodeAlerts(raw: String?): List<ClinicalAlert> {
     if (raw.isNullOrBlank()) return emptyList()

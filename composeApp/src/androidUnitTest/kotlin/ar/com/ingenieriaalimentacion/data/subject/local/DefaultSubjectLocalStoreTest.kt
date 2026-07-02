@@ -136,6 +136,20 @@ class DefaultSubjectLocalStoreTest {
     }
 
     @Test
+    fun `pruneTerminalOlderThan exempts MERGED rows even when old`() = runTest {
+        store.insert(row("merged"))
+        time = 50L
+        store.markSynced("merged", SyncState.Merged, "canon-1") // updatedAt = 50
+        store.insert(row("synced"))
+        store.markSynced("synced", SyncState.Synced, "synced") // updatedAt = 50
+
+        store.pruneTerminalOlderThan(cutoff = 100L)
+
+        val ids = store.observeAll().first().map { it.localId }
+        assertEquals(listOf("merged"), ids)
+    }
+
+    @Test
     fun `delete removes the row`() = runTest {
         store.insert(row("r1"))
 

@@ -26,6 +26,10 @@ class DefaultMeasurementLocalStore(
     override fun observeAll(): Flow<List<MeasurementUpload>> =
         queries.selectAll().asFlow().mapToList(dispatcher).map { rows -> rows.map { it.toDomain() } }
 
+    override suspend fun all(): List<MeasurementUpload> = withContext(dispatcher) {
+        queries.selectAll().executeAsList().map { it.toDomain() }
+    }
+
     override suspend fun insert(upload: MeasurementUpload): Unit = withContext(dispatcher) {
         queries.insert(
             localId = upload.localId,

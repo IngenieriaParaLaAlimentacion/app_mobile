@@ -68,6 +68,12 @@ class SqlDelightDatabaseCleanerTest {
             status = "Approved",
             updatedAt = 10L,
         )
+        database.cachedActivityItemQueries.upsert(
+            id = "a1",
+            type = "SUBJECT",
+            occurredAtMillis = 10L,
+            payloadJson = "{}",
+        )
     }
 
     @Test
@@ -77,11 +83,13 @@ class SqlDelightDatabaseCleanerTest {
         assertTrue(database.pendingSubjectQueries.selectAll().executeAsList().isNotEmpty())
         assertTrue(database.pendingMeasurementQueries.selectAll().executeAsList().isNotEmpty())
         assertTrue(database.cachedEstablishmentQueries.selectAll().executeAsList().isNotEmpty())
+        assertTrue(database.cachedActivityItemQueries.selectByType("SUBJECT").executeAsList().isNotEmpty())
 
         cleaner.clearAll()
 
         assertTrue(database.pendingSubjectQueries.selectAll().executeAsList().isEmpty())
         assertTrue(database.pendingMeasurementQueries.selectAll().executeAsList().isEmpty())
         assertTrue(database.cachedEstablishmentQueries.selectAll().executeAsList().isEmpty())
+        assertTrue(database.cachedActivityItemQueries.selectByType("SUBJECT").executeAsList().isEmpty())
     }
 }

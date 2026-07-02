@@ -12,10 +12,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -30,6 +34,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlIcon
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ingenieria_alimentacion.composeapp.generated.resources.Res
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_delete
+import kotlinx.coroutines.flow.distinctUntilChanged
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -47,6 +52,18 @@ fun SubjectUploadsContent(
     onAction: (SubjectUploadsAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val listState = rememberLazyListState()
+    val currentState by rememberUpdatedState(state)
+
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+            last >= currentState.uploads.lastIndex - LOAD_MORE_THRESHOLD
+        }.distinctUntilChanged().collect { nearEnd ->
+            if (nearEnd && currentState.canLoadMore) onAction(SubjectUploadsAction.LoadMore)
+        }
+    }
+
     when {
         state.isLoading -> Box(modifier.fillMaxSize(), Alignment.Center) {
             CircularProgressIndicator(color = AlTheme.colors.accent)
@@ -58,13 +75,25 @@ fun SubjectUploadsContent(
             modifier = modifier,
         )
 
-        else -> LazyColumn(modifier.fillMaxSize()) {
+        else -> LazyColumn(modifier.fillMaxSize(), state = listState) {
             items(state.uploads, key = { it.localId }) { upload ->
                 SubjectUploadRow(upload = upload, onAction = onAction)
+            }
+            if (state.isLoadingMore) {
+                item {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(AlTheme.spacing.md),
+                        color = AlTheme.colors.accent,
+                    )
+                }
             }
         }
     }
 }
+
+private const val LOAD_MORE_THRESHOLD = 3
 
 @Composable
 private fun SubjectUploadRow(

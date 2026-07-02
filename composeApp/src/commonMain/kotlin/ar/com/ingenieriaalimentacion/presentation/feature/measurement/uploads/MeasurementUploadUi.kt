@@ -1,7 +1,7 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.measurement.uploads
 
 import ar.com.ingenieriaalimentacion.core.design_system.components.pill.AlPillTone
-import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementUpload
+import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -28,7 +28,7 @@ data class MeasurementUploadUi(
     val canDelete: Boolean,
 )
 
-internal fun MeasurementUpload.toUi(): MeasurementUploadUi {
+internal fun MeasurementHistoryEntry.toUi(): MeasurementUploadUi {
     val (label, tone) = when (syncState) {
         SyncState.Pending -> "Pendiente" to AlPillTone.Warning
         SyncState.Syncing -> "Sincronizando" to AlPillTone.Neutral
@@ -40,7 +40,7 @@ internal fun MeasurementUpload.toUi(): MeasurementUploadUi {
     val bmiValue = bmi?.takeIf { synced }?.let { formatBmi(it) }
     val primaryAlert = alerts.firstOrNull()
     return MeasurementUploadUi(
-        localId = localId,
+        localId = id,
         title = "$subjectName $subjectLastName",
         identity = "DNI $subjectDni",
         measurements = "${formatKg(weightKg)} kg · ${formatCm(heightCm)} cm",
@@ -65,8 +65,8 @@ internal fun MeasurementUpload.toUi(): MeasurementUploadUi {
         } else {
             null
         },
-        canRetry = syncState == SyncState.Failed,
-        canDelete = syncState == SyncState.Pending || syncState == SyncState.Failed || synced,
+        canRetry = isLocal && syncState == SyncState.Failed,
+        canDelete = isLocal && (syncState == SyncState.Pending || syncState == SyncState.Failed || synced),
     )
 }
 

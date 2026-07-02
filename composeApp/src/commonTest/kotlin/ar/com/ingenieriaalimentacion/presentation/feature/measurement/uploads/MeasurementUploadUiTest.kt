@@ -2,7 +2,7 @@ package ar.com.ingenieriaalimentacion.presentation.feature.measurement.uploads
 
 import ar.com.ingenieriaalimentacion.core.design_system.components.pill.AlPillTone
 import ar.com.ingenieriaalimentacion.domain.model.measurement.ClinicalAlert
-import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementUpload
+import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -20,22 +20,21 @@ class MeasurementUploadUiTest {
         weightKg: Double = 70.0,
         heightCm: Double = 172.0,
         measuredAt: String = "2026-06-21T18:30:00Z",
-    ) = MeasurementUpload(
-        localId = "m1",
-        subjectId = "s1",
+        isLocal: Boolean = true,
+    ) = MeasurementHistoryEntry(
+        id = "m1",
         subjectName = "Ana",
         subjectLastName = "García",
         subjectDni = 42,
-        establishmentId = "e1",
         establishmentName = "Escuela 1",
         weightKg = weightKg,
         heightCm = heightCm,
         measuredAt = measuredAt,
         syncState = syncState,
         errorMessage = errorMessage,
-        attemptCount = 0,
         bmi = bmi,
         alerts = alerts,
+        isLocal = isLocal,
         createdAt = 0L,
         updatedAt = 0L,
     )
@@ -166,5 +165,12 @@ class MeasurementUploadUiTest {
     fun `garbage measuredAt falls back to the raw string`() {
         val ui = upload(SyncState.Pending, measuredAt = "not-a-date").toUi()
         assertEquals("not-a-date", ui.measuredAtLabel)
+    }
+
+    @Test
+    fun `a remote-sourced Synced entry never allows retry or delete regardless of syncState`() {
+        val ui = upload(SyncState.Synced, bmi = 23.7, isLocal = false).toUi()
+        assertFalse(ui.canRetry)
+        assertFalse(ui.canDelete)
     }
 }

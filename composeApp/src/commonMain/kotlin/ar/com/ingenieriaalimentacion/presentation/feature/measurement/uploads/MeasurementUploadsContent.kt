@@ -7,16 +7,21 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -34,6 +39,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.pill.AlPillTo
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ingenieria_alimentacion.composeapp.generated.resources.Res
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_delete
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
 fun MeasurementUploadsContent(
@@ -42,6 +48,17 @@ fun MeasurementUploadsContent(
     modifier: Modifier = Modifier,
 ) {
     var pendingDelete by remember { mutableStateOf<MeasurementUploadUi?>(null) }
+    val listState = rememberLazyListState()
+    val currentState by rememberUpdatedState(state)
+
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+            last >= currentState.uploads.lastIndex - LOAD_MORE_THRESHOLD
+        }.distinctUntilChanged().collect { nearEnd ->
+            if (nearEnd && currentState.canLoadMore) onAction(MeasurementUploadsAction.LoadMore)
+        }
+    }
 
     when {
         state.isLoading -> Box(modifier.fillMaxSize(), Alignment.Center) {
@@ -56,6 +73,7 @@ fun MeasurementUploadsContent(
 
         else -> LazyColumn(
             modifier = modifier.fillMaxSize(),
+            state = listState,
             contentPadding = PaddingValues(AlTheme.spacing.md),
             verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
         ) {
@@ -65,6 +83,16 @@ fun MeasurementUploadsContent(
                     onAction = onAction,
                     onRequestDelete = { pendingDelete = it },
                 )
+            }
+            if (state.isLoadingMore) {
+                item {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(AlTheme.spacing.md),
+                        color = AlTheme.colors.accent,
+                    )
+                }
             }
         }
     }
@@ -203,3 +231,5 @@ private fun MeasurementUploadRow(
         }
     }
 }
+
+private const val LOAD_MORE_THRESHOLD = 3

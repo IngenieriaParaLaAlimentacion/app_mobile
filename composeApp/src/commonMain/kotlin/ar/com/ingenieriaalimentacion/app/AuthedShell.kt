@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.LifecycleStartEffect
 import ar.com.ingenieriaalimentacion.data.network.connectivity.ConnectivityObserver
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
+import ar.com.ingenieriaalimentacion.domain.usecase.activity.WarmActivityCacheUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.RefreshMyEstablishmentsUseCase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -118,6 +119,7 @@ private fun SyncTriggers(
     coordinator: SyncCoordinator = koinInject(),
     connectivity: ConnectivityObserver = koinInject(),
     refreshMyEstablishments: RefreshMyEstablishmentsUseCase = koinInject(),
+    warmActivityCache: WarmActivityCacheUseCase = koinInject(),
 ) {
     LifecycleStartEffect(Unit) {
         coordinator.requestSync()                    // sync each time the app returns to foreground
@@ -126,6 +128,10 @@ private fun SyncTriggers(
     LaunchedEffect(Unit) {
         // One-shot: warm the establishment cache so the measurement picker works offline later.
         if (connectivity.isOnline()) refreshMyEstablishments()
+    }
+    LaunchedEffect(Unit) {
+        // One-shot: warm the activity cache so Home/History have fresh data before first open.
+        if (connectivity.isOnline()) warmActivityCache()
     }
     LaunchedEffect(Unit) {
         while (isActive) {                           // periodic backstop while foregrounded

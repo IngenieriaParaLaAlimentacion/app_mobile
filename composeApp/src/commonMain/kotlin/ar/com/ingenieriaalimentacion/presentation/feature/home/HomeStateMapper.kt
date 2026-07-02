@@ -2,9 +2,9 @@ package ar.com.ingenieriaalimentacion.presentation.feature.home
 
 import ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlBadgeTone
 import ar.com.ingenieriaalimentacion.domain.model.measurement.ClinicalAlert
-import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementUpload
+import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.profile.Profile
-import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectUpload
+import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.presentation.feature.measurement.uploads.alertTypeLabel
 import kotlinx.datetime.TimeZone
@@ -23,8 +23,8 @@ private const val RECENT_LIMIT = 4
  * at their defaults here. No Android/Compose deps so this is fully unit-testable.
  */
 internal fun deriveState(
-    subjects: List<SubjectUpload>,
-    measurements: List<MeasurementUpload>,
+    subjects: List<SubjectHistoryEntry>,
+    measurements: List<MeasurementHistoryEntry>,
     online: Boolean,
     now: Long,
     timeZone: TimeZone = TimeZone.currentSystemDefault(),
@@ -68,10 +68,10 @@ internal fun deriveState(
 /** Synced + Merged are the terminal "uploaded" states that count toward the last-synced timestamp. */
 private fun SyncState.isDone(): Boolean = this == SyncState.Synced || this == SyncState.Merged
 
-private fun SubjectUpload.toRecentUi(): RecentActivityUi {
+private fun SubjectHistoryEntry.toRecentUi(): RecentActivityUi {
     val (label, tone) = subjectSyncBadge(syncState)
     return RecentActivityUi(
-        id = localId,
+        id = id,
         kind = RecentActivityUi.Kind.Subject,
         title = "$name $lastName",
         subtitle = "DNI $dni",
@@ -82,7 +82,7 @@ private fun SubjectUpload.toRecentUi(): RecentActivityUi {
     )
 }
 
-private fun MeasurementUpload.toRecentUi(): RecentActivityUi {
+private fun MeasurementHistoryEntry.toRecentUi(): RecentActivityUi {
     val topAlert = alerts.maxByOrNull { tonePriority(it.tone()) }
     val (label, tone) = if (topAlert != null) {
         alertTypeLabel(topAlert.alertType) to topAlert.tone()
@@ -91,7 +91,7 @@ private fun MeasurementUpload.toRecentUi(): RecentActivityUi {
     }
     val synced = syncState == SyncState.Synced
     return RecentActivityUi(
-        id = localId,
+        id = id,
         kind = RecentActivityUi.Kind.Measurement,
         title = "$subjectName $subjectLastName",
         subtitle = "Talla: ${formatMeasure(heightCm)} cm, Peso: ${formatMeasure(weightKg)} kg",

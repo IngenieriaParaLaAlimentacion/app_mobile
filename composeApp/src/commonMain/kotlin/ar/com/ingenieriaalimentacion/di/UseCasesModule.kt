@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.di
 
+import ar.com.ingenieriaalimentacion.domain.usecase.activity.WarmActivityCacheUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.ClearLocalDataUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.InitializeAuthUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.ObserveSessionStatusUseCase
@@ -59,4 +60,5 @@ val useCasesModule = module {
     factory { UpdateMyProfileUseCase(get()) }
     factory { GetAvailableEstablishmentsUseCase(get()) }
     factory { RequestEstablishmentAccessUseCase(get()) }
+    factory { WarmActivityCacheUseCase(get(), get()) }
 }

@@ -1,5 +1,7 @@
 package ar.com.ingenieriaalimentacion.di
 
+import ar.com.ingenieriaalimentacion.data.activity.local.ActivityLocalStore
+import ar.com.ingenieriaalimentacion.data.activity.local.DefaultActivityLocalStore
 import ar.com.ingenieriaalimentacion.data.auth.AuthRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.auth.storage.TokenStoreSessionManager
 import ar.com.ingenieriaalimentacion.data.device.DeviceIdProvider
@@ -76,4 +78,5 @@ val repositoriesModule = module {
         DefaultEstablishmentLocalStore(queries = get(), now = { Clock.System.now().toEpochMilliseconds() })
     }
     single<ProfileRepository> { ProfileRepositoryImpl(api = get(), local = get()) }
+    single<ActivityLocalStore> { DefaultActivityLocalStore(queries = get()) }
 }

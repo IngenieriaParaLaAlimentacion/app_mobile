@@ -10,6 +10,7 @@ import ar.com.ingenieriaalimentacion.domain.usecase.auth.SignOutUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.establishment.GetEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.CreateMeasurementUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.DeleteMeasurementUploadUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.measurement.GetMeasurementHistoryPageUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.ObserveMeasurementsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.RetryMeasurementUploadUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.ClearEstablishmentCacheUseCase
@@ -22,6 +23,7 @@ import ar.com.ingenieriaalimentacion.domain.usecase.profile.UpdateMyProfileUseCa
 import ar.com.ingenieriaalimentacion.domain.usecase.registration.RegisterFieldWorkerUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.CreateSubjectUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.DeleteSubjectUploadUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.subject.GetSubjectHistoryPageUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.GetSubjectsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.ObserveSubjectUploadsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.RetrySubjectUploadUseCase
@@ -41,11 +43,13 @@ val useCasesModule = module {
     factory { CreateSubjectUseCase(get()) }
     factory { GetSubjectsUseCase(get()) }
     factory { ObserveSubjectUploadsUseCase(get()) }
+    factory { GetSubjectHistoryPageUseCase(get()) }
     factory { SyncSubjectsUseCase(get()) }
     factory { RetrySubjectUploadUseCase(get()) }
     factory { DeleteSubjectUploadUseCase(get()) }
     factory { CreateMeasurementUseCase(get()) }
     factory { ObserveMeasurementsUseCase(get()) }
+    factory { GetMeasurementHistoryPageUseCase(get()) }
     factory { RetryMeasurementUploadUseCase(get()) }
     factory { DeleteMeasurementUploadUseCase(get()) }
     factory { GetMyProfileUseCase(get()) }

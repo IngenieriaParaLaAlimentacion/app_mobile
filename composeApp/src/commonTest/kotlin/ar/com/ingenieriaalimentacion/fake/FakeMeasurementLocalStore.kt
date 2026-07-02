@@ -15,13 +15,14 @@ class FakeMeasurementLocalStore(private val now: () -> Long = { 0L }) : Measurem
     private val rows = MutableStateFlow<List<MeasurementUpload>>(emptyList())
 
     fun current(localId: String): MeasurementUpload? = rows.value.firstOrNull { it.localId == localId }
-    fun all(): List<MeasurementUpload> = rows.value
 
     private fun mutate(localId: String, transform: (MeasurementUpload) -> MeasurementUpload) {
         rows.value = rows.value.map { if (it.localId == localId) transform(it) else it }
     }
 
     override fun observeAll(): Flow<List<MeasurementUpload>> = rows
+
+    override suspend fun all(): List<MeasurementUpload> = rows.value
 
     override suspend fun insert(upload: MeasurementUpload) {
         rows.value = rows.value + upload

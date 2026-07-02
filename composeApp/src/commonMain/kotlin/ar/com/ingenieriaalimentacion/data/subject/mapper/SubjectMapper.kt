@@ -6,8 +6,10 @@ import ar.com.ingenieriaalimentacion.data.subject.dto.SubjectResponse
 import ar.com.ingenieriaalimentacion.data.subject.dto.SubjectSummaryResponse
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
 import ar.com.ingenieriaalimentacion.domain.model.subject.Subject
+import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectPage
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
+import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectUpload
 import kotlinx.datetime.LocalDate
 
 internal fun SubjectResponse.toDomain(): Subject = Subject(
@@ -43,4 +45,18 @@ internal fun PaginatedSubjectsResponse.toDomain(): SubjectPage = SubjectPage(
     items = items.map { it.toDomain() },
     page = page,
     totalPages = totalPages,
+)
+
+internal fun SubjectUpload.toHistoryEntry(): SubjectHistoryEntry = SubjectHistoryEntry(
+    id = localId,
+    dni = dni,
+    sex = sex,
+    name = name,
+    lastName = lastName,
+    syncState = syncState,
+    canonicalId = canonicalId,
+    errorMessage = errorMessage,
+    isLocal = true,
+    createdAt = createdAt,
+    updatedAt = updatedAt,
 )

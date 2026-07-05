@@ -7,8 +7,10 @@ import ar.com.ingenieriaalimentacion.domain.model.profile.PagedEstablishments
 import ar.com.ingenieriaalimentacion.domain.model.profile.Profile
 import ar.com.ingenieriaalimentacion.domain.model.profile.UpdateProfile
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetAvailableEstablishmentsUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyProfileUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.RequestEstablishmentAccessUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.SetCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.UpdateMyProfileUseCase
 import ar.com.ingenieriaalimentacion.fake.FakeProfileRepository
 import kotlinx.coroutines.test.runTest
@@ -79,5 +81,53 @@ class ProfileUseCasesTest {
 
         assertEquals(listOf("e1"), repo.lastRequestedIds)
         assertTrue(result.getOrNull()?.first()?.status == EstablishmentStatus.Pending)
+    }
+
+    private fun establishment(id: String, status: EstablishmentStatus) = EstablishmentWithStatus(
+        id, "Escuela $id", "Calle 1", 0.0, 0.0, "p$id", "Ciudad", "Provincia", status,
+    )
+
+    @Test
+    fun `GetCurrentEstablishment returns null when nothing is stored`() = runTest {
+        val repo = FakeProfileRepository().apply { currentEstablishmentId = null }
+
+        val result = GetCurrentEstablishmentUseCase(repo)(
+            listOf(establishment("e1", EstablishmentStatus.Approved)),
+        )
+
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun `GetCurrentEstablishment returns the matching approved establishment`() = runTest {
+        val repo = FakeProfileRepository().apply { currentEstablishmentId = "e1" }
+        val approved = listOf(
+            establishment("e1", EstablishmentStatus.Approved),
+            establishment("e2", EstablishmentStatus.Approved),
+        )
+
+        val result = GetCurrentEstablishmentUseCase(repo)(approved)
+
+        assertEquals("e1", result?.id)
+    }
+
+    @Test
+    fun `GetCurrentEstablishment returns null when the stored id is no longer approved`() = runTest {
+        val repo = FakeProfileRepository().apply { currentEstablishmentId = "revoked" }
+        val approved = listOf(establishment("e1", EstablishmentStatus.Approved))
+
+        val result = GetCurrentEstablishmentUseCase(repo)(approved)
+
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun `SetCurrentEstablishment forwards the establishment's id`() = runTest {
+        val repo = FakeProfileRepository()
+
+        SetCurrentEstablishmentUseCase(repo)(establishment("e1", EstablishmentStatus.Approved))
+
+        assertEquals("e1", repo.currentEstablishmentId)
+        assertEquals(1, repo.setCurrentEstablishmentIdCount)
     }
 }

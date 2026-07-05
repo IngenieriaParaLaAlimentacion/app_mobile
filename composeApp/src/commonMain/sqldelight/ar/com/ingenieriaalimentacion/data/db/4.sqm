@@ -1,0 +1,6 @@
+-- v4 -> v5: adds CurrentEstablishment, a single-row store for the Home "current establishment" pick.
+CREATE TABLE IF NOT EXISTS CurrentEstablishment (
+    singleton       INTEGER NOT NULL PRIMARY KEY,
+    establishmentId TEXT,
+    updatedAt       INTEGER NOT NULL
+);

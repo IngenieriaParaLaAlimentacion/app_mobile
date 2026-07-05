@@ -14,9 +14,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,6 +38,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButt
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButtonVariant
 import ar.com.ingenieriaalimentacion.core.design_system.components.card.AlInfoCard
 import ar.com.ingenieriaalimentacion.core.design_system.components.header.AlScreenHeader
+import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlSelectField
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
@@ -68,11 +73,14 @@ fun HomeScreenRoot(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     state: HomeState,
     onAction: (HomeAction) -> Unit,
 ) {
+    val sheetState = rememberModalBottomSheetState()
+
     AlScaffold {
         Column(
             modifier = Modifier
@@ -86,6 +94,14 @@ fun HomeScreen(
                 subtitle = state.roleLabel,
             )
 
+            AlSelectField(
+                label = "Establecimiento actual",
+                value = state.currentEstablishment?.name ?: "",
+                placeholder = "Elegí el establecimiento",
+                enabled = state.establishmentOptions.isNotEmpty(),
+                onClick = { onAction(HomeAction.EstablishmentPickerOpen) },
+            )
+
             SyncStatusCard(sync = state.sync, onAction = onAction)
 
             PrimaryActions(onAction = onAction)
@@ -93,6 +109,29 @@ fun HomeScreen(
             TodayStrip(state = state, onAction = onAction)
 
             RecentActivity(recent = state.recent, onAction = onAction)
+        }
+
+        if (state.showEstablishmentPicker) {
+            ModalBottomSheet(
+                onDismissRequest = { onAction(HomeAction.EstablishmentPickerDismiss) },
+                sheetState = sheetState,
+            ) {
+                Column(modifier = Modifier.navigationBarsPadding()) {
+                    Text(
+                        text = "Elegí el establecimiento",
+                        style = AlTheme.typography.body,
+                        color = AlTheme.colors.textBase,
+                        modifier = Modifier.padding(horizontal = AlTheme.spacing.md, vertical = AlTheme.spacing.sm),
+                    )
+                    state.establishmentOptions.forEach { establishment ->
+                        AlListRow(
+                            title = establishment.name,
+                            subtitle = establishment.formattedAddress,
+                            onClick = { onAction(HomeAction.EstablishmentSelected(establishment)) },
+                        )
+                    }
+                }
+            }
         }
     }
 }

@@ -1,0 +1,17 @@
+-- Single-row store for the Home "current establishment" pick (id only; display fields are
+-- resolved against the CachedEstablishment/EstablishmentWithStatus list at read time).
+CREATE TABLE CurrentEstablishment (
+    singleton       INTEGER NOT NULL PRIMARY KEY,
+    establishmentId TEXT,
+    updatedAt       INTEGER NOT NULL
+);
+
+select:
+SELECT establishmentId FROM CurrentEstablishment WHERE singleton = 0;
+
+set:
+INSERT OR REPLACE INTO CurrentEstablishment(singleton, establishmentId, updatedAt)
+VALUES (0, ?, ?);
+
+deleteAll:
+DELETE FROM CurrentEstablishment;

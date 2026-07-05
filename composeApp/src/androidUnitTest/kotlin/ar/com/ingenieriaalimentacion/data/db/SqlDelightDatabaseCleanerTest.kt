@@ -74,6 +74,7 @@ class SqlDelightDatabaseCleanerTest {
             occurredAtMillis = 10L,
             payloadJson = "{}",
         )
+        database.currentEstablishmentQueries.set("est-1", 10L)
     }
 
     @Test
@@ -84,6 +85,7 @@ class SqlDelightDatabaseCleanerTest {
         assertTrue(database.pendingMeasurementQueries.selectAll().executeAsList().isNotEmpty())
         assertTrue(database.cachedEstablishmentQueries.selectAll().executeAsList().isNotEmpty())
         assertTrue(database.cachedActivityItemQueries.selectByType("SUBJECT").executeAsList().isNotEmpty())
+        assertTrue(database.currentEstablishmentQueries.select().executeAsOneOrNull()?.establishmentId != null)
 
         cleaner.clearAll()
 
@@ -91,5 +93,6 @@ class SqlDelightDatabaseCleanerTest {
         assertTrue(database.pendingMeasurementQueries.selectAll().executeAsList().isEmpty())
         assertTrue(database.cachedEstablishmentQueries.selectAll().executeAsList().isEmpty())
         assertTrue(database.cachedActivityItemQueries.selectByType("SUBJECT").executeAsList().isEmpty())
+        assertTrue(database.currentEstablishmentQueries.select().executeAsOneOrNull()?.establishmentId == null)
     }
 }

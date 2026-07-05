@@ -16,10 +16,12 @@ import ar.com.ingenieriaalimentacion.domain.usecase.measurement.ObserveMeasureme
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.RetryMeasurementUploadUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.ClearEstablishmentCacheUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetAvailableEstablishmentsUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.RefreshMyEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyProfileUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.RequestEstablishmentAccessUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.SetCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.UpdateMyProfileUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.registration.RegisterFieldWorkerUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.CreateSubjectUseCase
@@ -57,6 +59,8 @@ val useCasesModule = module {
     factory { GetMyEstablishmentsUseCase(get()) }
     factory { RefreshMyEstablishmentsUseCase(get()) }
     factory { ClearEstablishmentCacheUseCase(get()) }
+    factory { GetCurrentEstablishmentUseCase(get()) }
+    factory { SetCurrentEstablishmentUseCase(get()) }
     factory { UpdateMyProfileUseCase(get()) }
     factory { GetAvailableEstablishmentsUseCase(get()) }
     factory { RequestEstablishmentAccessUseCase(get()) }

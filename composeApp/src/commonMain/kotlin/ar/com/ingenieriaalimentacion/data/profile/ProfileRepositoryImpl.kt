@@ -2,6 +2,7 @@ package ar.com.ingenieriaalimentacion.data.profile
 
 import ar.com.ingenieriaalimentacion.data.profile.dto.RequestEstablishmentsRequest
 import ar.com.ingenieriaalimentacion.data.profile.dto.UpdateProfileRequest
+import ar.com.ingenieriaalimentacion.data.profile.local.CurrentEstablishmentLocalStore
 import ar.com.ingenieriaalimentacion.data.profile.local.EstablishmentLocalStore
 import ar.com.ingenieriaalimentacion.data.profile.mapper.toDomain
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentRequestError
@@ -18,6 +19,7 @@ import io.ktor.http.HttpStatusCode
 class ProfileRepositoryImpl(
     private val api: ProfileApi,
     private val local: EstablishmentLocalStore,
+    private val currentEstablishment: CurrentEstablishmentLocalStore,
 ) : ProfileRepository {
 
     override suspend fun getMe(): Result<Profile> =
@@ -48,6 +50,12 @@ class ProfileRepositoryImpl(
 
     override suspend fun clearEstablishmentCache() {
         local.clear()
+    }
+
+    override suspend fun getCurrentEstablishmentId(): String? = currentEstablishment.get()
+
+    override suspend fun setCurrentEstablishmentId(establishmentId: String?) {
+        currentEstablishment.set(establishmentId)
     }
 
     private suspend fun fetchMyEstablishments(): Result<List<EstablishmentWithStatus>> =

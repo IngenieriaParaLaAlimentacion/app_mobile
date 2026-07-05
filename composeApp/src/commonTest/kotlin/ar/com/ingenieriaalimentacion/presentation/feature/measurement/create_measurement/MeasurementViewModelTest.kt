@@ -9,6 +9,7 @@ import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatu
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.CreateMeasurementUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.fake.FakeConnectivityObserver
 import ar.com.ingenieriaalimentacion.fake.FakeMeasurementRepository
@@ -63,6 +64,7 @@ class MeasurementViewModelTest {
         return MeasurementViewModel(
             createMeasurement = CreateMeasurementUseCase(measRepo),
             getMyEstablishments = GetMyEstablishmentsUseCase(profileRepo),
+            getCurrentEstablishment = GetCurrentEstablishmentUseCase(profileRepo),
             syncCoordinator = coordinator,
         )
     }
@@ -192,6 +194,72 @@ class MeasurementViewModelTest {
         }
         assertTrue(measRepo.enqueued.isEmpty())
     }
+
+    @Test
+    fun `a current establishment pre-fills selection even with two approved options`() = runTest(dispatcher) {
+        val profileRepo = FakeProfileRepository().apply {
+            myEstablishmentsResult = Result.success(
+                listOf(
+                    establishment("a", EstablishmentStatus.Approved),
+                    establishment("b", EstablishmentStatus.Approved),
+                ),
+            )
+            currentEstablishmentId = "b"
+        }
+        val vm = viewModel(profileRepo = profileRepo)
+
+        vm.state.test {
+            val loaded = awaitState { !it.isLoadingProfile }
+            assertEquals(2, loaded.establishmentOptions.size)
+            assertEquals("b", loaded.selectedEstablishment?.id)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `a stale current establishment id falls back to today's behavior`() = runTest(dispatcher) {
+        val profileRepo = FakeProfileRepository().apply {
+            myEstablishmentsResult = Result.success(
+                listOf(
+                    establishment("a", EstablishmentStatus.Approved),
+                    establishment("b", EstablishmentStatus.Approved),
+                ),
+            )
+            currentEstablishmentId = "revoked"
+        }
+        val vm = viewModel(profileRepo = profileRepo)
+
+        vm.state.test {
+            val loaded = awaitState { !it.isLoadingProfile }
+            assertNull(loaded.selectedEstablishment)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `overriding the establishment in Measurement does not persist as the current establishment`() =
+        runTest(dispatcher) {
+            val profileRepo = FakeProfileRepository().apply {
+                myEstablishmentsResult = Result.success(
+                    listOf(
+                        establishment("a", EstablishmentStatus.Approved),
+                        establishment("b", EstablishmentStatus.Approved),
+                    ),
+                )
+                currentEstablishmentId = "a"
+            }
+            val vm = viewModel(profileRepo = profileRepo)
+
+            vm.state.test {
+                awaitState { !it.isLoadingProfile }
+                vm.onAction(MeasurementAction.EstablishmentSelected(establishment("b", EstablishmentStatus.Approved)))
+                val overridden = awaitState { it.selectedEstablishment?.id == "b" }
+                assertEquals("b", overridden.selectedEstablishment?.id)
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            assertEquals(0, profileRepo.setCurrentEstablishmentIdCount)
+        }
 
     @Test
     fun `subject result is reflected in state`() = runTest(dispatcher) {

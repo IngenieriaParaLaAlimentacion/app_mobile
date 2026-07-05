@@ -57,6 +57,16 @@ class FakeProfileRepository : ProfileRepository {
         clearCacheCount++
     }
 
+    var currentEstablishmentId: String? = null
+    var setCurrentEstablishmentIdCount: Int = 0
+
+    override suspend fun getCurrentEstablishmentId(): String? = currentEstablishmentId
+
+    override suspend fun setCurrentEstablishmentId(establishmentId: String?) {
+        setCurrentEstablishmentIdCount++
+        currentEstablishmentId = establishmentId
+    }
+
     override suspend fun getAvailableEstablishments(
         search: String?,
         page: Int,

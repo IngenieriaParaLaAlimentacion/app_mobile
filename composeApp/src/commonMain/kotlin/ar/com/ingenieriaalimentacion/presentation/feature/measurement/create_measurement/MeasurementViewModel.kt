@@ -13,6 +13,7 @@ import ar.com.ingenieriaalimentacion.domain.model.measurement.NewMeasurement
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.CreateMeasurementUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -26,6 +27,7 @@ import kotlin.time.Clock
 class MeasurementViewModel(
     private val createMeasurement: CreateMeasurementUseCase,
     private val getMyEstablishments: GetMyEstablishmentsUseCase,
+    private val getCurrentEstablishment: GetCurrentEstablishmentUseCase,
     private val syncCoordinator: SyncCoordinator,
 ) : ViewModel() {
 
@@ -109,12 +111,14 @@ class MeasurementViewModel(
             getMyEstablishments().fold(
                 onSuccess = { establishments ->
                     val approved = establishments.filter { it.status == EstablishmentStatus.Approved }
+                    val current = getCurrentEstablishment(approved)
                     _state.update {
                         it.copy(
                             isLoadingProfile = false,
                             establishmentOptions = approved,
-                            // Auto-select when exactly one approved establishment exists.
-                            selectedEstablishment = approved.singleOrNull() ?: it.selectedEstablishment,
+                            // Current establishment (Home's default) wins over auto-select-when-single;
+                            // a manual pick already in state (e.g. a RetryProfile re-load) is untouched.
+                            selectedEstablishment = current ?: approved.singleOrNull() ?: it.selectedEstablishment,
                         )
                     }
                 },

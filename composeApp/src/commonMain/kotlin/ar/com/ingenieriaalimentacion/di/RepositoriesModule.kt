@@ -11,6 +11,8 @@ import ar.com.ingenieriaalimentacion.data.measurement.MeasurementRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.measurement.local.DefaultMeasurementLocalStore
 import ar.com.ingenieriaalimentacion.data.measurement.local.MeasurementLocalStore
 import ar.com.ingenieriaalimentacion.data.profile.ProfileRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.profile.local.CurrentEstablishmentLocalStore
+import ar.com.ingenieriaalimentacion.data.profile.local.DefaultCurrentEstablishmentLocalStore
 import ar.com.ingenieriaalimentacion.data.profile.local.DefaultEstablishmentLocalStore
 import ar.com.ingenieriaalimentacion.data.profile.local.EstablishmentLocalStore
 import ar.com.ingenieriaalimentacion.data.registration.RegistrationRepositoryImpl
@@ -81,7 +83,12 @@ val repositoriesModule = module {
     single<EstablishmentLocalStore> {
         DefaultEstablishmentLocalStore(queries = get(), now = { Clock.System.now().toEpochMilliseconds() })
     }
-    single<ProfileRepository> { ProfileRepositoryImpl(api = get(), local = get()) }
+    single<CurrentEstablishmentLocalStore> {
+        DefaultCurrentEstablishmentLocalStore(queries = get(), now = { Clock.System.now().toEpochMilliseconds() })
+    }
+    single<ProfileRepository> {
+        ProfileRepositoryImpl(api = get(), local = get(), currentEstablishment = get())
+    }
     single<ActivityLocalStore> { DefaultActivityLocalStore(queries = get()) }
     single<SubjectHistoryRepository> {
         SubjectHistoryRepositoryImpl(api = get(), cache = get(), queue = get(), json = get(named("auth")))

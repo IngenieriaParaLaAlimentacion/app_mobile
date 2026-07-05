@@ -20,6 +20,13 @@ interface ProfileRepository {
 
     /** Clear the establishment cache (call on logout so no previous user's data leaks). */
     suspend fun clearEstablishmentCache()
+
+    /** The locally-remembered "current establishment" id Home sets, for pre-filling measurement uploads. */
+    suspend fun getCurrentEstablishmentId(): String?
+
+    /** Sets (or clears, with `null`) the current establishment id. */
+    suspend fun setCurrentEstablishmentId(establishmentId: String?)
+
     suspend fun getAvailableEstablishments(
         search: String?,
         page: Int,

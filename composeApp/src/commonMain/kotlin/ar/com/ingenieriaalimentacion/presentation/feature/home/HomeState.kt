@@ -1,6 +1,7 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.home
 
 import ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlBadgeTone
+import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 
 /**
  * Field-tool Home state. Identity fields ([greetingName]/[roleLabel]) are best-effort and load once
@@ -17,6 +18,9 @@ data class HomeState(
     val todaySubjects: Int = 0,
     val todayAlerts: Int = 0,
     val recent: List<RecentActivityUi> = emptyList(),
+    val currentEstablishment: EstablishmentWithStatus? = null,
+    val establishmentOptions: List<EstablishmentWithStatus> = emptyList(),
+    val showEstablishmentPicker: Boolean = false,
 )
 
 /** The single derived state the sync-status card renders. Precedence lives in [deriveState]. */

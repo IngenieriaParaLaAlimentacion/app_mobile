@@ -4,8 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ar.com.ingenieriaalimentacion.data.network.connectivity.ConnectivityObserver
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
+import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.ObserveMeasurementsUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyProfileUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.SetCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.ObserveSubjectUploadsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +27,9 @@ class HomeViewModel(
     observeSubjectUploads: ObserveSubjectUploadsUseCase,
     observeMeasurements: ObserveMeasurementsUseCase,
     private val getMyProfile: GetMyProfileUseCase,
+    private val getMyEstablishments: GetMyEstablishmentsUseCase,
+    private val getCurrentEstablishment: GetCurrentEstablishmentUseCase,
+    private val setCurrentEstablishment: SetCurrentEstablishmentUseCase,
     private val syncCoordinator: SyncCoordinator,
     connectivity: ConnectivityObserver,
     private val now: () -> Long,
@@ -52,9 +59,25 @@ class HomeViewModel(
                         destination = it.destination,
                         greetingName = it.greetingName,
                         roleLabel = it.roleLabel,
+                        currentEstablishment = it.currentEstablishment,
+                        establishmentOptions = it.establishmentOptions,
+                        showEstablishmentPicker = it.showEstablishmentPicker,
                     )
                 }
             }
+        }
+        loadEstablishments()
+    }
+
+    private fun loadEstablishments() {
+        viewModelScope.launch {
+            getMyEstablishments().onSuccess { all ->
+                val approved = all.filter { it.status == EstablishmentStatus.Approved }
+                val current = getCurrentEstablishment(approved)
+                _state.update { it.copy(establishmentOptions = approved, currentEstablishment = current) }
+            }
+            // Failure: leave establishmentOptions/currentEstablishment at their defaults — Home never
+            // blocks on this (ADR-015); the picker just shows nothing to pick yet.
         }
     }
 
@@ -68,6 +91,16 @@ class HomeViewModel(
             HomeAction.SeeAllActivityClick,
             HomeAction.AlertsClick ->
                 _state.update { it.copy(destination = HomeDestination.NavigateToHistory) }
+            HomeAction.EstablishmentPickerOpen ->
+                _state.update { it.copy(showEstablishmentPicker = true) }
+            HomeAction.EstablishmentPickerDismiss ->
+                _state.update { it.copy(showEstablishmentPicker = false) }
+            is HomeAction.EstablishmentSelected -> {
+                _state.update {
+                    it.copy(currentEstablishment = action.establishment, showEstablishmentPicker = false)
+                }
+                viewModelScope.launch { setCurrentEstablishment(action.establishment) }
+            }
         }
     }
 

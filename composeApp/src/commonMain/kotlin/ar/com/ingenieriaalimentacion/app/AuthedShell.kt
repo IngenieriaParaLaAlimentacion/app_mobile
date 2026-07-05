@@ -1,6 +1,7 @@
 package ar.com.ingenieriaalimentacion.app
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -47,6 +48,10 @@ fun AuthedShell(onSignOut: () -> Unit) {
     }
 
     Scaffold(
+        // Each screen's own AlScaffold already applies safeDrawingPadding(); AlBottomNavBar already
+        // applies its own navigationBars inset. Without this, Scaffold's default safeDrawing inset
+        // stacks on top of AlScaffold's, doubling the gap above every screen's content.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             AlBottomNavBar(
                 selected = selectedTab,

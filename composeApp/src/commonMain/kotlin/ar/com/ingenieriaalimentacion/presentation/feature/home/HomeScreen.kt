@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,7 +30,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ar.com.ingenieriaalimentacion.core.design_system.components.EmptyState
 import ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlBadgeTone
@@ -38,13 +41,15 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButt
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButtonVariant
 import ar.com.ingenieriaalimentacion.core.design_system.components.card.AlInfoCard
 import ar.com.ingenieriaalimentacion.core.design_system.components.header.AlScreenHeader
-import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlSelectField
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
+import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import ingenieria_alimentacion.composeapp.generated.resources.Res
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_alert_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_check_circle
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_down_line
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_location_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_ruler_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_time
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_upload_line
@@ -82,33 +87,34 @@ fun HomeScreen(
     val sheetState = rememberModalBottomSheetState()
 
     AlScaffold {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(AlTheme.spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg),
-        ) {
-            AlScreenHeader(
-                title = state.greetingName?.let { "Hola, $it" } ?: "Hola",
-                subtitle = state.roleLabel,
-            )
-
-            AlSelectField(
-                label = "Establecimiento actual",
-                value = state.currentEstablishment?.name ?: "",
-                placeholder = "Elegí el establecimiento",
+        Column(modifier = Modifier.fillMaxSize()) {
+            EstablishmentTopBar(
+                establishment = state.currentEstablishment,
                 enabled = state.establishmentOptions.isNotEmpty(),
                 onClick = { onAction(HomeAction.EstablishmentPickerOpen) },
             )
 
-            SyncStatusCard(sync = state.sync, onAction = onAction)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(AlTheme.spacing.lg),
+                verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg),
+            ) {
+                AlScreenHeader(
+                    title = state.greetingName?.let { "Hola, $it" } ?: "Hola",
+                    subtitle = state.roleLabel,
+                )
 
-            PrimaryActions(onAction = onAction)
+                SyncStatusCard(sync = state.sync, onAction = onAction)
 
-            TodayStrip(state = state, onAction = onAction)
+                PrimaryActions(onAction = onAction)
 
-            RecentActivity(recent = state.recent, onAction = onAction)
+                TodayStrip(state = state, onAction = onAction)
+
+                RecentActivity(recent = state.recent, onAction = onAction)
+            }
         }
 
         if (state.showEstablishmentPicker) {
@@ -132,6 +138,45 @@ fun HomeScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun EstablishmentTopBar(
+    establishment: EstablishmentWithStatus?,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = AlTheme.spacing.lg, vertical = AlTheme.spacing.md),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs, Alignment.CenterHorizontally),
+    ) {
+        Icon(
+            imageVector = vectorResource(Res.drawable.ic_mingcute_location_line),
+            contentDescription = null,
+            tint = AlTheme.colors.textMuted,
+            modifier = Modifier.size(18.dp),
+        )
+        Text(
+            text = establishment?.name ?: "Elegí el establecimiento",
+            style = AlTheme.typography.body.copy(fontSize = 14.sp, fontWeight = FontWeight.Medium),
+            color = if (establishment != null) AlTheme.colors.textBase else AlTheme.colors.textMuted,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false),
+        )
+        if (enabled) {
+            Icon(
+                imageVector = vectorResource(Res.drawable.ic_mingcute_down_line),
+                contentDescription = null,
+                tint = AlTheme.colors.textMuted,
+                modifier = Modifier.size(16.dp),
+            )
         }
     }
 }

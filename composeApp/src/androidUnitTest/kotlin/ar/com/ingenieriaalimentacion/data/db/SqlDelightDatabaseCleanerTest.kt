@@ -75,6 +75,42 @@ class SqlDelightDatabaseCleanerTest {
             payloadJson = "{}",
         )
         database.currentEstablishmentQueries.set("est-1", 10L)
+        database.cachedSurveyQueries.upsertSummary(
+            id = "sv-1",
+            name = "Encuesta",
+            scope = "GENERIC",
+            isActive = 1L,
+            questionCount = 3L,
+            updatedAt = 10L,
+        )
+        database.pendingSurveyResponseQueries.insert(
+            localId = "sr-1",
+            surveyId = "sv-1",
+            surveyName = "Encuesta",
+            establishmentId = "est-1",
+            establishmentName = "Norte",
+            answersJson = "{}",
+            eventAt = "2026-01-01T00:00:00Z",
+            syncState = "PENDING",
+            canonicalId = null,
+            errorMessage = null,
+            attemptCount = 0L,
+            createdAt = 10L,
+            updatedAt = 10L,
+        )
+        database.pendingSurveyResponseEditQueries.insert(
+            editId = "se-1",
+            responseId = "sr-1",
+            surveyName = "Encuesta",
+            establishmentName = "Norte",
+            answersJson = "{}",
+            eventAt = "2026-01-01T00:00:00Z",
+            syncState = "PENDING",
+            errorMessage = null,
+            attemptCount = 0L,
+            createdAt = 10L,
+            updatedAt = 10L,
+        )
     }
 
     @Test
@@ -86,6 +122,9 @@ class SqlDelightDatabaseCleanerTest {
         assertTrue(database.cachedEstablishmentQueries.selectAll().executeAsList().isNotEmpty())
         assertTrue(database.cachedActivityItemQueries.selectByType("SUBJECT").executeAsList().isNotEmpty())
         assertTrue(database.currentEstablishmentQueries.select().executeAsOneOrNull()?.establishmentId != null)
+        assertTrue(database.cachedSurveyQueries.selectAll().executeAsList().isNotEmpty())
+        assertTrue(database.pendingSurveyResponseQueries.selectAll().executeAsList().isNotEmpty())
+        assertTrue(database.pendingSurveyResponseEditQueries.selectAll().executeAsList().isNotEmpty())
 
         cleaner.clearAll()
 
@@ -94,5 +133,8 @@ class SqlDelightDatabaseCleanerTest {
         assertTrue(database.cachedEstablishmentQueries.selectAll().executeAsList().isEmpty())
         assertTrue(database.cachedActivityItemQueries.selectByType("SUBJECT").executeAsList().isEmpty())
         assertTrue(database.currentEstablishmentQueries.select().executeAsOneOrNull()?.establishmentId == null)
+        assertTrue(database.cachedSurveyQueries.selectAll().executeAsList().isEmpty())
+        assertTrue(database.pendingSurveyResponseQueries.selectAll().executeAsList().isEmpty())
+        assertTrue(database.pendingSurveyResponseEditQueries.selectAll().executeAsList().isEmpty())
     }
 }

@@ -31,6 +31,13 @@ import ar.com.ingenieriaalimentacion.domain.usecase.subject.GetSubjectsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.ObserveSubjectUploadsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.RetrySubjectUploadUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.SyncSubjectsUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.survey.EditSurveyResponseUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.survey.GetAvailableSurveysUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.survey.GetSurveyDetailUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.survey.GetSurveyResponseDetailUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.survey.GetSurveyResponseHistoryPageUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.survey.RetrySurveyResponseUploadUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.survey.SubmitSurveyResponseUseCase
 import org.koin.dsl.module
 
 val useCasesModule = module {
@@ -65,4 +72,11 @@ val useCasesModule = module {
     factory { GetAvailableEstablishmentsUseCase(get()) }
     factory { RequestEstablishmentAccessUseCase(get()) }
     factory { WarmActivityCacheUseCase(get(), get()) }
+    factory { GetAvailableSurveysUseCase(get()) }
+    factory { GetSurveyDetailUseCase(get()) }
+    factory { SubmitSurveyResponseUseCase(get()) }
+    factory { GetSurveyResponseHistoryPageUseCase(get()) }
+    factory { GetSurveyResponseDetailUseCase(get()) }
+    factory { RetrySurveyResponseUploadUseCase(get()) }
+    factory { EditSurveyResponseUseCase(get()) }
 }

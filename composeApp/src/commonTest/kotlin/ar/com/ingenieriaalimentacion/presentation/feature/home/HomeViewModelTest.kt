@@ -6,6 +6,7 @@ import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.di.AppScope
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
+import ar.com.ingenieriaalimentacion.domain.model.profile.Profile
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
@@ -46,6 +47,15 @@ class HomeViewModelTest {
     fun teardown() {
         Dispatchers.resetMain()
     }
+
+    private fun profile(role: String) = Profile(
+        id = "user-1",
+        email = "user@example.com",
+        name = "Ana",
+        lastName = "García",
+        role = role,
+        establishments = null,
+    )
 
     private fun establishment(id: String, status: EstablishmentStatus = EstablishmentStatus.Approved) =
         EstablishmentWithStatus(
@@ -177,6 +187,63 @@ class HomeViewModelTest {
             val afterEmission = awaitState { it.todaySubjects == 1 }
             assertEquals(listOf("a"), afterEmission.establishmentOptions.map { it.id })
             assertEquals(false, afterEmission.showEstablishmentPicker)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `field_worker admin and superadmin can respond to surveys`() = runTest(dispatcher) {
+        for (role in listOf("field_worker", "admin", "superadmin")) {
+            val profileRepo = FakeProfileRepository().apply {
+                meResult = Result.success(profile(role))
+                myEstablishmentsResult = Result.success(emptyList())
+            }
+            val vm = viewModel(profileRepo = profileRepo)
+
+            vm.state.test {
+                val loaded = awaitState { it.roleLabel != null }
+                assertEquals(true, loaded.canRespondToSurveys, "role=$role should be able to respond")
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+    }
+
+    @Test
+    fun `analyst cannot respond to surveys`() = runTest(dispatcher) {
+        val profileRepo = FakeProfileRepository().apply {
+            meResult = Result.success(profile("analyst"))
+            myEstablishmentsResult = Result.success(emptyList())
+        }
+        val vm = viewModel(profileRepo = profileRepo)
+
+        vm.state.test {
+            val loaded = awaitState { it.roleLabel != null }
+            assertEquals(false, loaded.canRespondToSurveys)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `canRespondToSurveys survives a queue emission after profile load`() = runTest(dispatcher) {
+        val subjectRepo = FakeSubjectHistoryRepository()
+        val profileRepo = FakeProfileRepository().apply {
+            meResult = Result.success(profile("field_worker"))
+            myEstablishmentsResult = Result.success(listOf(establishment("a", EstablishmentStatus.Approved)))
+        }
+        val vm = viewModel(subjectRepo = subjectRepo, profileRepo = profileRepo)
+
+        vm.state.test {
+            awaitState { it.canRespondToSurveys }
+
+            subjectRepo.merged.value = listOf(
+                SubjectHistoryEntry(
+                    id = "s1", dni = 1, sex = Sex.Female, name = "Ana", lastName = "García",
+                    syncState = SyncState.Pending, canonicalId = null, errorMessage = null,
+                    isLocal = true, createdAt = 0L, updatedAt = 0L,
+                ),
+            )
+            val afterEmission = awaitState { it.todaySubjects == 1 }
+            assertEquals(true, afterEmission.canRespondToSurveys)
             cancelAndIgnoreRemainingEvents()
         }
     }

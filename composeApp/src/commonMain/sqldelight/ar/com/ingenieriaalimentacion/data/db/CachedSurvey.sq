@@ -1,0 +1,30 @@
+-- Read-through cache: list rows come from GET /surveys/available (detailJson NULL until
+-- first detail fetch); detailJson holds the full question/option set from GET /surveys/{id}
+-- so an in-progress or fully offline response can still render + validate against it.
+CREATE TABLE CachedSurvey (
+    id            TEXT NOT NULL PRIMARY KEY,
+    name          TEXT NOT NULL,
+    scope         TEXT NOT NULL,   -- 'GENERIC' | 'TARGETED'
+    isActive      INTEGER NOT NULL,
+    questionCount INTEGER NOT NULL,
+    detailJson    TEXT,            -- full SurveyDetail JSON; NULL until GET /surveys/{id}
+    updatedAt     INTEGER NOT NULL
+);
+
+selectAll:
+SELECT * FROM CachedSurvey ORDER BY name ASC;
+
+selectById:
+SELECT * FROM CachedSurvey WHERE id = ?;
+
+-- No ON CONFLICT DO UPDATE here: the project's SQLDelight dialect (sqlite_3_18, this
+-- codebase's existing default) predates SQLite's UPSERT syntax. A full-row replace is used
+-- instead, same convention as CachedActivityItem/CachedEstablishment; the caller
+-- (SurveyLocalStore, Phase 3) reads any existing detailJson first and re-passes it so a
+-- summary-list refresh doesn't blow away a previously cached detail.
+insertOrReplace:
+INSERT OR REPLACE INTO CachedSurvey(id, name, scope, isActive, questionCount, detailJson, updatedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+deleteAll:
+DELETE FROM CachedSurvey;

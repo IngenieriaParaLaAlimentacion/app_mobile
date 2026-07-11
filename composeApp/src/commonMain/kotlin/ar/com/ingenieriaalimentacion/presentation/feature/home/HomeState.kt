@@ -21,6 +21,9 @@ data class HomeState(
     val currentEstablishment: EstablishmentWithStatus? = null,
     val establishmentOptions: List<EstablishmentWithStatus> = emptyList(),
     val showEstablishmentPicker: Boolean = false,
+    // Defaults false so the survey entry points are hidden until profile load resolves —
+    // consistent with "Home never blocks, never over-shows" (ADR-015's spirit).
+    val canRespondToSurveys: Boolean = false,
 )
 
 /** The single derived state the sync-status card renders. Precedence lives in [deriveState]. */

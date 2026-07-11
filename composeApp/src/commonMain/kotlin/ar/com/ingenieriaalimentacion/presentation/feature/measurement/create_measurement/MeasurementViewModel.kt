@@ -15,6 +15,7 @@ import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.CreateMeasurementUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
+import ar.com.ingenieriaalimentacion.domain.util.sanitizeDecimalInput
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -47,7 +48,7 @@ class MeasurementViewModel(
             is MeasurementAction.WeightChanged ->
                 _state.update {
                     it.copy(
-                        weight = it.weight.onChange(sanitizeDecimal(action.value), weightValidator),
+                        weight = it.weight.onChange(sanitizeDecimalInput(action.value), weightValidator),
                         successMessage = null,
                     )
                 }
@@ -58,7 +59,7 @@ class MeasurementViewModel(
             is MeasurementAction.HeightChanged ->
                 _state.update {
                     it.copy(
-                        height = it.height.onChange(sanitizeDecimal(action.value), heightValidator),
+                        height = it.height.onChange(sanitizeDecimalInput(action.value), heightValidator),
                         successMessage = null,
                     )
                 }
@@ -191,16 +192,6 @@ class MeasurementViewModel(
             weightKg = weight,
             heightCm = height,
         )
-    }
-
-    private fun sanitizeDecimal(raw: String): String {
-        val normalized = raw.replace(',', '.').filter { it.isDigit() || it == '.' }
-        val firstDot = normalized.indexOf('.')
-        if (firstDot == -1) return normalized
-        // Keep the first separator, drop any subsequent ones.
-        val head = normalized.substring(0, firstDot + 1)
-        val tail = normalized.substring(firstDot + 1).filter { it.isDigit() }
-        return head + tail
     }
 
     private val weightValidator: Validator = Rules.of(

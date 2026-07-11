@@ -1,0 +1,44 @@
+-- v5 -> v6: adds CachedSurvey, PendingSurveyResponse, PendingSurveyResponseEdit for the
+-- survey-responses feature.
+CREATE TABLE IF NOT EXISTS CachedSurvey (
+    id            TEXT NOT NULL PRIMARY KEY,
+    name          TEXT NOT NULL,
+    scope         TEXT NOT NULL,
+    isActive      INTEGER NOT NULL,
+    questionCount INTEGER NOT NULL,
+    detailJson    TEXT,
+    updatedAt     INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS PendingSurveyResponse (
+    localId           TEXT    NOT NULL PRIMARY KEY,
+    surveyId          TEXT    NOT NULL,
+    surveyName        TEXT    NOT NULL,
+    establishmentId   TEXT    NOT NULL,
+    establishmentName TEXT    NOT NULL,
+    answersJson       TEXT    NOT NULL,
+    eventAt           TEXT    NOT NULL,
+    syncState         TEXT    NOT NULL,
+    canonicalId       TEXT,
+    errorMessage      TEXT,
+    attemptCount      INTEGER NOT NULL DEFAULT 0,
+    createdAt         INTEGER NOT NULL,
+    updatedAt         INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS PendingSurveyResponse_state ON PendingSurveyResponse(syncState);
+
+CREATE TABLE IF NOT EXISTS PendingSurveyResponseEdit (
+    editId             TEXT    NOT NULL PRIMARY KEY,
+    responseId         TEXT    NOT NULL,
+    surveyName         TEXT    NOT NULL,
+    establishmentName  TEXT    NOT NULL,
+    answersJson        TEXT    NOT NULL,
+    eventAt            TEXT    NOT NULL,
+    syncState          TEXT    NOT NULL,
+    errorMessage       TEXT,
+    attemptCount       INTEGER NOT NULL DEFAULT 0,
+    createdAt          INTEGER NOT NULL,
+    updatedAt          INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS PendingSurveyResponseEdit_state ON PendingSurveyResponseEdit(syncState);
+CREATE INDEX IF NOT EXISTS PendingSurveyResponseEdit_responseId ON PendingSurveyResponseEdit(responseId);

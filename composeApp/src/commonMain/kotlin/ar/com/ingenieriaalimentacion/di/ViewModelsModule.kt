@@ -17,6 +17,11 @@ import ar.com.ingenieriaalimentacion.presentation.feature.register.RegisterViewM
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.create_subject.CreateSubjectViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.select_subject.SelectSubjectViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.uploads.SubjectUploadsViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_list.SurveyListViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_detail.SurveyResponseDetailViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_edit.SurveyResponseEditViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_form.SurveyResponseFormViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_history.SurveyResponseHistoryViewModel
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 import kotlin.time.Clock
 import org.koin.core.module.dsl.viewModel
@@ -58,5 +63,36 @@ val viewModelsModule = module {
     }
     viewModel { (route: Route.EditProfile) ->
         EditProfileViewModel(route = route, updateMyProfile = get())
+    }
+    viewModelOf(::SurveyListViewModel)
+    viewModel { (route: Route.SurveyResponseForm) ->
+        SurveyResponseFormViewModel(
+            route = route,
+            getSurveyDetail = get(),
+            getMyEstablishments = get(),
+            getCurrentEstablishment = get(),
+            submitSurveyResponse = get(),
+            syncCoordinator = get(),
+        )
+    }
+    viewModelOf(::SurveyResponseHistoryViewModel)
+    viewModel { (route: Route.SurveyResponseDetail) ->
+        SurveyResponseDetailViewModel(
+            route = route,
+            getSurveyResponseDetail = get(),
+            getSurveyDetail = get(),
+            getMyProfile = get(),
+            getMyEstablishments = get(),
+        )
+    }
+    viewModel { (route: Route.SurveyResponseEdit) ->
+        SurveyResponseEditViewModel(
+            route = route,
+            getSurveyResponseDetail = get(),
+            getSurveyDetail = get(),
+            getMyEstablishments = get(),
+            editSurveyResponse = get(),
+            syncCoordinator = get(),
+        )
     }
 }

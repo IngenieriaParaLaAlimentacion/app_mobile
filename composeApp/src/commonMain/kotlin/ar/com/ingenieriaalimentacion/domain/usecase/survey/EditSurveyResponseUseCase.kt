@@ -1,0 +1,15 @@
+package ar.com.ingenieriaalimentacion.domain.usecase.survey
+
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyAnswerValue
+import ar.com.ingenieriaalimentacion.domain.repository.SurveyResponseEditRepository
+
+/** Queues a full-replace edit for a response locally (offline-first). Returns immediately. */
+class EditSurveyResponseUseCase(private val repository: SurveyResponseEditRepository) {
+    suspend operator fun invoke(
+        responseId: String,
+        surveyName: String,
+        establishmentName: String,
+        answers: Map<String, SurveyAnswerValue>,
+        eventAtMs: Long,
+    ): Result<Unit> = repository.enqueueEdit(responseId, surveyName, establishmentName, answers, eventAtMs)
+}

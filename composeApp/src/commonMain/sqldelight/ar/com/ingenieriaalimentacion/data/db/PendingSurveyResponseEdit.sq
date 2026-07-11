@@ -1,0 +1,69 @@
+-- editId is the wire idempotency `id` for ONE edit attempt — deliberately NOT the same
+-- value as responseId. responseId is a plain string, not a SQL foreign key: the
+-- parent response may live in PendingSurveyResponse (this device's own submission) or may
+-- never have a local row at all (an edit of a response fetched from another device via
+-- GET /survey-responses/{id}) — both are valid and gated at the app level (Phase 3), not
+-- the schema level.
+CREATE TABLE PendingSurveyResponseEdit (
+    editId             TEXT    NOT NULL PRIMARY KEY,
+    responseId         TEXT    NOT NULL,
+    surveyName         TEXT    NOT NULL,
+    establishmentName  TEXT    NOT NULL,
+    answersJson        TEXT    NOT NULL,
+    eventAt            TEXT    NOT NULL,
+    syncState          TEXT    NOT NULL,  -- PENDING|SYNCING|SYNCED|FAILED
+    errorMessage       TEXT,
+    attemptCount       INTEGER NOT NULL DEFAULT 0,
+    createdAt          INTEGER NOT NULL,
+    updatedAt          INTEGER NOT NULL
+);
+
+CREATE INDEX PendingSurveyResponseEdit_state ON PendingSurveyResponseEdit(syncState);
+CREATE INDEX PendingSurveyResponseEdit_responseId ON PendingSurveyResponseEdit(responseId);
+
+insert:
+INSERT INTO PendingSurveyResponseEdit(editId, responseId, surveyName, establishmentName,
+    answersJson, eventAt, syncState, errorMessage, attemptCount, createdAt, updatedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+selectAll:
+SELECT * FROM PendingSurveyResponseEdit ORDER BY createdAt DESC;
+
+selectSyncable:
+SELECT * FROM PendingSurveyResponseEdit WHERE syncState = 'PENDING' ORDER BY createdAt ASC;
+
+selectPendingForResponse:          -- the "coalesce into the still-unsent edit" lookup (Phase 3)
+SELECT * FROM PendingSurveyResponseEdit WHERE responseId = ? AND syncState = 'PENDING' LIMIT 1;
+
+updatePending:                     -- overwrite an unsent edit in place, no new idempotency key
+UPDATE PendingSurveyResponseEdit SET surveyName = ?, establishmentName = ?, answersJson = ?,
+    eventAt = ?, updatedAt = ? WHERE editId = ?;
+
+markSyncing:
+UPDATE PendingSurveyResponseEdit SET syncState = 'SYNCING', updatedAt = ? WHERE editId = ?;
+
+resetSyncingToPending:
+UPDATE PendingSurveyResponseEdit SET syncState = 'PENDING', updatedAt = ? WHERE syncState = 'SYNCING';
+
+bumpRetry:
+UPDATE PendingSurveyResponseEdit SET syncState = 'PENDING', attemptCount = attemptCount + 1,
+    errorMessage = ?, updatedAt = ? WHERE editId = ?;
+
+pruneTerminalOlderThan:
+DELETE FROM PendingSurveyResponseEdit
+WHERE (syncState = 'SYNCED' OR syncState = 'FAILED') AND updatedAt < :cutoff;
+
+markSynced:
+UPDATE PendingSurveyResponseEdit SET syncState = 'SYNCED', errorMessage = NULL, updatedAt = ?
+WHERE editId = ?;
+
+markFailed:
+UPDATE PendingSurveyResponseEdit SET syncState = 'FAILED', errorMessage = ?,
+    attemptCount = attemptCount + 1, updatedAt = ? WHERE editId = ?;
+
+resetForRetry:
+UPDATE PendingSurveyResponseEdit SET syncState = 'PENDING', errorMessage = NULL, attemptCount = 0,
+    updatedAt = ? WHERE editId = ?;
+
+deleteAll:
+DELETE FROM PendingSurveyResponseEdit;

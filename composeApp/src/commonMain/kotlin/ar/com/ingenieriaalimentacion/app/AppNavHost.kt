@@ -17,6 +17,11 @@ import ar.com.ingenieriaalimentacion.presentation.feature.profile.request_establ
 import ar.com.ingenieriaalimentacion.presentation.feature.register.registerScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.create_subject.createSubjectScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.select_subject.selectSubjectScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_list.surveyListScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_detail.surveyResponseDetailScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_edit.surveyResponseEditScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_form.surveyResponseFormScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_history.surveyResponseHistoryScreen
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 
 @Composable
@@ -41,6 +46,11 @@ fun AppNavHost(
             myEstablishmentsScreen(navController)
             resetPasswordScreen(navController)
             forgotPasswordScreen(navController)
+            surveyListScreen(navController)
+            surveyResponseFormScreen(navController)
+            surveyResponseHistoryScreen(navController)
+            surveyResponseDetailScreen(navController)
+            surveyResponseEditScreen(navController)
             composable<Route.AuthedShell> {
                 AuthedShell(
                     onSignOut = {

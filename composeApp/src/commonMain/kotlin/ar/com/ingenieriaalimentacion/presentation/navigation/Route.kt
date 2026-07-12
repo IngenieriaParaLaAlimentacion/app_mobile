@@ -81,4 +81,24 @@ sealed class Route {
     @Serializable
     @SerialName("authed_shell")
     data object AuthedShell : Route()
+
+    @Serializable
+    @SerialName("survey_list")
+    data object SurveyList : Route()
+
+    @Serializable
+    @SerialName("survey_response_form")
+    data class SurveyResponseForm(val surveyId: String) : Route()
+
+    @Serializable
+    @SerialName("survey_response_history")
+    data object SurveyResponseHistory : Route()
+
+    @Serializable
+    @SerialName("survey_response_detail")
+    data class SurveyResponseDetail(val responseId: String) : Route()
+
+    @Serializable
+    @SerialName("survey_response_edit")
+    data class SurveyResponseEdit(val responseId: String) : Route()
 }

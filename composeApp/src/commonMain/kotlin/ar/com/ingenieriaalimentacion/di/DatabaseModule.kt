@@ -7,6 +7,8 @@ import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.domain.repository.DatabaseCleaner
 import ar.com.ingenieriaalimentacion.domain.repository.MeasurementRepository
 import ar.com.ingenieriaalimentacion.domain.repository.SubjectRepository
+import ar.com.ingenieriaalimentacion.domain.repository.SurveyResponseEditRepository
+import ar.com.ingenieriaalimentacion.domain.repository.SurveyResponseRepository
 import ar.com.ingenieriaalimentacion.domain.sync.SyncEngine
 import org.koin.dsl.module
 
@@ -17,10 +19,18 @@ val databaseModule = module {
     single { get<AppDatabase>().cachedEstablishmentQueries }
     single { get<AppDatabase>().cachedActivityItemQueries }
     single { get<AppDatabase>().currentEstablishmentQueries }
+    single { get<AppDatabase>().cachedSurveyQueries }
+    single { get<AppDatabase>().pendingSurveyResponseQueries }
+    single { get<AppDatabase>().pendingSurveyResponseEditQueries }
     single<DatabaseCleaner> { SqlDelightDatabaseCleaner(database = get()) }
     single { AppScope() }
     single<List<SyncEngine>> {
-        listOf(get<SubjectRepository>(), get<MeasurementRepository>())
+        listOf(
+            get<SubjectRepository>(),
+            get<MeasurementRepository>(),
+            get<SurveyResponseRepository>(),
+            get<SurveyResponseEditRepository>(),
+        )
     }
     single { SyncCoordinator(engines = get(), connectivity = get(), scope = get()) }
 }

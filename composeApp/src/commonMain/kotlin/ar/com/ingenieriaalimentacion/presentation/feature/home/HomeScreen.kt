@@ -48,6 +48,8 @@ import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatu
 import ingenieria_alimentacion.composeapp.generated.resources.Res
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_alert_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_check_circle
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_doc_line
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_document_2_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_down_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_location_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_ruler_line
@@ -110,6 +112,10 @@ fun HomeScreen(
                 SyncStatusCard(sync = state.sync, onAction = onAction)
 
                 PrimaryActions(onAction = onAction)
+
+                if (state.canRespondToSurveys) {
+                    SurveyActions(onAction = onAction)
+                }
 
                 TodayStrip(state = state, onAction = onAction)
 
@@ -264,6 +270,30 @@ private fun PrimaryActions(onAction: (HomeAction) -> Unit) {
             ButtonIcon(Res.drawable.ic_mingcute_user_3_line)
             Spacer(Modifier.width(AlTheme.spacing.sm))
             Text("Nuevo sujeto")
+        }
+    }
+}
+
+@Composable
+private fun SurveyActions(onAction: (HomeAction) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+        AlButton(
+            onClick = { onAction(HomeAction.RespondSurveyClick) },
+            fullWidth = true,
+            variant = AlButtonVariant.Outline,
+        ) {
+            ButtonIcon(Res.drawable.ic_mingcute_doc_line)
+            Spacer(Modifier.width(AlTheme.spacing.sm))
+            Text("Responder encuesta")
+        }
+        AlButton(
+            onClick = { onAction(HomeAction.MySurveysClick) },
+            fullWidth = true,
+            variant = AlButtonVariant.Outline,
+        ) {
+            ButtonIcon(Res.drawable.ic_mingcute_document_2_line)
+            Spacer(Modifier.width(AlTheme.spacing.sm))
+            Text("Mis respuestas")
         }
     }
 }

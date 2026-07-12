@@ -13,6 +13,7 @@ import androidx.lifecycle.SavedStateHandle
  */
 const val PROFILE_UPDATED_RESULT = "PROFILE_UPDATED_RESULT"
 const val ESTABLISHMENT_REQUESTED_RESULT = "ESTABLISHMENT_REQUESTED_RESULT"
+const val SURVEY_RESPONSE_EDITED_RESULT = "SURVEY_RESPONSE_EDITED_RESULT"
 
 /**
  * Observes [key] on [savedStateHandle] and invokes [onResult] each time the child sets

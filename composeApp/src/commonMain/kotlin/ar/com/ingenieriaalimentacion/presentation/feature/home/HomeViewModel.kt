@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ar.com.ingenieriaalimentacion.data.network.connectivity.ConnectivityObserver
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
+import ar.com.ingenieriaalimentacion.domain.model.auth.canRespondToSurveys
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.ObserveMeasurementsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
@@ -42,7 +43,13 @@ class HomeViewModel(
         // Identity (best-effort; offline -> generic greeting, never blocks the screen).
         viewModelScope.launch {
             getMyProfile().onSuccess { profile ->
-                _state.update { it.copy(greetingName = profile.name, roleLabel = roleLabel(profile)) }
+                _state.update {
+                    it.copy(
+                        greetingName = profile.name,
+                        roleLabel = roleLabel(profile),
+                        canRespondToSurveys = canRespondToSurveys(profile.role),
+                    )
+                }
             }
         }
         // Reactive queue + connectivity -> derived state (identity + destination preserved).
@@ -62,6 +69,7 @@ class HomeViewModel(
                         currentEstablishment = it.currentEstablishment,
                         establishmentOptions = it.establishmentOptions,
                         showEstablishmentPicker = it.showEstablishmentPicker,
+                        canRespondToSurveys = it.canRespondToSurveys,
                     )
                 }
             }
@@ -101,6 +109,10 @@ class HomeViewModel(
                 }
                 viewModelScope.launch { setCurrentEstablishment(action.establishment) }
             }
+            HomeAction.RespondSurveyClick ->
+                _state.update { it.copy(destination = HomeDestination.NavigateToSurveyList) }
+            HomeAction.MySurveysClick ->
+                _state.update { it.copy(destination = HomeDestination.NavigateToSurveyResponseHistory) }
         }
     }
 

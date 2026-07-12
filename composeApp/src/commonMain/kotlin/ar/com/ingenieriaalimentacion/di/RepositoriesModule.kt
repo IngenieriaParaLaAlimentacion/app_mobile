@@ -21,6 +21,16 @@ import ar.com.ingenieriaalimentacion.data.subject.SubjectQueryRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.subject.SubjectRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.subject.local.DefaultSubjectLocalStore
 import ar.com.ingenieriaalimentacion.data.subject.local.SubjectLocalStore
+import ar.com.ingenieriaalimentacion.data.survey.SurveyRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.survey.SurveyResponseEditRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.survey.SurveyResponseHistoryRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.survey.SurveyResponseRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.survey.local.DefaultSurveyLocalStore
+import ar.com.ingenieriaalimentacion.data.survey.local.DefaultSurveyResponseEditLocalStore
+import ar.com.ingenieriaalimentacion.data.survey.local.DefaultSurveyResponseLocalStore
+import ar.com.ingenieriaalimentacion.data.survey.local.SurveyLocalStore
+import ar.com.ingenieriaalimentacion.data.survey.local.SurveyResponseEditLocalStore
+import ar.com.ingenieriaalimentacion.data.survey.local.SurveyResponseLocalStore
 import ar.com.ingenieriaalimentacion.domain.repository.AuthRepository
 import ar.com.ingenieriaalimentacion.domain.repository.EstablishmentRepository
 import ar.com.ingenieriaalimentacion.domain.repository.MeasurementHistoryRepository
@@ -31,6 +41,10 @@ import ar.com.ingenieriaalimentacion.domain.repository.SessionManager
 import ar.com.ingenieriaalimentacion.domain.repository.SubjectHistoryRepository
 import ar.com.ingenieriaalimentacion.domain.repository.SubjectQueryRepository
 import ar.com.ingenieriaalimentacion.domain.repository.SubjectRepository
+import ar.com.ingenieriaalimentacion.domain.repository.SurveyRepository
+import ar.com.ingenieriaalimentacion.domain.repository.SurveyResponseEditRepository
+import ar.com.ingenieriaalimentacion.domain.repository.SurveyResponseHistoryRepository
+import ar.com.ingenieriaalimentacion.domain.repository.SurveyResponseRepository
 import ar.com.ingenieriaalimentacion.domain.util.IdGenerator
 import ar.com.ingenieriaalimentacion.domain.util.UuidGenerator
 import kotlinx.serialization.json.Json
@@ -95,5 +109,47 @@ val repositoriesModule = module {
     }
     single<MeasurementHistoryRepository> {
         MeasurementHistoryRepositoryImpl(api = get(), cache = get(), queue = get(), json = get(named("auth")))
+    }
+    single<SurveyLocalStore> {
+        DefaultSurveyLocalStore(
+            queries = get(),
+            json = get(named("auth")),
+            now = { Clock.System.now().toEpochMilliseconds() },
+        )
+    }
+    single<SurveyRepository> { SurveyRepositoryImpl(api = get(), local = get()) }
+    single<SurveyResponseLocalStore> {
+        DefaultSurveyResponseLocalStore(queries = get(), now = { Clock.System.now().toEpochMilliseconds() })
+    }
+    single<SurveyResponseRepository> {
+        SurveyResponseRepositoryImpl(
+            api = get(),
+            local = get(),
+            idGenerator = get(),
+            json = get(named("auth")),
+            now = { Clock.System.now().toEpochMilliseconds() },
+        )
+    }
+    single<SurveyResponseEditLocalStore> {
+        DefaultSurveyResponseEditLocalStore(queries = get(), now = { Clock.System.now().toEpochMilliseconds() })
+    }
+    single<SurveyResponseEditRepository> {
+        SurveyResponseEditRepositoryImpl(
+            api = get(),
+            local = get(),
+            responses = get(),
+            idGenerator = get(),
+            json = get(named("auth")),
+            now = { Clock.System.now().toEpochMilliseconds() },
+        )
+    }
+    single<SurveyResponseHistoryRepository> {
+        SurveyResponseHistoryRepositoryImpl(
+            api = get(),
+            activityApi = get(),
+            local = get(),
+            surveys = get(),
+            json = get(named("auth")),
+        )
     }
 }

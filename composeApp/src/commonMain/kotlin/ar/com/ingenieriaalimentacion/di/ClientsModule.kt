@@ -8,6 +8,9 @@ import ar.com.ingenieriaalimentacion.data.network.HttpClientFactory
 import ar.com.ingenieriaalimentacion.data.profile.ProfileApi
 import ar.com.ingenieriaalimentacion.data.registration.RegistrationApi
 import ar.com.ingenieriaalimentacion.data.subject.SubjectApi
+import ar.com.ingenieriaalimentacion.data.survey.SurveyApi
+import ar.com.ingenieriaalimentacion.data.survey.SurveyResponseActivityApi
+import ar.com.ingenieriaalimentacion.data.survey.SurveyResponseApi
 import ar.com.ingenieriaalimentacion.domain.model.auth.SessionStatus
 import ar.com.ingenieriaalimentacion.domain.repository.SessionManager
 import io.ktor.client.HttpClient
@@ -48,4 +51,7 @@ val clientsModule = module {
     single { MeasurementApi(client = get()) }
     single { ProfileApi(client = get()) }
     single { ActivityApi(client = get()) }
+    single { SurveyApi(client = get()) }
+    single { SurveyResponseApi(client = get()) }
+    single { SurveyResponseActivityApi(client = get()) }
 }

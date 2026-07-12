@@ -17,6 +17,9 @@ class SqlDelightDatabaseCleaner(
             database.cachedEstablishmentQueries.deleteAll()
             database.cachedActivityItemQueries.deleteAll()
             database.currentEstablishmentQueries.deleteAll()
+            database.cachedSurveyQueries.deleteAll()
+            database.pendingSurveyResponseQueries.deleteAll()
+            database.pendingSurveyResponseEditQueries.deleteAll()
         }
     }
 }

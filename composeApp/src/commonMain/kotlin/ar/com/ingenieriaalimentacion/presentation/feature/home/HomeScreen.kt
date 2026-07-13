@@ -1,23 +1,17 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.home
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -39,6 +33,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlBadge
 import ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlStatusBadge
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButtonVariant
+import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlCardIconButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.card.AlInfoCard
 import ar.com.ingenieriaalimentacion.core.design_system.components.header.AlScreenHeader
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
@@ -111,13 +106,7 @@ fun HomeScreen(
 
                 SyncStatusCard(sync = state.sync, onAction = onAction)
 
-                PrimaryActions(onAction = onAction)
-
-                if (state.canRespondToSurveys) {
-                    SurveyActions(onAction = onAction)
-                }
-
-                TodayStrip(state = state, onAction = onAction)
+                QuickActions(state = state, onAction = onAction)
 
                 RecentActivity(recent = state.recent, onAction = onAction)
             }
@@ -251,105 +240,61 @@ private fun SyncStatusCard(sync: SyncStatusUi, onAction: (HomeAction) -> Unit) {
 }
 
 @Composable
-private fun PrimaryActions(onAction: (HomeAction) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
-        AlButton(
-            onClick = { onAction(HomeAction.NewMeasurementClick) },
-            fullWidth = true,
-            variant = AlButtonVariant.Default,
-        ) {
-            ButtonIcon(Res.drawable.ic_mingcute_ruler_line)
-            Spacer(Modifier.width(AlTheme.spacing.sm))
-            Text("Nueva medición")
-        }
-        AlButton(
-            onClick = { onAction(HomeAction.NewSubjectClick) },
-            fullWidth = true,
-            variant = AlButtonVariant.Outline,
-        ) {
-            ButtonIcon(Res.drawable.ic_mingcute_user_3_line)
-            Spacer(Modifier.width(AlTheme.spacing.sm))
-            Text("Nuevo sujeto")
-        }
-    }
-}
-
-@Composable
-private fun SurveyActions(onAction: (HomeAction) -> Unit) {
-    AlButton(
-        onClick = { onAction(HomeAction.RespondSurveyClick) },
-        fullWidth = true,
-        variant = AlButtonVariant.Outline,
+private fun QuickActions(state: HomeState, onAction: (HomeAction) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
     ) {
-        ButtonIcon(Res.drawable.ic_mingcute_doc_line)
-        Spacer(Modifier.width(AlTheme.spacing.sm))
-        Text("Responder encuesta")
-    }
-}
-
-@Composable
-private fun ButtonIcon(icon: DrawableResource) {
-    Icon(
-        imageVector = vectorResource(icon),
-        contentDescription = null,
-        tint = LocalContentColor.current,
-        modifier = Modifier.size(18.dp),
-    )
-}
-
-@Composable
-private fun TodayStrip(state: HomeState, onAction: (HomeAction) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
-        SectionLabel("HOY")
-        Row(horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
-            StatCard(
-                value = state.todayMeasurements.toString(),
-                label = "Mediciones",
-                container = AlTheme.colors.surfaceMuted,
-                valueColor = AlTheme.colors.textBase,
-            )
-            StatCard(
-                value = state.todaySubjects.toString(),
-                label = "Sujetos",
-                container = AlTheme.colors.surfaceMuted,
-                valueColor = AlTheme.colors.textBase,
-            )
-            val hasAlerts = state.todayAlerts > 0
-            StatCard(
-                value = state.todayAlerts.toString(),
-                label = "Alertas",
-                container = if (hasAlerts) AlTheme.colors.dangerContainer else AlTheme.colors.surfaceMuted,
-                valueColor = if (hasAlerts) AlTheme.colors.danger else AlTheme.colors.textBase,
-                onClick = if (hasAlerts) {
-                    { onAction(HomeAction.AlertsClick) }
-                } else {
-                    null
-                },
+        QuickActionWithStat(
+            modifier = Modifier.weight(1f),
+            icon = Res.drawable.ic_mingcute_ruler_line,
+            actionLabel = "Medición",
+            statValue = state.todayMeasurements.toString(),
+            statLabel = "Mediciones cargadas",
+            onClick = { onAction(HomeAction.NewMeasurementClick) },
+        )
+        QuickActionWithStat(
+            modifier = Modifier.weight(1f),
+            icon = Res.drawable.ic_mingcute_user_3_line,
+            actionLabel = "Sujeto",
+            statValue = state.todaySubjects.toString(),
+            statLabel = "Sujetos cargados",
+            onClick = { onAction(HomeAction.NewSubjectClick) },
+        )
+        if (state.canRespondToSurveys) {
+            QuickActionWithStat(
+                modifier = Modifier.weight(1f),
+                icon = Res.drawable.ic_mingcute_doc_line,
+                actionLabel = "Encuesta",
+                statValue = state.todaySurveyResponses.toString(),
+                statLabel = "Encuestas respondidas",
+                onClick = { onAction(HomeAction.RespondSurveyClick) },
             )
         }
     }
 }
 
+/**
+ * One quick-action tile with its matching "today" stat directly beneath it, so each number reads
+ * as a consequence of the action above it rather than competing with it for attention.
+ */
 @Composable
-private fun RowScope.StatCard(
-    value: String,
-    label: String,
-    container: Color,
-    valueColor: Color,
-    onClick: (() -> Unit)? = null,
+private fun QuickActionWithStat(
+    icon: DrawableResource,
+    actionLabel: String,
+    statValue: String,
+    statLabel: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = Modifier
-            .weight(1f)
-            .clip(RoundedCornerShape(AlTheme.corners.lg))
-            .background(container)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(vertical = AlTheme.spacing.md, horizontal = AlTheme.spacing.sm),
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs),
     ) {
-        Text(value, style = AlTheme.typography.title, color = valueColor)
-        Text(label, style = AlTheme.typography.caption, color = AlTheme.colors.textMuted)
+        AlCardIconButton(icon = icon, label = actionLabel, onClick = onClick)
+        Text(statValue, style = AlTheme.typography.title, color = AlTheme.colors.textBase)
+        Text(statLabel, style = AlTheme.typography.caption, color = AlTheme.colors.textMuted)
     }
 }
 

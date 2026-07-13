@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -20,7 +19,6 @@ import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import com.komoui.components.Card
 import com.komoui.components.Checkbox
 import com.komoui.components.CheckboxDefaults
-import com.komoui.themes.styles
 
 /**
  * Design-system selectable row card. Wraps the KomoUI [Card] (container, radius,
@@ -41,7 +39,6 @@ fun AlSelectableCard(
     description: String? = null,
     enabled: Boolean = true,
 ) {
-    val styles = MaterialTheme.styles
     val radius = AlTheme.corners.lg
     val shape = RoundedCornerShape(radius)
 
@@ -67,16 +64,16 @@ fun AlSelectableCard(
             ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = styles.foreground,
+                    style = AlTheme.typography.body,
+                    color = AlTheme.colors.textBase,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (description != null) {
                     Text(
                         text = description,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = styles.mutedForeground,
+                        style = AlTheme.typography.caption,
+                        color = AlTheme.colors.textMuted,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )

@@ -5,15 +5,14 @@ import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import com.komoui.components.Input
-import com.komoui.themes.styles
 
 /**
  * Design-system "picker" field. Looks identical to [AlInput] — same label,
@@ -34,9 +33,9 @@ fun AlSelectField(
     placeholder: String = "",
     error: String? = null,
     enabled: Boolean = true,
+    required: Boolean = false,
     trailingIcon: @Composable (() -> Unit)? = null,
 ) {
-    val styles = MaterialTheme.styles
     val interactionSource = remember { MutableInteractionSource() }
 
     if (enabled) {
@@ -51,14 +50,10 @@ fun AlSelectField(
 
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
     ) {
         if (label != null) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge,
-                color = styles.foreground,
-            )
+            AlFieldLabel(text = label, required = required)
         }
         Input(
             value = value,
@@ -73,12 +68,12 @@ fun AlSelectField(
             trailingIcon = trailingIcon ?: {
                 Text(
                     text = "›",
-                    color = styles.mutedForeground,
-                    style = MaterialTheme.typography.bodyMedium,
+                    color = AlTheme.colors.textMuted,
+                    style = AlTheme.typography.body,
                 )
             },
             supportingText = error?.let {
-                { Text(text = it, color = styles.destructive, style = MaterialTheme.typography.bodySmall) }
+                { Text(text = it, color = AlTheme.colors.danger, style = AlTheme.typography.caption) }
             },
         )
     }

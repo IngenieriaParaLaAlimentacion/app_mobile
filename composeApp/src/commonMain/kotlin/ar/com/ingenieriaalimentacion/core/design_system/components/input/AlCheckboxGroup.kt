@@ -7,14 +7,21 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import ar.com.ingenieriaalimentacion.core.design_system.components.card.AlSelectableCard
-import com.komoui.themes.styles
+import androidx.compose.ui.unit.sp
+import ar.com.ingenieriaalimentacion.core.design_system.components.card.AlCard
+import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
+import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
+import com.komoui.components.Checkbox
+import com.komoui.components.CheckboxDefaults
+import com.komoui.themes.radius
 
 /**
- * Design-system multiple-choice group: a vertical list of [AlSelectableCard] rows (reusing its
- * existing `Checkbox` selection affordance rather than a new checkbox primitive), each toggling
- * independently in [selectedIds].
+ * Design-system multiple-choice group: a single [AlCard] holding one [AlListRow]
+ * per option (hairline divider between rows, trailing [Checkbox]) so an N-option
+ * checklist (e.g. a symptom list) reads as one grouped list instead of N stacked
+ * cards with repeated chrome.
  */
 @Composable
 fun AlCheckboxGroup(
@@ -25,32 +32,40 @@ fun AlCheckboxGroup(
     modifier: Modifier = Modifier,
     error: String? = null,
     enabled: Boolean = true,
+    required: Boolean = false,
 ) {
-    val styles = MaterialTheme.styles
     Column(
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
         modifier = modifier.fillMaxWidth(),
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            color = styles.foreground,
-        )
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            options.forEach { option ->
-                AlSelectableCard(
+        AlFieldLabel(text = label, required = required)
+        AlCard(contentPadding = 0.dp, radius = MaterialTheme.radius.md) {
+            options.forEachIndexed { index, option ->
+                AlListRow(
                     title = option.label,
-                    selected = option.id in selectedIds,
-                    onClick = { onToggle(option.id) },
-                    enabled = enabled,
+                    titleStyle = AlTheme.typography.body.copy(fontWeight = FontWeight.Normal, fontSize = 14.sp),
+                    onClick = if (enabled) { { onToggle(option.id) } } else null,
+                    showChevron = false,
+                    showDivider = index != options.lastIndex,
+                    trailing = {
+                        Checkbox(
+                            checked = option.id in selectedIds,
+                            onCheckedChange = { onToggle(option.id) },
+                            enabled = enabled,
+                            colors = CheckboxDefaults.colors().copy(
+                                checkedColor = AlTheme.colors.accent,
+                                checkedBorderColor = AlTheme.colors.accent,
+                            ),
+                        )
+                    },
                 )
             }
         }
         error?.let {
             Text(
                 text = it,
-                color = styles.destructive,
-                style = MaterialTheme.typography.bodySmall,
+                color = AlTheme.colors.danger,
+                style = AlTheme.typography.caption,
             )
         }
     }

@@ -9,13 +9,13 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.komoui.themes.styles
+import androidx.compose.ui.unit.sp
+import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 
 /** One selectable option shared by [AlChoiceGroup] and [AlCheckboxGroup]. */
 data class AlChoiceOption(val id: String, val label: String)
@@ -35,17 +35,13 @@ fun AlChoiceGroup(
     modifier: Modifier = Modifier,
     error: String? = null,
     enabled: Boolean = true,
+    required: Boolean = false,
 ) {
-    val styles = MaterialTheme.styles
     Column(
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
         modifier = modifier.fillMaxWidth(),
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            color = styles.foreground,
-        )
+        AlFieldLabel(text = label, required = required)
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -64,8 +60,8 @@ fun AlChoiceGroup(
         error?.let {
             Text(
                 text = it,
-                color = styles.destructive,
-                style = MaterialTheme.typography.bodySmall,
+                color = AlTheme.colors.danger,
+                style = AlTheme.typography.caption,
             )
         }
     }
@@ -79,18 +75,18 @@ private fun ChoiceChip(
     hasError: Boolean,
     onClick: () -> Unit,
 ) {
-    val styles = MaterialTheme.styles
-    val bg = if (selected) styles.primary else styles.background
-    val fg = if (selected) styles.primaryForeground else styles.foreground
+    val colors = AlTheme.colors
+    val bg = if (selected) colors.accent else colors.surfaceBase
+    val fg = if (selected) colors.textInverted else colors.textBase
     val borderColor = when {
-        selected -> styles.primary
-        hasError -> styles.destructive
-        else -> styles.border
+        selected -> colors.accent
+        hasError -> colors.danger
+        else -> colors.border
     }
     Text(
         text = label,
         color = fg,
-        style = MaterialTheme.typography.bodyMedium,
+        style = AlTheme.typography.body.copy(fontSize = 14.sp),
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
             .background(bg)

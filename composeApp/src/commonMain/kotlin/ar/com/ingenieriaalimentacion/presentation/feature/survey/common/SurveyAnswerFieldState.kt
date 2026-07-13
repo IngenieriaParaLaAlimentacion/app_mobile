@@ -115,16 +115,6 @@ fun SurveyQuestion.isFieldValid(state: SurveyAnswerFieldState): Boolean = when (
     is SurveyAnswerFieldState.MultipleChoice -> !isRequired || state.selectedIds.isNotEmpty()
 }
 
-/** Whether the field has any value at all, regardless of [SurveyQuestion.isRequired] — drives the
- *  response-form's "N de M respondidas" progress header. */
-fun SurveyAnswerFieldState.isAnswered(): Boolean = when (this) {
-    is SurveyAnswerFieldState.Text -> field.value.isNotBlank()
-    is SurveyAnswerFieldState.Numeric -> field.value.isNotBlank()
-    is SurveyAnswerFieldState.DateAnswer -> field.value.isNotBlank()
-    is SurveyAnswerFieldState.SingleChoice -> selectedId != null
-    is SurveyAnswerFieldState.MultipleChoice -> selectedIds.isNotEmpty()
-}
-
 /** Builds the typed [SurveyAnswerValue] map for [ar.com.ingenieriaalimentacion.domain.model.survey.NewSurveyResponse]/
  *  an edit payload. A blank-and-optional question is simply omitted — an absent key is a valid
  *  "not answered" per the guide, since presence is only enforced for required questions. */

@@ -21,12 +21,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
+import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButtonVariant
+import ar.com.ingenieriaalimentacion.core.design_system.components.card.AlInfoCard
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import com.komoui.components.Spinner
 import com.komoui.themes.styles
+import ingenieria_alimentacion.composeapp.generated.resources.Res
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_time
 import kotlinx.coroutines.flow.distinctUntilChanged
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -105,26 +109,43 @@ fun SurveyListScreen(
                         modifier = Modifier.align(Alignment.Center),
                     )
 
-                    else -> LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(),
-                    ) {
-                        items(items = state.surveys, key = { it.id }) { survey ->
-                            AlListRow(
-                                horizontalPadding = 0.dp,
-                                title = survey.name,
-                                subtitle = "${survey.questionCount} preguntas",
-                                onClick = { onAction(SurveyListAction.SurveyClick(survey.id)) },
+                    else -> Column(modifier = Modifier.fillMaxSize()) {
+                        if (state.fromCache) {
+                            AlInfoCard(
+                                title = "Sin conexión",
+                                description = "Mostrando encuestas guardadas",
+                                leadingIcon = Res.drawable.ic_mingcute_time,
+                                leadingIconTint = AlTheme.colors.textMuted,
+                                modifier = Modifier.padding(top = AlTheme.spacing.md),
+                                trailing = {
+                                    AlButton(
+                                        onClick = { onAction(SurveyListAction.RetryClick) },
+                                        variant = AlButtonVariant.Outline,
+                                    ) { Text("Reintentar") }
+                                },
                             )
                         }
-                        if (state.isLoadingMore) {
-                            item {
-                                Spinner(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    size = 24.dp,
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize(),
+                        ) {
+                            items(items = state.surveys, key = { it.id }) { survey ->
+                                AlListRow(
+                                    horizontalPadding = 0.dp,
+                                    title = survey.name,
+                                    subtitle = "${survey.questionCount} preguntas",
+                                    onClick = { onAction(SurveyListAction.SurveyClick(survey.id)) },
                                 )
+                            }
+                            if (state.isLoadingMore) {
+                                item {
+                                    Spinner(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        size = 24.dp,
+                                    )
+                                }
                             }
                         }
                     }

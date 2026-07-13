@@ -148,6 +148,7 @@ val repositoriesModule = module {
             api = get(),
             activityApi = get(),
             local = get(),
+            cache = get(),
             surveys = get(),
             json = get(named("auth")),
         )

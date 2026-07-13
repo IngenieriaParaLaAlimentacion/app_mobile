@@ -5,5 +5,4 @@ sealed interface SurveyResponseHistoryAction {
     data class RetryUploadClick(val responseId: String) : SurveyResponseHistoryAction
     data object LoadMore : SurveyResponseHistoryAction
     data object RetryLoad : SurveyResponseHistoryAction
-    data object BackClick : SurveyResponseHistoryAction
 }

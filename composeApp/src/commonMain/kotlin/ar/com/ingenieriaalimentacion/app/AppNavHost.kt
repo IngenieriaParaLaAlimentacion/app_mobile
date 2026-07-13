@@ -21,7 +21,6 @@ import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_list.sur
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_detail.surveyResponseDetailScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_edit.surveyResponseEditScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_form.surveyResponseFormScreen
-import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_history.surveyResponseHistoryScreen
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 
 @Composable
@@ -48,7 +47,6 @@ fun AppNavHost(
             forgotPasswordScreen(navController)
             surveyListScreen(navController)
             surveyResponseFormScreen(navController)
-            surveyResponseHistoryScreen(navController)
             surveyResponseDetailScreen(navController)
             surveyResponseEditScreen(navController)
             composable<Route.AuthedShell> {

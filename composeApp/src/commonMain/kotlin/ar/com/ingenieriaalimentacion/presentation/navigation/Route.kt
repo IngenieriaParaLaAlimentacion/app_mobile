@@ -91,10 +91,6 @@ sealed class Route {
     data class SurveyResponseForm(val surveyId: String) : Route()
 
     @Serializable
-    @SerialName("survey_response_history")
-    data object SurveyResponseHistory : Route()
-
-    @Serializable
     @SerialName("survey_response_detail")
     data class SurveyResponseDetail(val responseId: String) : Route()
 

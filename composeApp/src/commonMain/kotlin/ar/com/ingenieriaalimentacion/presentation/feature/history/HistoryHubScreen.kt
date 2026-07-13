@@ -17,9 +17,10 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.segmented.AlS
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.presentation.feature.measurement.uploads.MeasurementUploadsContentRoot
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.uploads.SubjectUploadsContentRoot
+import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_history.SurveyResponseHistoryContentRoot
 
 /**
- * Combined "Historial" hub: a Sujetos | Mediciones segmented control hosting each
+ * Combined "Historial" hub: a Sujetos | Mediciones | Encuestas segmented control hosting each
  * segment's content body. Sync runs automatically via
  * [ar.com.ingenieriaalimentacion.app.AuthedShell]'s SyncTriggers (foreground, periodic
  * and connectivity-driven), so the hub no longer needs a manual "Sincronizar" action.
@@ -44,6 +45,7 @@ private fun HistoryHubScreen(
             when (segment) {
                 HistorySegment.Subjects -> SubjectUploadsContentRoot(Modifier.fillMaxSize())
                 HistorySegment.Measurements -> MeasurementUploadsContentRoot(Modifier.fillMaxSize())
+                HistorySegment.SurveyResponses -> SurveyResponseHistoryContentRoot(Modifier.fillMaxSize())
             }
         }
     }

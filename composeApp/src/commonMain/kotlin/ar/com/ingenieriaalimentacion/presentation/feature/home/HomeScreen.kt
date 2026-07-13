@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -241,60 +242,79 @@ private fun SyncStatusCard(sync: SyncStatusUi, onAction: (HomeAction) -> Unit) {
 
 @Composable
 private fun QuickActions(state: HomeState, onAction: (HomeAction) -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
-    ) {
-        QuickActionWithStat(
-            modifier = Modifier.weight(1f),
-            icon = Res.drawable.ic_mingcute_ruler_line,
-            actionLabel = "Medición",
-            statValue = state.todayMeasurements.toString(),
-            statLabel = "Mediciones cargadas",
-            onClick = { onAction(HomeAction.NewMeasurementClick) },
-        )
-        QuickActionWithStat(
-            modifier = Modifier.weight(1f),
-            icon = Res.drawable.ic_mingcute_user_3_line,
-            actionLabel = "Sujeto",
-            statValue = state.todaySubjects.toString(),
-            statLabel = "Sujetos cargados",
-            onClick = { onAction(HomeAction.NewSubjectClick) },
-        )
-        if (state.canRespondToSurveys) {
-            QuickActionWithStat(
+    Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
+        ) {
+            AlCardIconButton(
+                modifier = Modifier.weight(1f),
+                icon = Res.drawable.ic_mingcute_ruler_line,
+                label = "Medición",
+                onClick = { onAction(HomeAction.NewMeasurementClick) },
+            )
+            AlCardIconButton(
+                modifier = Modifier.weight(1f),
+                icon = Res.drawable.ic_mingcute_user_3_line,
+                label = "Sujeto",
+                onClick = { onAction(HomeAction.NewSubjectClick) },
+            )
+            AlCardIconButton(
                 modifier = Modifier.weight(1f),
                 icon = Res.drawable.ic_mingcute_doc_line,
-                actionLabel = "Encuesta",
-                statValue = state.todaySurveyResponses.toString(),
-                statLabel = "Encuestas respondidas",
+                label = "Encuesta",
                 onClick = { onAction(HomeAction.RespondSurveyClick) },
             )
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+            SectionLabel("HOY")
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
+            ) {
+                StatCell(
+                    modifier = Modifier.weight(1f),
+                    value = state.todayMeasurements.toString(),
+                    label = "Mediciones cargadas",
+                )
+                StatCell(
+                    modifier = Modifier.weight(1f),
+                    value = state.todaySubjects.toString(),
+                    label = "Sujetos cargados",
+                )
+                StatCell(
+                    modifier = Modifier.weight(1f),
+                    value = state.todaySurveyResponses.toString(),
+                    label = "Encuestas respondidas",
+                )
+            }
         }
     }
 }
 
-/**
- * One quick-action tile with its matching "today" stat directly beneath it, so each number reads
- * as a consequence of the action above it rather than competing with it for attention.
- */
 @Composable
-private fun QuickActionWithStat(
-    icon: DrawableResource,
-    actionLabel: String,
-    statValue: String,
-    statLabel: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
+private fun StatCell(value: String, label: String, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs),
     ) {
-        AlCardIconButton(icon = icon, label = actionLabel, onClick = onClick)
-        Text(statValue, style = AlTheme.typography.title, color = AlTheme.colors.textBase)
-        Text(statLabel, style = AlTheme.typography.caption, color = AlTheme.colors.textMuted)
+        Text(
+            text = value,
+            style = AlTheme.typography.title,
+            color = AlTheme.colors.textBase,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text(
+            text = label,
+            style = AlTheme.typography.caption,
+            color = AlTheme.colors.textMuted,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 

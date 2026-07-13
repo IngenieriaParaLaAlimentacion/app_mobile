@@ -16,14 +16,11 @@ data class HomeState(
     val sync: SyncStatusUi = SyncStatusUi.AllSynced(lastSyncedLabel = null),
     val todayMeasurements: Int = 0,
     val todaySubjects: Int = 0,
-    val todayAlerts: Int = 0,
+    val todaySurveyResponses: Int = 0,
     val recent: List<RecentActivityUi> = emptyList(),
     val currentEstablishment: EstablishmentWithStatus? = null,
     val establishmentOptions: List<EstablishmentWithStatus> = emptyList(),
     val showEstablishmentPicker: Boolean = false,
-    // Defaults false so the survey entry points are hidden until profile load resolves —
-    // consistent with "Home never blocks, never over-shows" (ADR-015's spirit).
-    val canRespondToSurveys: Boolean = false,
 )
 
 /** The single derived state the sync-status card renders. Precedence lives in [deriveState]. */

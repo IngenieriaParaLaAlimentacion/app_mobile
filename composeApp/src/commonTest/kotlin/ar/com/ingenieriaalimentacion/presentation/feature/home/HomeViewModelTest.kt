@@ -197,63 +197,6 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `field_worker admin and superadmin can respond to surveys`() = runTest(dispatcher) {
-        for (role in listOf("field_worker", "admin", "superadmin")) {
-            val profileRepo = FakeProfileRepository().apply {
-                meResult = Result.success(profile(role))
-                myEstablishmentsResult = Result.success(emptyList())
-            }
-            val vm = viewModel(profileRepo = profileRepo)
-
-            vm.state.test {
-                val loaded = awaitState { it.roleLabel != null }
-                assertEquals(true, loaded.canRespondToSurveys, "role=$role should be able to respond")
-                cancelAndIgnoreRemainingEvents()
-            }
-        }
-    }
-
-    @Test
-    fun `analyst cannot respond to surveys`() = runTest(dispatcher) {
-        val profileRepo = FakeProfileRepository().apply {
-            meResult = Result.success(profile("analyst"))
-            myEstablishmentsResult = Result.success(emptyList())
-        }
-        val vm = viewModel(profileRepo = profileRepo)
-
-        vm.state.test {
-            val loaded = awaitState { it.roleLabel != null }
-            assertEquals(false, loaded.canRespondToSurveys)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
-    fun `canRespondToSurveys survives a queue emission after profile load`() = runTest(dispatcher) {
-        val subjectRepo = FakeSubjectHistoryRepository()
-        val profileRepo = FakeProfileRepository().apply {
-            meResult = Result.success(profile("field_worker"))
-            myEstablishmentsResult = Result.success(listOf(establishment("a", EstablishmentStatus.Approved)))
-        }
-        val vm = viewModel(subjectRepo = subjectRepo, profileRepo = profileRepo)
-
-        vm.state.test {
-            awaitState { it.canRespondToSurveys }
-
-            subjectRepo.merged.value = listOf(
-                SubjectHistoryEntry(
-                    id = "s1", dni = 1, sex = Sex.Female, name = "Ana", lastName = "García",
-                    syncState = SyncState.Pending, canonicalId = null, errorMessage = null,
-                    isLocal = true, createdAt = 0L, updatedAt = 0L,
-                ),
-            )
-            val afterEmission = awaitState { it.todaySubjects == 1 }
-            assertEquals(true, afterEmission.canRespondToSurveys)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
     fun `a survey response appears in recent activity`() = runTest(dispatcher) {
         val surveyResponseRepo = FakeSurveyResponseHistoryRepository()
         val profileRepo = FakeProfileRepository().apply {

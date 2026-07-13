@@ -18,7 +18,7 @@ class HomeStateMapperTest {
 
     private val tz = TimeZone.UTC
 
-    // 2026-06-29T12:00:00Z so "today" math is stable regardless of the host clock.
+    // 2026-06-21T00:00:00Z so "today" math is stable regardless of the host clock.
     private val now = 1_782_000_000_000L
     private val startOfToday = startOfTodayMillis(now, tz)
 
@@ -173,13 +173,17 @@ class HomeStateMapperTest {
                 measurement(localId = "m-today", createdAt = startOfToday + 1, alerts = listOf(alert("high"))),
                 measurement(localId = "m-yesterday", createdAt = yesterday2359),
             ),
+            surveyResponses = listOf(
+                surveyResponse(id = "sr-today", eventAt = "2026-06-21T00:00:00.001Z"), // startOfToday + 1ms
+                surveyResponse(id = "sr-yesterday", eventAt = "2026-06-20T23:59:00Z"), // yesterday2359
+            ),
             online = true,
             now = now,
             timeZone = tz,
         )
         assertEquals(1, state.todaySubjects)
         assertEquals(1, state.todayMeasurements)
-        assertEquals(1, state.todayAlerts)
+        assertEquals(1, state.todaySurveyResponses)
     }
 
     @Test

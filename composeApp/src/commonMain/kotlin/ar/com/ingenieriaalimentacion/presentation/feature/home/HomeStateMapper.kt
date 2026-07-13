@@ -51,7 +51,7 @@ internal fun deriveState(
     val startOfToday = startOfTodayMillis(now, timeZone)
     val todaySubjects = subjects.count { it.createdAt >= startOfToday }
     val todayMeasurements = measurements.count { it.createdAt >= startOfToday }
-    val todayAlerts = measurements.count { it.createdAt >= startOfToday && it.alerts.isNotEmpty() }
+    val todaySurveyResponses = surveyResponses.count { eventAtMillis(it.eventAt) >= startOfToday }
 
     val recent = (
         subjects.map { it.toRecentUi() } +
@@ -66,7 +66,7 @@ internal fun deriveState(
         sync = sync,
         todayMeasurements = todayMeasurements,
         todaySubjects = todaySubjects,
-        todayAlerts = todayAlerts,
+        todaySurveyResponses = todaySurveyResponses,
         recent = recent,
     )
 }

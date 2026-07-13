@@ -33,7 +33,6 @@ import ar.com.ingenieriaalimentacion.presentation.feature.profile.view.ProfileSc
 import ar.com.ingenieriaalimentacion.presentation.feature.profile.view.navigateProfile
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.create_subject.navigateToCreateSubject
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_list.navigateToSurveyList
-import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_history.navigateToSurveyResponseHistory
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 
 @Composable
@@ -102,8 +101,6 @@ fun AuthedShell(onSignOut: () -> Unit) {
                                     restoreState = true
                                 }
                             HomeDestination.NavigateToSurveyList -> outerNav.navigateToSurveyList()
-                            HomeDestination.NavigateToSurveyResponseHistory ->
-                                outerNav.navigateToSurveyResponseHistory()
                         }
                     },
                 )

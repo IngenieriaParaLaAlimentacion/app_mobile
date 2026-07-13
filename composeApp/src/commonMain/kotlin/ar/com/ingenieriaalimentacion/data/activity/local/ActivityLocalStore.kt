@@ -2,7 +2,7 @@ package ar.com.ingenieriaalimentacion.data.activity.local
 
 import kotlinx.coroutines.flow.Flow
 
-enum class ActivityItemType { SUBJECT, MEASUREMENT }
+enum class ActivityItemType { SUBJECT, MEASUREMENT, SURVEY_RESPONSE }
 
 data class CachedActivityRow(val id: String, val occurredAtMillis: Long, val payloadJson: String)
 

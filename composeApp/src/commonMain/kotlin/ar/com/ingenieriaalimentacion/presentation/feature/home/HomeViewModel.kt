@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ar.com.ingenieriaalimentacion.data.network.connectivity.ConnectivityObserver
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
-import ar.com.ingenieriaalimentacion.domain.model.auth.canRespondToSurveys
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.ObserveMeasurementsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
@@ -12,6 +11,7 @@ import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsU
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyProfileUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.SetCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.ObserveSubjectUploadsUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.survey.ObserveSurveyResponseUploadsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +27,7 @@ import kotlinx.coroutines.launch
 class HomeViewModel(
     observeSubjectUploads: ObserveSubjectUploadsUseCase,
     observeMeasurements: ObserveMeasurementsUseCase,
+    observeSurveyResponseUploads: ObserveSurveyResponseUploadsUseCase,
     private val getMyProfile: GetMyProfileUseCase,
     private val getMyEstablishments: GetMyEstablishmentsUseCase,
     private val getCurrentEstablishment: GetCurrentEstablishmentUseCase,
@@ -47,7 +48,6 @@ class HomeViewModel(
                     it.copy(
                         greetingName = profile.name,
                         roleLabel = roleLabel(profile),
-                        canRespondToSurveys = canRespondToSurveys(profile.role),
                     )
                 }
             }
@@ -57,9 +57,10 @@ class HomeViewModel(
             combine(
                 observeSubjectUploads(),
                 observeMeasurements(),
+                observeSurveyResponseUploads(),
                 connectivity.isOnline,
-            ) { subjects, measurements, online ->
-                deriveState(subjects, measurements, online, now())
+            ) { subjects, measurements, surveyResponses, online ->
+                deriveState(subjects, measurements, surveyResponses, online, now())
             }.collect { derived ->
                 _state.update {
                     derived.copy(
@@ -69,7 +70,6 @@ class HomeViewModel(
                         currentEstablishment = it.currentEstablishment,
                         establishmentOptions = it.establishmentOptions,
                         showEstablishmentPicker = it.showEstablishmentPicker,
-                        canRespondToSurveys = it.canRespondToSurveys,
                     )
                 }
             }
@@ -96,8 +96,7 @@ class HomeViewModel(
             HomeAction.NewSubjectClick ->
                 _state.update { it.copy(destination = HomeDestination.NavigateToCreateSubject) }
             HomeAction.SyncClick -> syncCoordinator.requestSync()
-            HomeAction.SeeAllActivityClick,
-            HomeAction.AlertsClick ->
+            HomeAction.SeeAllActivityClick ->
                 _state.update { it.copy(destination = HomeDestination.NavigateToHistory) }
             HomeAction.EstablishmentPickerOpen ->
                 _state.update { it.copy(showEstablishmentPicker = true) }
@@ -111,8 +110,6 @@ class HomeViewModel(
             }
             HomeAction.RespondSurveyClick ->
                 _state.update { it.copy(destination = HomeDestination.NavigateToSurveyList) }
-            HomeAction.MySurveysClick ->
-                _state.update { it.copy(destination = HomeDestination.NavigateToSurveyResponseHistory) }
         }
     }
 

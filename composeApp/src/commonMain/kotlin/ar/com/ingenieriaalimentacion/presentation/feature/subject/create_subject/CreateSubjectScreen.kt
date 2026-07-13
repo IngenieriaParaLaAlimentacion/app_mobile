@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -29,12 +30,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import ar.com.ingenieriaalimentacion.core.design_system.components.banner.AlInlineBanner
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlInput
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.DateVisualTransformation
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
+import ar.com.ingenieriaalimentacion.core.design_system.components.toast.AlToast
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
 import com.komoui.themes.styles
@@ -76,122 +77,122 @@ fun CreateSubjectScreen(
                 enabled = !state.isSubmitting,
             )
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = AlTheme.spacing.lg),
-            ) {
+            Box(modifier = Modifier.fillMaxSize()) {
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .verticalScroll(scrollState)
-                        .padding(top = AlTheme.spacing.lg, bottom = AlTheme.spacing.md),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                        .fillMaxSize()
+                        .padding(horizontal = AlTheme.spacing.lg),
                 ) {
-                    state.successMessage?.let { msg ->
-                        AlInlineBanner(
-                            message = msg,
-                            onDismiss = { onAction(CreateSubjectAction.DismissSuccess) },
-                        )
-                    }
-
-                    AlInput(
-                        label = "DNI",
-                        value = state.dni.value,
-                        onValueChange = { onAction(CreateSubjectAction.DniChanged(it)) },
-                        onFocusChange = { onAction(CreateSubjectAction.DniFocusChanged(it)) },
-                        error = state.dni.displayError,
-                        enabled = !state.isSubmitting,
-                        scrollState = scrollState,
-                        isImeVisible = isImeVisible,
-                        placeholder = "Sin puntos",
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    )
-
-                    SexSelector(
-                        selected = state.sex,
-                        onSelected = { onAction(CreateSubjectAction.SexChanged(it)) },
-                        error = state.sexError,
-                        enabled = !state.isSubmitting,
-                    )
-
-                    AlInput(
-                        label = "Nombre",
-                        value = state.name.value,
-                        onValueChange = { onAction(CreateSubjectAction.NameChanged(it)) },
-                        onFocusChange = { onAction(CreateSubjectAction.NameFocusChanged(it)) },
-                        error = state.name.displayError,
-                        enabled = !state.isSubmitting,
-                        scrollState = scrollState,
-                        isImeVisible = isImeVisible,
-                        placeholder = "Nombre del sujeto",
-                    )
-
-                    AlInput(
-                        label = "Apellido",
-                        value = state.lastName.value,
-                        onValueChange = { onAction(CreateSubjectAction.LastNameChanged(it)) },
-                        onFocusChange = { onAction(CreateSubjectAction.LastNameFocusChanged(it)) },
-                        error = state.lastName.displayError,
-                        enabled = !state.isSubmitting,
-                        scrollState = scrollState,
-                        isImeVisible = isImeVisible,
-                        placeholder = "Apellido del sujeto",
-                    )
-
-                    AlInput(
-                        label = "Fecha de nacimiento",
-                        value = state.birthDate.value,
-                        onValueChange = { onAction(CreateSubjectAction.BirthDateChanged(it)) },
-                        onFocusChange = { onAction(CreateSubjectAction.BirthDateFocusChanged(it)) },
-                        error = state.birthDate.displayError,
-                        enabled = !state.isSubmitting,
-                        scrollState = scrollState,
-                        isImeVisible = isImeVisible,
-                        placeholder = "DD/MM/AAAA",
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        visualTransformation = DateVisualTransformation(),
-                    )
-
-                    ToggleRow(
-                        label = "Población rural",
-                        checked = state.isRural,
-                        enabled = !state.isSubmitting,
-                        onChange = { onAction(CreateSubjectAction.IsRuralChanged(it)) },
-                    )
-                    ToggleRow(
-                        label = "Población indígena",
-                        checked = state.isIndigenous,
-                        enabled = !state.isSubmitting,
-                        onChange = { onAction(CreateSubjectAction.IsIndigenousChanged(it)) },
-                    )
-                }
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp, bottom = AlTheme.spacing.lg),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    state.submitError?.let { error ->
-                        Text(
-                            text = error,
-                            color = AlTheme.colors.danger,
-                            style = AlTheme.typography.body,
-                        )
-                    }
-
-                    AlButton(
-                        onClick = { onAction(CreateSubjectAction.Submit) },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = state.canSubmit,
-                        loading = state.isSubmitting,
-                        fullWidth = true,
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .verticalScroll(scrollState)
+                            .padding(top = AlTheme.spacing.lg, bottom = AlTheme.spacing.md),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
-                        Text("Guardar")
+                        AlInput(
+                            label = "DNI",
+                            value = state.dni.value,
+                            onValueChange = { onAction(CreateSubjectAction.DniChanged(it)) },
+                            onFocusChange = { onAction(CreateSubjectAction.DniFocusChanged(it)) },
+                            error = state.dni.displayError,
+                            enabled = !state.isSubmitting,
+                            scrollState = scrollState,
+                            isImeVisible = isImeVisible,
+                            placeholder = "Sin puntos",
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        )
+
+                        SexSelector(
+                            selected = state.sex,
+                            onSelected = { onAction(CreateSubjectAction.SexChanged(it)) },
+                            error = state.sexError,
+                            enabled = !state.isSubmitting,
+                        )
+
+                        AlInput(
+                            label = "Nombre",
+                            value = state.name.value,
+                            onValueChange = { onAction(CreateSubjectAction.NameChanged(it)) },
+                            onFocusChange = { onAction(CreateSubjectAction.NameFocusChanged(it)) },
+                            error = state.name.displayError,
+                            enabled = !state.isSubmitting,
+                            scrollState = scrollState,
+                            isImeVisible = isImeVisible,
+                            placeholder = "Nombre del sujeto",
+                        )
+
+                        AlInput(
+                            label = "Apellido",
+                            value = state.lastName.value,
+                            onValueChange = { onAction(CreateSubjectAction.LastNameChanged(it)) },
+                            onFocusChange = { onAction(CreateSubjectAction.LastNameFocusChanged(it)) },
+                            error = state.lastName.displayError,
+                            enabled = !state.isSubmitting,
+                            scrollState = scrollState,
+                            isImeVisible = isImeVisible,
+                            placeholder = "Apellido del sujeto",
+                        )
+
+                        AlInput(
+                            label = "Fecha de nacimiento",
+                            value = state.birthDate.value,
+                            onValueChange = { onAction(CreateSubjectAction.BirthDateChanged(it)) },
+                            onFocusChange = { onAction(CreateSubjectAction.BirthDateFocusChanged(it)) },
+                            error = state.birthDate.displayError,
+                            enabled = !state.isSubmitting,
+                            scrollState = scrollState,
+                            isImeVisible = isImeVisible,
+                            placeholder = "DD/MM/AAAA",
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            visualTransformation = DateVisualTransformation(),
+                        )
+
+                        ToggleRow(
+                            label = "Población rural",
+                            checked = state.isRural,
+                            enabled = !state.isSubmitting,
+                            onChange = { onAction(CreateSubjectAction.IsRuralChanged(it)) },
+                        )
+                        ToggleRow(
+                            label = "Población indígena",
+                            checked = state.isIndigenous,
+                            enabled = !state.isSubmitting,
+                            onChange = { onAction(CreateSubjectAction.IsIndigenousChanged(it)) },
+                        )
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp, bottom = AlTheme.spacing.lg),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        state.submitError?.let { error ->
+                            Text(
+                                text = error,
+                                color = AlTheme.colors.danger,
+                                style = AlTheme.typography.body,
+                            )
+                        }
+
+                        AlButton(
+                            onClick = { onAction(CreateSubjectAction.Submit) },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = state.canSubmit,
+                            loading = state.isSubmitting,
+                            fullWidth = true,
+                        ) {
+                            Text("Guardar")
+                        }
                     }
                 }
+
+                AlToast(
+                    message = state.successMessage,
+                    onDismiss = { onAction(CreateSubjectAction.DismissSuccess) },
+                )
             }
         }
     }

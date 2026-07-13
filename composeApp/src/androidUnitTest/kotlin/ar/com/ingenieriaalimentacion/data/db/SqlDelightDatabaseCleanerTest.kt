@@ -75,12 +75,13 @@ class SqlDelightDatabaseCleanerTest {
             payloadJson = "{}",
         )
         database.currentEstablishmentQueries.set("est-1", 10L)
-        database.cachedSurveyQueries.upsertSummary(
+        database.cachedSurveyQueries.insertOrReplace(
             id = "sv-1",
             name = "Encuesta",
             scope = "GENERIC",
             isActive = 1L,
             questionCount = 3L,
+            detailJson = null,
             updatedAt = 10L,
         )
         database.pendingSurveyResponseQueries.insert(

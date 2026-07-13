@@ -31,6 +31,10 @@ import org.jetbrains.compose.resources.vectorResource
  *
  * Title-only by default — keep [message] short and skip [onDismiss] for purely
  * informational banners. Pass [onDismiss] to render a quiet close affordance.
+ *
+ * For a self-dismissing success confirmation that must stay visible regardless
+ * of scroll position (e.g. after an upload), use
+ * [ar.com.ingenieriaalimentacion.core.design_system.components.toast.AlToast] instead.
  */
 @Composable
 fun AlInlineBanner(

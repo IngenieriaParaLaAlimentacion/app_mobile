@@ -35,6 +35,7 @@ val viewModelsModule = module {
         HomeViewModel(
             observeSubjectUploads = get(),
             observeMeasurements = get(),
+            observeSurveyResponseUploads = get(),
             getMyProfile = get(),
             getMyEstablishments = get(),
             getCurrentEstablishment = get(),
@@ -83,6 +84,9 @@ val viewModelsModule = module {
             getSurveyDetail = get(),
             getMyProfile = get(),
             getMyEstablishments = get(),
+            observeEditStatus = get(),
+            retryEditUpload = get(),
+            syncCoordinator = get(),
         )
     }
     viewModel { (route: Route.SurveyResponseEdit) ->

@@ -13,7 +13,6 @@ import androidx.navigation.compose.composable
 import ar.com.ingenieriaalimentacion.presentation.feature.measurement.create_measurement.navigateToCreateMeasurement
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.create_subject.navigateToCreateSubject
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_list.navigateToSurveyList
-import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_history.navigateToSurveyResponseHistory
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 
 fun NavController.navigateToHome(navOptions: NavOptions? = null) =
@@ -39,6 +38,5 @@ internal fun navigate(
         HomeDestination.NavigateToCreateMeasurement -> navController.navigateToCreateMeasurement()
         HomeDestination.NavigateToHistory -> navController.navigate(Route.History)
         HomeDestination.NavigateToSurveyList -> navController.navigateToSurveyList()
-        HomeDestination.NavigateToSurveyResponseHistory -> navController.navigateToSurveyResponseHistory()
     }
 }

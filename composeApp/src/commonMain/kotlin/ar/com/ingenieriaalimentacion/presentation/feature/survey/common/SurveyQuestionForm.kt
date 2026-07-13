@@ -8,12 +8,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlChoiceGroup
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlChoiceOption
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlCheckboxGroup
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlInput
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.DateVisualTransformation
+import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.core.validation.onChange
 import ar.com.ingenieriaalimentacion.core.validation.onFocus
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyQuestion
@@ -36,16 +36,16 @@ fun SurveyQuestionForm(
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg),
     ) {
         questions.forEach { question ->
             val state = answers[question.id] ?: question.initialFieldState()
             val validator = question.validator()
-            val label = if (question.isRequired) "${question.text} *" else question.text
 
             when (state) {
                 is SurveyAnswerFieldState.SingleChoice -> AlChoiceGroup(
-                    label = label,
+                    label = question.text,
+                    required = question.isRequired,
                     options = question.options.map { AlChoiceOption(it.id, it.text) },
                     selectedId = state.selectedId,
                     onSelected = { optionId ->
@@ -56,7 +56,8 @@ fun SurveyQuestionForm(
                 )
 
                 is SurveyAnswerFieldState.MultipleChoice -> AlCheckboxGroup(
-                    label = label,
+                    label = question.text,
+                    required = question.isRequired,
                     options = question.options.map { AlChoiceOption(it.id, it.text) },
                     selectedIds = state.selectedIds,
                     onToggle = { optionId ->
@@ -72,7 +73,8 @@ fun SurveyQuestionForm(
                 )
 
                 is SurveyAnswerFieldState.Numeric -> AlInput(
-                    label = label,
+                    label = question.text,
+                    required = question.isRequired,
                     value = state.field.value,
                     onValueChange = { raw ->
                         onAnswerChanged(
@@ -91,7 +93,8 @@ fun SurveyQuestionForm(
                 )
 
                 is SurveyAnswerFieldState.Text -> AlInput(
-                    label = label,
+                    label = question.text,
+                    required = question.isRequired,
                     value = state.field.value,
                     onValueChange = { raw ->
                         onAnswerChanged(question.id, state.copy(field = state.field.onChange(raw, validator)))
@@ -107,7 +110,8 @@ fun SurveyQuestionForm(
                 )
 
                 is SurveyAnswerFieldState.DateAnswer -> AlInput(
-                    label = label,
+                    label = question.text,
+                    required = question.isRequired,
                     value = state.field.value,
                     onValueChange = { raw ->
                         val digits = raw.filter(Char::isDigit).take(8)

@@ -1,8 +1,12 @@
 package ar.com.ingenieriaalimentacion.domain.model.survey
 
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
+import kotlinx.serialization.Serializable
 
-/** One row in the "My survey responses" list — union of remote (/me/activity) + local pending. */
+/** One row in the "My survey responses" list — union of remote (/me/activity) + local pending.
+ *  `@Serializable` so it round-trips through `CachedActivityItem.payloadJson`, same as
+ *  [ar.com.ingenieriaalimentacion.domain.model.subject.SubjectHistoryEntry]. */
+@Serializable
 data class SurveyResponseSummary(
     val id: String,
     val surveyName: String,

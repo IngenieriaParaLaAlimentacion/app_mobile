@@ -1,11 +1,14 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_form
 
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -13,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -23,19 +25,22 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ar.com.ingenieriaalimentacion.core.design_system.components.banner.AlBannerVariant
 import ar.com.ingenieriaalimentacion.core.design_system.components.banner.AlInlineBanner
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlSelectField
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
+import ar.com.ingenieriaalimentacion.core.design_system.components.toast.AlToast
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.common.SurveyQuestionForm
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 import com.komoui.components.Spinner
-import com.komoui.themes.styles
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -63,7 +68,6 @@ fun SurveyResponseFormScreen(
     state: SurveyResponseFormState,
     onAction: (SurveyResponseFormAction) -> Unit,
 ) {
-    val styles = MaterialTheme.styles
     val scrollState = rememberScrollState()
     val isImeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     val sheetState = rememberModalBottomSheetState()
@@ -138,75 +142,98 @@ fun SurveyResponseFormScreen(
 private fun SurveyResponseFormBody(
     state: SurveyResponseFormState,
     onAction: (SurveyResponseFormAction) -> Unit,
-    scrollState: androidx.compose.foundation.ScrollState,
+    scrollState: ScrollState,
     isImeVisible: Boolean,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = AlTheme.spacing.lg),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .verticalScroll(scrollState)
-                .padding(top = AlTheme.spacing.lg, bottom = AlTheme.spacing.md),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            state.successMessage?.let { msg ->
-                AlInlineBanner(
-                    message = msg,
-                    onDismiss = { onAction(SurveyResponseFormAction.DismissSuccess) },
-                )
-            }
-
-            AlSelectField(
-                label = "Establecimiento",
-                value = state.selectedEstablishment?.name ?: "",
-                placeholder = "Elegí el establecimiento",
-                error = state.establishmentError,
-                enabled = !state.isSubmitting && state.establishmentOptions.isNotEmpty(),
-                onClick = { onAction(SurveyResponseFormAction.EstablishmentPickerOpen) },
-            )
-            if (state.establishmentOptions.isEmpty()) {
-                Text(
-                    text = "No tenés establecimientos aprobados.",
-                    style = AlTheme.typography.caption,
-                    color = AlTheme.colors.textMuted,
-                )
-            }
-
-            SurveyQuestionForm(
-                questions = state.questions,
-                answers = state.answers,
-                onAnswerChanged = { questionId, fieldState ->
-                    onAction(SurveyResponseFormAction.AnswerChanged(questionId, fieldState))
-                },
-                enabled = !state.isSubmitting,
-                scrollState = scrollState,
-                isImeVisible = isImeVisible,
-            )
-        }
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp, bottom = AlTheme.spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            state.submitError?.let { error ->
-                Text(text = error, color = AlTheme.colors.danger, style = AlTheme.typography.body)
-            }
-            AlButton(
-                onClick = { onAction(SurveyResponseFormAction.Submit) },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = state.canSubmit,
-                loading = state.isSubmitting,
-                fullWidth = true,
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(scrollState)
+                    .padding(horizontal = AlTheme.spacing.lg)
+                    .padding(top = AlTheme.spacing.lg, bottom = AlTheme.spacing.md),
+                verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg),
             ) {
-                Text("Guardar")
+                Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+                    AlSelectField(
+                        label = "Establecimiento",
+                        value = state.selectedEstablishment?.name ?: "",
+                        placeholder = "Elegí el establecimiento",
+                        error = state.establishmentError,
+                        required = true,
+                        enabled = !state.isSubmitting && state.establishmentOptions.isNotEmpty(),
+                        onClick = { onAction(SurveyResponseFormAction.EstablishmentPickerOpen) },
+                    )
+                    if (state.establishmentOptions.isEmpty()) {
+                        Text(
+                            text = "No tenés establecimientos aprobados.",
+                            style = AlTheme.typography.caption,
+                            color = AlTheme.colors.textMuted,
+                        )
+                    }
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+                    Text(
+                        text = "PREGUNTAS",
+                        style = AlTheme.typography.caption.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 0.5.sp,
+                        ),
+                        color = AlTheme.colors.textMuted,
+                    )
+                    SurveyQuestionForm(
+                        questions = state.questions,
+                        answers = state.answers,
+                        onAnswerChanged = { questionId, fieldState ->
+                            onAction(SurveyResponseFormAction.AnswerChanged(questionId, fieldState))
+                        },
+                        enabled = !state.isSubmitting,
+                        scrollState = scrollState,
+                        isImeVisible = isImeVisible,
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(AlTheme.colors.surfaceBase)
+                    .padding(horizontal = AlTheme.spacing.lg),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(AlTheme.borders.thin)
+                        .background(AlTheme.colors.border),
+                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = AlTheme.spacing.md, bottom = AlTheme.spacing.lg),
+                    verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
+                ) {
+                    state.submitError?.let { error ->
+                        AlInlineBanner(message = error, variant = AlBannerVariant.Danger)
+                    }
+                    AlButton(
+                        onClick = { onAction(SurveyResponseFormAction.Submit) },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = state.canSubmit,
+                        loading = state.isSubmitting,
+                        fullWidth = true,
+                    ) {
+                        Text("Guardar")
+                    }
+                }
             }
         }
+
+        AlToast(
+            message = state.successMessage,
+            onDismiss = { onAction(SurveyResponseFormAction.DismissSuccess) },
+        )
     }
 }

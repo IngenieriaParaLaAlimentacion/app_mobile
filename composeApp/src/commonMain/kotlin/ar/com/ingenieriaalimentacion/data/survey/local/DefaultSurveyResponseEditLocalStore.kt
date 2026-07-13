@@ -1,11 +1,15 @@
 package ar.com.ingenieriaalimentacion.data.survey.local
 
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToOneOrNull
 import ar.com.ingenieriaalimentacion.data.db.PendingSurveyResponseEditQueries
 import ar.com.ingenieriaalimentacion.data.survey.mapper.toDomain
 import ar.com.ingenieriaalimentacion.data.survey.mapper.toSurveyDbString
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseEditUpload
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 /**
@@ -22,6 +26,9 @@ class DefaultSurveyResponseEditLocalStore(
         withContext(dispatcher) {
             queries.selectPendingForResponse(responseId).executeAsOneOrNull()?.toDomain()
         }
+
+    override fun observeLatestForResponse(responseId: String): Flow<SurveyResponseEditUpload?> =
+        queries.selectLatestForResponse(responseId).asFlow().mapToOneOrNull(dispatcher).map { it?.toDomain() }
 
     override suspend fun updatePending(
         editId: String,

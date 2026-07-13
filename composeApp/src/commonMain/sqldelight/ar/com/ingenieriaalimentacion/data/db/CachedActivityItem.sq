@@ -1,6 +1,6 @@
 CREATE TABLE CachedActivityItem (
     id               TEXT    NOT NULL PRIMARY KEY,  -- subject id or measurement id
-    type             TEXT    NOT NULL,              -- 'SUBJECT' | 'MEASUREMENT'
+    type             TEXT    NOT NULL,              -- 'SUBJECT' | 'MEASUREMENT' | 'SURVEY_RESPONSE'
     occurredAtMillis INTEGER NOT NULL,
     payloadJson      TEXT    NOT NULL
 );

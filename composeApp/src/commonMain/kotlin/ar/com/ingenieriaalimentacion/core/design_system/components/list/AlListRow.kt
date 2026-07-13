@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,6 +51,7 @@ fun AlListRow(
     leadingIcon: DrawableResource? = null,
     leadingIconTint: Color = AlTheme.colors.textMuted,
     titleColor: Color = AlTheme.colors.textBase,
+    titleStyle: TextStyle = AlTheme.typography.body.copy(fontWeight = FontWeight.Medium),
     onClick: (() -> Unit)? = null,
     showChevron: Boolean = onClick != null,
     showDivider: Boolean = true,
@@ -86,7 +88,7 @@ fun AlListRow(
                 Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
                     Text(
                         text = title,
-                        style = AlTheme.typography.body.copy(fontWeight = FontWeight.Medium),
+                        style = titleStyle,
                         color = titleColor,
                     )
                     subtitle?.let {

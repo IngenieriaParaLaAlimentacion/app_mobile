@@ -3,6 +3,7 @@ package ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_respons
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyQuestion
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.common.SurveyAnswerFieldState
+import ar.com.ingenieriaalimentacion.presentation.feature.survey.common.isFieldValid
 
 data class SurveyResponseFormState(
     val destination: SurveyResponseFormDestination? = null,
@@ -21,5 +22,9 @@ data class SurveyResponseFormState(
     val successMessage: String? = null,
 ) {
     val canSubmit: Boolean
-        get() = !isLoading && !loadError && selectedEstablishment != null && !isSubmitting
+        get() = !isLoading &&
+            !loadError &&
+            !isSubmitting &&
+            selectedEstablishment != null &&
+            questions.all { question -> question.isFieldValid(answers[question.id] ?: return@all false) }
 }

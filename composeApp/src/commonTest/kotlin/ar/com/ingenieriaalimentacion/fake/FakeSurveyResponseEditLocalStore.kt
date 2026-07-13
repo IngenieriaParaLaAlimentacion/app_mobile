@@ -3,7 +3,9 @@ package ar.com.ingenieriaalimentacion.fake
 import ar.com.ingenieriaalimentacion.data.survey.local.SurveyResponseEditLocalStore
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseEditUpload
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 
 /**
  * In-memory [SurveyResponseEditLocalStore] that mirrors the SQL semantics of
@@ -23,6 +25,11 @@ class FakeSurveyResponseEditLocalStore(private val now: () -> Long = { 0L }) : S
 
     override suspend fun findPendingForResponse(responseId: String): SurveyResponseEditUpload? =
         rows.value.firstOrNull { it.responseId == responseId && it.syncState == SyncState.Pending }
+
+    override fun observeLatestForResponse(responseId: String): Flow<SurveyResponseEditUpload?> =
+        rows.map { list ->
+            list.filter { it.responseId == responseId }.maxByOrNull { it.createdAt }
+        }
 
     override suspend fun updatePending(
         editId: String,

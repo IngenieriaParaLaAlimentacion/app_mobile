@@ -8,10 +8,13 @@ import ar.com.ingenieriaalimentacion.domain.model.subject.MAX_SYNC_ATTEMPTS
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncSummary
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyAnswerValue
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseEditStatus
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseEditUpload
 import ar.com.ingenieriaalimentacion.domain.model.survey.isEligibleAt
 import ar.com.ingenieriaalimentacion.domain.repository.SurveyResponseEditRepository
 import ar.com.ingenieriaalimentacion.domain.util.IdGenerator
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.encodeToString
@@ -129,6 +132,11 @@ class SurveyResponseEditRepositoryImpl(
         }
 
     override suspend fun retry(editId: String): Result<Unit> = runCatching { local.resetForRetry(editId) }
+
+    override fun observeEditStatus(responseId: String): Flow<SurveyResponseEditStatus?> =
+        local.observeLatestForResponse(responseId).map { edit ->
+            edit?.let { SurveyResponseEditStatus(it.editId, it.syncState, it.errorMessage) }
+        }
 
     override suspend fun resetStuckSyncing() {
         local.resetStuckSyncing()

@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -20,8 +19,8 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import com.komoui.components.Input
-import com.komoui.themes.styles
 
 /**
  * Design-system text field. Wraps the KomoUI [Input] with an optional [label],
@@ -47,6 +46,7 @@ fun AlInput(
     placeholder: String = "",
     error: String? = null,
     enabled: Boolean = true,
+    required: Boolean = false,
     singleLine: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     visualTransformation: VisualTransformation = VisualTransformation.None,
@@ -55,7 +55,6 @@ fun AlInput(
     isImeVisible: Boolean = false,
     onFocusChange: (Boolean) -> Unit = {},
 ) {
-    val styles = MaterialTheme.styles
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
     var fieldScrollOffset by remember { mutableStateOf(0) }
@@ -87,14 +86,10 @@ fun AlInput(
                     Modifier
                 },
             ),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
     ) {
         if (label != null) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge,
-                color = styles.foreground,
-            )
+            AlFieldLabel(text = label, required = required)
         }
         Input(
             value = value,
@@ -109,7 +104,7 @@ fun AlInput(
             visualTransformation = visualTransformation,
             trailingIcon = trailingIcon,
             supportingText = error?.let {
-                { Text(text = it, color = styles.destructive, style = MaterialTheme.typography.bodySmall) }
+                { Text(text = it, color = AlTheme.colors.danger, style = AlTheme.typography.caption) }
             },
         )
     }

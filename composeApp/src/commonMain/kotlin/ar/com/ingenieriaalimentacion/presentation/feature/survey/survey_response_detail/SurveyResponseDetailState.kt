@@ -1,5 +1,7 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_detail
 
+import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
+
 data class AnsweredQuestionUi(
     val questionText: String,
     val displayValue: String,
@@ -16,4 +18,8 @@ data class SurveyResponseDetailState(
     val canEdit: Boolean = false,
     val isLoading: Boolean = true,
     val loadError: Boolean = false,
+    val successMessage: String? = null,
+    val editId: String? = null,
+    val editSyncState: SyncState? = null,
+    val editErrorMessage: String? = null,
 )

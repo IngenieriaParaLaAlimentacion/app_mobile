@@ -96,12 +96,33 @@ fun forceShowAllErrors(
     question.id to question.forceShowError(answers[question.id] ?: question.initialFieldState())
 }
 
+/** The answer's semantic value only — excludes [TextFieldState]'s UI-only bits (focus/blur/error)
+ *  so two [SurveyAnswerFieldState]s can be compared for a real content change (edit-screen dirty
+ *  check), not just a focus transition. */
+fun SurveyAnswerFieldState.answerSnapshot(): Any? = when (this) {
+    is SurveyAnswerFieldState.Text -> field.value
+    is SurveyAnswerFieldState.Numeric -> field.value
+    is SurveyAnswerFieldState.DateAnswer -> field.value
+    is SurveyAnswerFieldState.SingleChoice -> selectedId
+    is SurveyAnswerFieldState.MultipleChoice -> selectedIds
+}
+
 fun SurveyQuestion.isFieldValid(state: SurveyAnswerFieldState): Boolean = when (state) {
     is SurveyAnswerFieldState.Text -> state.field.isValid
     is SurveyAnswerFieldState.Numeric -> state.field.isValid
     is SurveyAnswerFieldState.DateAnswer -> state.field.isValid
     is SurveyAnswerFieldState.SingleChoice -> !isRequired || state.selectedId != null
     is SurveyAnswerFieldState.MultipleChoice -> !isRequired || state.selectedIds.isNotEmpty()
+}
+
+/** Whether the field has any value at all, regardless of [SurveyQuestion.isRequired] — drives the
+ *  response-form's "N de M respondidas" progress header. */
+fun SurveyAnswerFieldState.isAnswered(): Boolean = when (this) {
+    is SurveyAnswerFieldState.Text -> field.value.isNotBlank()
+    is SurveyAnswerFieldState.Numeric -> field.value.isNotBlank()
+    is SurveyAnswerFieldState.DateAnswer -> field.value.isNotBlank()
+    is SurveyAnswerFieldState.SingleChoice -> selectedId != null
+    is SurveyAnswerFieldState.MultipleChoice -> selectedIds.isNotEmpty()
 }
 
 /** Builds the typed [SurveyAnswerValue] map for [ar.com.ingenieriaalimentacion.domain.model.survey.NewSurveyResponse]/

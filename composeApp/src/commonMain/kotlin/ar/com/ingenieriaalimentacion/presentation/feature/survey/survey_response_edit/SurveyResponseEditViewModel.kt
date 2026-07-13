@@ -69,6 +69,7 @@ class SurveyResponseEditViewModel(
                 .firstOrNull { it.id == detail.establishmentId }?.name
                 ?: detail.establishmentId
 
+            val fieldStates = surveyDetail.questions.toFieldStates(detail.answers)
             _state.update {
                 it.copy(
                     isLoading = false,
@@ -76,7 +77,8 @@ class SurveyResponseEditViewModel(
                     surveyName = surveyDetail.name,
                     establishmentName = establishmentName,
                     questions = surveyDetail.questions,
-                    answers = surveyDetail.questions.toFieldStates(detail.answers),
+                    answers = fieldStates,
+                    originalAnswers = fieldStates,
                 )
             }
         }

@@ -12,7 +12,6 @@ data class Survey(
     val scope: SurveyScope,
     val isActive: Boolean,
     val questionCount: Int,
-    val createdAt: String,
 )
 
 @Serializable

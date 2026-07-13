@@ -20,7 +20,6 @@ internal fun SurveyListItemResponse.toDomain(): Survey = Survey(
     scope = scope.toDomainScope(),
     isActive = isActive,
     questionCount = questionCount,
-    createdAt = createdAt,
 )
 
 internal fun PaginatedSurveysResponse.toDomain(): PagedSurveys = PagedSurveys(

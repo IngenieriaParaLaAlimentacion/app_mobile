@@ -18,4 +18,15 @@ interface SurveyLocalStore {
 
     /** From `GET /surveys/{id}`. */
     suspend fun upsertDetail(detail: SurveyDetail)
+
+    /** All cached summaries, name-ordered — the offline fallback for GET /surveys/available. */
+    suspend fun getSummaries(): List<Survey>
+
+    /** Replaces the entire snapshot with [surveys] (warm path). Rows absent from [surveys] are
+     *  deleted (drift fix); rows present keep any existing `detailJson`, same guarantee as
+     *  [upsertSummaries]. One transaction. */
+    suspend fun replaceAllSummaries(surveys: List<Survey>)
+
+    /** Ids of cached surveys whose questions were never fetched — the warm's detail-prefetch list. */
+    suspend fun idsMissingDetail(): List<String>
 }

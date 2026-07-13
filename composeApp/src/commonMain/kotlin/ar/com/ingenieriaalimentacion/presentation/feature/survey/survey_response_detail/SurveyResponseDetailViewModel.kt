@@ -2,11 +2,14 @@ package ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_respons
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.domain.model.auth.canRespondToSurveys
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyProfileUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.GetSurveyDetailUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.GetSurveyResponseDetailUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.survey.ObserveSurveyResponseEditStatusUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.survey.RetrySurveyResponseEditUploadUseCase
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.common.formatAnswerForDisplay
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +27,9 @@ class SurveyResponseDetailViewModel(
     private val getSurveyDetail: GetSurveyDetailUseCase,
     private val getMyProfile: GetMyProfileUseCase,
     private val getMyEstablishments: GetMyEstablishmentsUseCase,
+    observeEditStatus: ObserveSurveyResponseEditStatusUseCase,
+    private val retryEditUpload: RetrySurveyResponseEditUploadUseCase,
+    private val syncCoordinator: SyncCoordinator,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SurveyResponseDetailState(responseId = route.responseId))
@@ -35,6 +41,17 @@ class SurveyResponseDetailViewModel(
 
     init {
         load()
+        viewModelScope.launch {
+            observeEditStatus(route.responseId).collect { status ->
+                _state.update {
+                    it.copy(
+                        editId = status?.editId,
+                        editSyncState = status?.syncState,
+                        editErrorMessage = status?.errorMessage,
+                    )
+                }
+            }
+        }
     }
 
     fun onAction(action: SurveyResponseDetailAction) {
@@ -46,6 +63,11 @@ class SurveyResponseDetailViewModel(
             SurveyResponseDetailAction.RetryLoad -> load()
             SurveyResponseDetailAction.BackClick ->
                 _state.update { it.copy(destination = SurveyResponseDetailDestination.Back) }
+            SurveyResponseDetailAction.DismissSuccess -> _state.update { it.copy(successMessage = null) }
+            SurveyResponseDetailAction.RetryEditClick -> {
+                val editId = _state.value.editId ?: return
+                viewModelScope.launch { retryEditUpload(editId); syncCoordinator.requestSync() }
+            }
         }
     }
 
@@ -56,7 +78,10 @@ class SurveyResponseDetailViewModel(
     /** Called after a successful edit (navigate-back-with-result) so the screen shows the
      *  edit's effect — noting the re-fetched state may not equal what was just sent if a
      *  later-`event_at` edit from elsewhere already won (last-write-wins, no conflict UI). */
-    fun refresh() = load()
+    fun refresh() {
+        _state.update { it.copy(successMessage = "Respuesta actualizada") }
+        load()
+    }
 
     private fun load() {
         _state.update { it.copy(isLoading = true, loadError = false) }

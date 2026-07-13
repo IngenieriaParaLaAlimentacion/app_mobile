@@ -4,4 +4,6 @@ sealed interface SurveyResponseDetailAction {
     data object EditClick : SurveyResponseDetailAction
     data object RetryLoad : SurveyResponseDetailAction
     data object BackClick : SurveyResponseDetailAction
+    data object DismissSuccess : SurveyResponseDetailAction
+    data object RetryEditClick : SurveyResponseDetailAction
 }

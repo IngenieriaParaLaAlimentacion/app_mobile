@@ -35,6 +35,12 @@ SELECT * FROM PendingSurveyResponseEdit WHERE syncState = 'PENDING' ORDER BY cre
 selectPendingForResponse:          -- the "coalesce into the still-unsent edit" lookup (Phase 3)
 SELECT * FROM PendingSurveyResponseEdit WHERE responseId = ? AND syncState = 'PENDING' LIMIT 1;
 
+selectLatestForResponse:
+SELECT * FROM PendingSurveyResponseEdit
+WHERE responseId = :responseId
+ORDER BY createdAt DESC
+LIMIT 1;
+
 updatePending:                     -- overwrite an unsent edit in place, no new idempotency key
 UPDATE PendingSurveyResponseEdit SET surveyName = ?, establishmentName = ?, answersJson = ?,
     eventAt = ?, updatedAt = ? WHERE editId = ?;

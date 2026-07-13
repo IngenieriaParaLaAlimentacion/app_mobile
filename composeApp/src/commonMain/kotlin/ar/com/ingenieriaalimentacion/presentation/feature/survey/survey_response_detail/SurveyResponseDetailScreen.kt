@@ -18,10 +18,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ar.com.ingenieriaalimentacion.core.design_system.components.banner.AlInlineBanner
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
+import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 import ar.com.ingenieriaalimentacion.presentation.navigation.RefreshOnNavResult
 import ar.com.ingenieriaalimentacion.presentation.navigation.SURVEY_RESPONSE_EDITED_RESULT
@@ -103,6 +105,26 @@ fun SurveyResponseDetailScreen(
                             .padding(top = AlTheme.spacing.lg, bottom = AlTheme.spacing.md),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
+                        state.successMessage?.let { msg ->
+                            AlInlineBanner(
+                                message = msg,
+                                onDismiss = { onAction(SurveyResponseDetailAction.DismissSuccess) },
+                            )
+                        }
+
+                        if (state.editSyncState == SyncState.Failed) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(
+                                    text = state.editErrorMessage ?: "No se pudo guardar tu última edición.",
+                                    style = AlTheme.typography.body,
+                                    color = AlTheme.colors.danger,
+                                )
+                                AlButton(onClick = { onAction(SurveyResponseDetailAction.RetryEditClick) }) {
+                                    Text("Reintentar edición")
+                                }
+                            }
+                        }
+
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(
                                 text = state.establishmentLabel,

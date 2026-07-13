@@ -1,6 +1,7 @@
 package ar.com.ingenieriaalimentacion.data.survey.local
 
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseEditUpload
+import kotlinx.coroutines.flow.Flow
 
 /** Local source of truth for the survey-response edit queue — a second, independent queue from
  *  [SurveyResponseLocalStore], keyed by its own `editId`. The concrete
@@ -10,6 +11,10 @@ interface SurveyResponseEditLocalStore {
      *  `SurveyResponseEditRepositoryImpl.enqueueEdit` uses to overwrite in place instead of
      *  minting a new idempotency key. */
     suspend fun findPendingForResponse(responseId: String): SurveyResponseEditUpload?
+
+    /** The most recent edit attempt (any state) for [responseId], reactively — lets the detail
+     *  screen surface a dead-lettered (FAILED) edit instead of it silently vanishing. */
+    fun observeLatestForResponse(responseId: String): Flow<SurveyResponseEditUpload?>
 
     /** Overwrite a not-yet-transmitted edit in place — same `editId`. Refreshes the denormalized
      *  [surveyName]/[establishmentName] too, so a second offline edit doesn't leave them stale. */

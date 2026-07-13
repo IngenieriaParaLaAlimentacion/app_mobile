@@ -2,7 +2,10 @@ package ar.com.ingenieriaalimentacion.fake
 
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncSummary
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyAnswerValue
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseEditStatus
 import ar.com.ingenieriaalimentacion.domain.repository.SurveyResponseEditRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.time.Duration
 
 data class EnqueuedEdit(
@@ -17,6 +20,7 @@ class FakeSurveyResponseEditRepository : SurveyResponseEditRepository {
     val enqueued = mutableListOf<EnqueuedEdit>()
     var enqueueResult: Result<Unit> = Result.success(Unit)
     var syncSummary: SyncSummary = SyncSummary()
+    val editStatus = MutableStateFlow<SurveyResponseEditStatus?>(null)
 
     override suspend fun enqueueEdit(
         responseId: String,
@@ -32,6 +36,8 @@ class FakeSurveyResponseEditRepository : SurveyResponseEditRepository {
     override suspend fun syncPending(): SyncSummary = syncSummary
 
     override suspend fun retry(editId: String): Result<Unit> = Result.success(Unit)
+
+    override fun observeEditStatus(responseId: String): Flow<SurveyResponseEditStatus?> = editStatus
 
     override suspend fun resetStuckSyncing() = Unit
 

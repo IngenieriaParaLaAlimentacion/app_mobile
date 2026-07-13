@@ -47,5 +47,5 @@ data class RecentActivityUi(
     val badgeTone: AlBadgeTone,
     val createdAt: Long,
 ) {
-    enum class Kind { Subject, Measurement }
+    enum class Kind { Subject, Measurement, SurveyResponse }
 }

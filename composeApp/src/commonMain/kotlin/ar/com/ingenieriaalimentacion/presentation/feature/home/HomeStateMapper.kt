@@ -6,6 +6,7 @@ import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementHistory
 import ar.com.ingenieriaalimentacion.domain.model.profile.Profile
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseSummary
 import ar.com.ingenieriaalimentacion.presentation.feature.measurement.uploads.alertTypeLabel
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
@@ -25,6 +26,7 @@ private const val RECENT_LIMIT = 4
 internal fun deriveState(
     subjects: List<SubjectHistoryEntry>,
     measurements: List<MeasurementHistoryEntry>,
+    surveyResponses: List<SurveyResponseSummary> = emptyList(),
     online: Boolean,
     now: Long,
     timeZone: TimeZone = TimeZone.currentSystemDefault(),
@@ -51,7 +53,11 @@ internal fun deriveState(
     val todayMeasurements = measurements.count { it.createdAt >= startOfToday }
     val todayAlerts = measurements.count { it.createdAt >= startOfToday && it.alerts.isNotEmpty() }
 
-    val recent = (subjects.map { it.toRecentUi() } + measurements.map { it.toRecentUi() })
+    val recent = (
+        subjects.map { it.toRecentUi() } +
+            measurements.map { it.toRecentUi() } +
+            surveyResponses.map { it.toRecentUi() }
+        )
         .sortedByDescending { it.createdAt }
         .take(RECENT_LIMIT)
 
@@ -102,6 +108,20 @@ private fun MeasurementHistoryEntry.toRecentUi(): RecentActivityUi {
     )
 }
 
+private fun SurveyResponseSummary.toRecentUi(): RecentActivityUi {
+    val (label, tone) = surveyResponseSyncBadge(syncState)
+    return RecentActivityUi(
+        id = id,
+        kind = RecentActivityUi.Kind.SurveyResponse,
+        title = surveyName,
+        subtitle = establishmentName,
+        value = null,
+        badgeText = label,
+        badgeTone = tone,
+        createdAt = eventAtMillis(eventAt),
+    )
+}
+
 private fun subjectSyncBadge(state: SyncState): Pair<String, AlBadgeTone> = when (state) {
     SyncState.Pending -> "Pendiente" to AlBadgeTone.Neutral
     SyncState.Syncing -> "Sincronizando" to AlBadgeTone.Neutral
@@ -117,6 +137,19 @@ private fun measurementSyncBadge(state: SyncState): Pair<String, AlBadgeTone> = 
     SyncState.Merged -> "Sincronizado" to AlBadgeTone.Success // unreachable for measurements
     SyncState.Failed -> "Error" to AlBadgeTone.Danger
 }
+
+private fun surveyResponseSyncBadge(state: SyncState): Pair<String, AlBadgeTone> = when (state) {
+    SyncState.Pending -> "Pendiente" to AlBadgeTone.Neutral
+    SyncState.Syncing -> "Sincronizando" to AlBadgeTone.Neutral
+    SyncState.Synced -> "Sincronizado" to AlBadgeTone.Success
+    SyncState.Merged -> "Sincronizado" to AlBadgeTone.Success // unreachable for survey responses
+    SyncState.Failed -> "Error" to AlBadgeTone.Danger
+}
+
+/** ISO-8601 `eventAt` → epoch millis, matching SurveyResponseHistoryRepositoryImpl's own parsing;
+ *  malformed input sorts to the very bottom instead of crashing derivation. */
+private fun eventAtMillis(iso: String): Long =
+    runCatching { Instant.parse(iso).toEpochMilliseconds() }.getOrDefault(0L)
 
 /** Severity → tone, mirroring the history rows (`MeasurementUploadUi`). */
 private fun ClinicalAlert.tone(): AlBadgeTone = when (severity.trim().lowercase()) {

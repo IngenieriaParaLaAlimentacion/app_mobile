@@ -6,6 +6,7 @@ import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementHistory
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseSummary
 import kotlinx.datetime.TimeZone
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -68,6 +69,21 @@ class HomeStateMapperTest {
         isLocal = true,
         createdAt = createdAt,
         updatedAt = updatedAt,
+    )
+
+    private fun surveyResponse(
+        id: String = "sr1",
+        syncState: SyncState = SyncState.Pending,
+        eventAt: String = "2026-06-29T12:00:00Z",
+        surveyName: String = "Encuesta nutricional",
+        establishmentName: String = "Escuela 1",
+    ) = SurveyResponseSummary(
+        id = id,
+        surveyName = surveyName,
+        establishmentName = establishmentName,
+        eventAt = eventAt,
+        syncState = syncState,
+        isLocal = true,
     )
 
     @Test
@@ -174,6 +190,38 @@ class HomeStateMapperTest {
         assertEquals(4, state.recent.size)
         val timestamps = state.recent.map { it.createdAt }
         assertEquals(timestamps.sortedDescending(), timestamps)
+    }
+
+    @Test
+    fun `recent merges all three sources, sorts desc, caps at 4`() {
+        val subjects = listOf(subject(localId = "s1", createdAt = now - 1_000L))
+        val measurements = listOf(measurement(localId = "m1", createdAt = now - 2_000L))
+        val surveyResponses = listOf(
+            surveyResponse(id = "sr1", eventAt = "2026-06-29T11:59:59Z"), // now - 1_000ms
+            surveyResponse(id = "sr2", eventAt = "2026-06-29T11:59:57Z"), // now - 3_000ms
+            surveyResponse(id = "sr3", eventAt = "2026-06-29T11:59:55Z"), // now - 5_000ms
+        )
+        val state = deriveState(subjects, measurements, surveyResponses, online = true, now = now, timeZone = tz)
+        assertEquals(4, state.recent.size)
+        val timestamps = state.recent.map { it.createdAt }
+        assertEquals(timestamps.sortedDescending(), timestamps)
+    }
+
+    @Test
+    fun `survey response recent row carries establishment subtitle and a sync badge`() {
+        val row = deriveState(
+            subjects = emptyList(),
+            measurements = emptyList(),
+            surveyResponses = listOf(surveyResponse(syncState = SyncState.Failed)),
+            online = true,
+            now = now,
+            timeZone = tz,
+        ).recent.single()
+        assertEquals(RecentActivityUi.Kind.SurveyResponse, row.kind)
+        assertEquals("Escuela 1", row.subtitle)
+        assertNull(row.value)
+        assertEquals("Error", row.badgeText)
+        assertEquals(AlBadgeTone.Danger, row.badgeTone)
     }
 
     @Test

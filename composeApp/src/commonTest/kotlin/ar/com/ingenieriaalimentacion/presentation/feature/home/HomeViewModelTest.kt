@@ -10,16 +10,19 @@ import ar.com.ingenieriaalimentacion.domain.model.profile.Profile
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseSummary
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.ObserveMeasurementsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyProfileUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.SetCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.ObserveSubjectUploadsUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.survey.ObserveSurveyResponseUploadsUseCase
 import ar.com.ingenieriaalimentacion.fake.FakeConnectivityObserver
 import ar.com.ingenieriaalimentacion.fake.FakeMeasurementHistoryRepository
 import ar.com.ingenieriaalimentacion.fake.FakeProfileRepository
 import ar.com.ingenieriaalimentacion.fake.FakeSubjectHistoryRepository
+import ar.com.ingenieriaalimentacion.fake.FakeSurveyResponseHistoryRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -73,6 +76,7 @@ class HomeViewModelTest {
     private fun viewModel(
         subjectRepo: FakeSubjectHistoryRepository = FakeSubjectHistoryRepository(),
         measurementRepo: FakeMeasurementHistoryRepository = FakeMeasurementHistoryRepository(),
+        surveyResponseRepo: FakeSurveyResponseHistoryRepository = FakeSurveyResponseHistoryRepository(),
         profileRepo: FakeProfileRepository,
         connectivity: FakeConnectivityObserver = FakeConnectivityObserver(initial = true),
     ): HomeViewModel {
@@ -80,6 +84,7 @@ class HomeViewModelTest {
         return HomeViewModel(
             observeSubjectUploads = ObserveSubjectUploadsUseCase(subjectRepo),
             observeMeasurements = ObserveMeasurementsUseCase(measurementRepo),
+            observeSurveyResponseUploads = ObserveSurveyResponseUploadsUseCase(surveyResponseRepo),
             getMyProfile = GetMyProfileUseCase(profileRepo),
             getMyEstablishments = GetMyEstablishmentsUseCase(profileRepo),
             getCurrentEstablishment = GetCurrentEstablishmentUseCase(profileRepo),
@@ -244,6 +249,37 @@ class HomeViewModelTest {
             )
             val afterEmission = awaitState { it.todaySubjects == 1 }
             assertEquals(true, afterEmission.canRespondToSurveys)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `a survey response appears in recent activity`() = runTest(dispatcher) {
+        val surveyResponseRepo = FakeSurveyResponseHistoryRepository()
+        val profileRepo = FakeProfileRepository().apply {
+            meResult = Result.success(profile("field_worker"))
+            myEstablishmentsResult = Result.success(emptyList())
+        }
+        val vm = viewModel(surveyResponseRepo = surveyResponseRepo, profileRepo = profileRepo)
+
+        vm.state.test {
+            awaitState { it.roleLabel != null }
+
+            surveyResponseRepo.localMerged.value = listOf(
+                SurveyResponseSummary(
+                    id = "sr1",
+                    surveyName = "Encuesta nutricional",
+                    establishmentName = "Escuela 1",
+                    eventAt = "2026-06-29T12:00:00Z",
+                    syncState = SyncState.Pending,
+                    isLocal = true,
+                ),
+            )
+            val afterEmission = awaitState { it.recent.any { row -> row.id == "sr1" } }
+            val row = afterEmission.recent.single { it.id == "sr1" }
+            assertEquals(RecentActivityUi.Kind.SurveyResponse, row.kind)
+            assertEquals("Escuela 1", row.subtitle)
+            assertEquals("Pendiente", row.badgeText)
             cancelAndIgnoreRemainingEvents()
         }
     }

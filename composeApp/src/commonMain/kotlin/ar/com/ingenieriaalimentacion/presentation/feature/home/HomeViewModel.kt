@@ -12,6 +12,7 @@ import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsU
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyProfileUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.SetCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.ObserveSubjectUploadsUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.survey.ObserveSurveyResponseUploadsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +28,7 @@ import kotlinx.coroutines.launch
 class HomeViewModel(
     observeSubjectUploads: ObserveSubjectUploadsUseCase,
     observeMeasurements: ObserveMeasurementsUseCase,
+    observeSurveyResponseUploads: ObserveSurveyResponseUploadsUseCase,
     private val getMyProfile: GetMyProfileUseCase,
     private val getMyEstablishments: GetMyEstablishmentsUseCase,
     private val getCurrentEstablishment: GetCurrentEstablishmentUseCase,
@@ -57,9 +59,10 @@ class HomeViewModel(
             combine(
                 observeSubjectUploads(),
                 observeMeasurements(),
+                observeSurveyResponseUploads(),
                 connectivity.isOnline,
-            ) { subjects, measurements, online ->
-                deriveState(subjects, measurements, online, now())
+            ) { subjects, measurements, surveyResponses, online ->
+                deriveState(subjects, measurements, surveyResponses, online, now())
             }.collect { derived ->
                 _state.update {
                     derived.copy(
@@ -111,8 +114,6 @@ class HomeViewModel(
             }
             HomeAction.RespondSurveyClick ->
                 _state.update { it.copy(destination = HomeDestination.NavigateToSurveyList) }
-            HomeAction.MySurveysClick ->
-                _state.update { it.copy(destination = HomeDestination.NavigateToSurveyResponseHistory) }
         }
     }
 

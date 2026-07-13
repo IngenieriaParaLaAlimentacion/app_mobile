@@ -276,25 +276,14 @@ private fun PrimaryActions(onAction: (HomeAction) -> Unit) {
 
 @Composable
 private fun SurveyActions(onAction: (HomeAction) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
-        AlButton(
-            onClick = { onAction(HomeAction.RespondSurveyClick) },
-            fullWidth = true,
-            variant = AlButtonVariant.Outline,
-        ) {
-            ButtonIcon(Res.drawable.ic_mingcute_doc_line)
-            Spacer(Modifier.width(AlTheme.spacing.sm))
-            Text("Responder encuesta")
-        }
-        AlButton(
-            onClick = { onAction(HomeAction.MySurveysClick) },
-            fullWidth = true,
-            variant = AlButtonVariant.Outline,
-        ) {
-            ButtonIcon(Res.drawable.ic_mingcute_document_2_line)
-            Spacer(Modifier.width(AlTheme.spacing.sm))
-            Text("Mis respuestas")
-        }
+    AlButton(
+        onClick = { onAction(HomeAction.RespondSurveyClick) },
+        fullWidth = true,
+        variant = AlButtonVariant.Outline,
+    ) {
+        ButtonIcon(Res.drawable.ic_mingcute_doc_line)
+        Spacer(Modifier.width(AlTheme.spacing.sm))
+        Text("Responder encuesta")
     }
 }
 
@@ -418,6 +407,7 @@ private fun SectionLabel(text: String) {
 private fun RecentActivityUi.Kind.icon(): DrawableResource = when (this) {
     RecentActivityUi.Kind.Subject -> Res.drawable.ic_mingcute_user_3_line
     RecentActivityUi.Kind.Measurement -> Res.drawable.ic_mingcute_ruler_line
+    RecentActivityUi.Kind.SurveyResponse -> Res.drawable.ic_mingcute_document_2_line
 }
 
 @Composable

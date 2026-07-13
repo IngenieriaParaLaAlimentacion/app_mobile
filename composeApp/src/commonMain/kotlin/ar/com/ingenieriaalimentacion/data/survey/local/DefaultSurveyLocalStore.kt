@@ -2,6 +2,7 @@ package ar.com.ingenieriaalimentacion.data.survey.local
 
 import ar.com.ingenieriaalimentacion.data.db.CachedSurveyQueries
 import ar.com.ingenieriaalimentacion.data.survey.mapper.toDbString
+import ar.com.ingenieriaalimentacion.data.survey.mapper.toDomainSurvey
 import ar.com.ingenieriaalimentacion.domain.model.survey.Survey
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyDetail
 import kotlinx.coroutines.CoroutineDispatcher
@@ -61,5 +62,35 @@ class DefaultSurveyLocalStore(
             detailJson = json.encodeToString(detail),
             updatedAt = now(),
         )
+    }
+
+    override suspend fun getSummaries(): List<Survey> = withContext(dispatcher) {
+        queries.selectAll().executeAsList().map { it.toDomainSurvey() }
+    }
+
+    override suspend fun replaceAllSummaries(surveys: List<Survey>): Unit = withContext(dispatcher) {
+        val nowMs = now()
+        queries.transaction {
+            // Snapshot existing detailJson before wiping so the replace never loses a cached detail.
+            val existingDetailJson = queries.selectAll().executeAsList()
+                .filter { it.detailJson != null }
+                .associate { it.id to it.detailJson }
+            queries.deleteAll()
+            surveys.forEach { survey ->
+                queries.insertOrReplace(
+                    id = survey.id,
+                    name = survey.name,
+                    scope = survey.scope.toDbString(),
+                    isActive = if (survey.isActive) 1L else 0L,
+                    questionCount = survey.questionCount.toLong(),
+                    detailJson = existingDetailJson[survey.id],
+                    updatedAt = nowMs,
+                )
+            }
+        }
+    }
+
+    override suspend fun idsMissingDetail(): List<String> = withContext(dispatcher) {
+        queries.selectIdsMissingDetail().executeAsList()
     }
 }

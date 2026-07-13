@@ -3,8 +3,10 @@ package ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_list
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,12 +23,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
+import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButtonVariant
+import ar.com.ingenieriaalimentacion.core.design_system.components.card.AlInfoCard
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import com.komoui.components.Spinner
 import com.komoui.themes.styles
+import ingenieria_alimentacion.composeapp.generated.resources.Res
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_time
 import kotlinx.coroutines.flow.distinctUntilChanged
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -105,26 +111,44 @@ fun SurveyListScreen(
                         modifier = Modifier.align(Alignment.Center),
                     )
 
-                    else -> LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(),
-                    ) {
-                        items(items = state.surveys, key = { it.id }) { survey ->
-                            AlListRow(
-                                horizontalPadding = 0.dp,
-                                title = survey.name,
-                                subtitle = "${survey.questionCount} preguntas",
-                                onClick = { onAction(SurveyListAction.SurveyClick(survey.id)) },
+                    else -> Column(modifier = Modifier.fillMaxSize()) {
+                        if (state.fromCache) {
+                            Spacer(modifier = Modifier.height(AlTheme.spacing.md))
+                            AlInfoCard(
+                                title = "Sin conexión",
+                                description = "Mostrando encuestas guardadas",
+                                leadingIcon = Res.drawable.ic_mingcute_time,
+                                leadingIconTint = AlTheme.colors.textMuted,
+                                trailing = {
+                                    AlButton(
+                                        onClick = { onAction(SurveyListAction.RetryClick) },
+                                        variant = AlButtonVariant.Outline,
+                                    ) { Text("Reintentar") }
+                                },
                             )
+                            Spacer(modifier = Modifier.height(AlTheme.spacing.md))
                         }
-                        if (state.isLoadingMore) {
-                            item {
-                                Spinner(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    size = 24.dp,
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize(),
+                        ) {
+                            items(items = state.surveys, key = { it.id }) { survey ->
+                                AlListRow(
+                                    horizontalPadding = 0.dp,
+                                    title = survey.name,
+                                    subtitle = "${survey.questionCount} preguntas",
+                                    onClick = { onAction(SurveyListAction.SurveyClick(survey.id)) },
                                 )
+                            }
+                            if (state.isLoadingMore) {
+                                item {
+                                    Spinner(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        size = 24.dp,
+                                    )
+                                }
                             }
                         }
                     }

@@ -57,6 +57,7 @@ class SurveyListViewModel(
                             isLoading = false,
                             isLoadingMore = false,
                             loadError = false,
+                            fromCache = paged.fromCache,
                         )
                     }
                 },

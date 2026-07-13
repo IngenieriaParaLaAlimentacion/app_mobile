@@ -10,6 +10,7 @@ data class SurveyListState(
     val loadError: Boolean = false,
     val page: Int = 1,
     val totalPages: Int = 1,
+    val fromCache: Boolean = false,
 ) {
     val canLoadMore: Boolean
         get() = page < totalPages && !isLoading && !isLoadingMore && !loadError

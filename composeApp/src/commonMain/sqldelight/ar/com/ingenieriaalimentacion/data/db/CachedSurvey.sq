@@ -17,6 +17,9 @@ SELECT * FROM CachedSurvey ORDER BY name ASC;
 selectById:
 SELECT * FROM CachedSurvey WHERE id = ?;
 
+selectIdsMissingDetail:
+SELECT id FROM CachedSurvey WHERE detailJson IS NULL;
+
 -- No ON CONFLICT DO UPDATE here: the project's SQLDelight dialect (sqlite_3_18, this
 -- codebase's existing default) predates SQLite's UPSERT syntax. A full-row replace is used
 -- instead, same convention as CachedActivityItem/CachedEstablishment; the caller

@@ -10,7 +10,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,11 +20,8 @@ import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ingenieria_alimentacion.composeapp.generated.resources.Res
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_check_circle_fill
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_close_line
-import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.vectorResource
-
-private const val AUTO_DISMISS_DELAY_MS = 1_000L
 
 /**
  * Soft, glanceable status banner for inline confirmations and notices. Unlike a
@@ -34,8 +30,11 @@ private const val AUTO_DISMISS_DELAY_MS = 1_000L
  * note rather than a permanent brand surface.
  *
  * Title-only by default — keep [message] short and skip [onDismiss] for purely
- * informational banners. Pass [onDismiss] to render a quiet close affordance and
- * auto-dismiss the banner after [AUTO_DISMISS_DELAY_MS].
+ * informational banners. Pass [onDismiss] to render a quiet close affordance.
+ *
+ * For a self-dismissing success confirmation that must stay visible regardless
+ * of scroll position (e.g. after an upload), use
+ * [ar.com.ingenieriaalimentacion.core.design_system.components.toast.AlToast] instead.
  */
 @Composable
 fun AlInlineBanner(
@@ -44,13 +43,6 @@ fun AlInlineBanner(
     variant: AlBannerVariant = AlBannerVariant.Success,
     onDismiss: (() -> Unit)? = null,
 ) {
-    if (onDismiss != null) {
-        LaunchedEffect(message) {
-            delay(AUTO_DISMISS_DELAY_MS)
-            onDismiss()
-        }
-    }
-
     val colors = AlTheme.colors
     val (container, accent, icon) = when (variant) {
         AlBannerVariant.Success -> Triple(

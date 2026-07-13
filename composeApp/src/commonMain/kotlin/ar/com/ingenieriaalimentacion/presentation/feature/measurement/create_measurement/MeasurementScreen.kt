@@ -27,13 +27,13 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import ar.com.ingenieriaalimentacion.core.design_system.components.banner.AlInlineBanner
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlInput
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlSelectField
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
+import ar.com.ingenieriaalimentacion.core.design_system.components.toast.AlToast
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
@@ -152,105 +152,105 @@ private fun MeasurementForm(
     isImeVisible: Boolean,
 ) {
     val styles = MaterialTheme.styles
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = AlTheme.spacing.lg),
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .verticalScroll(scrollState)
-                .padding(top = AlTheme.spacing.lg, bottom = AlTheme.spacing.md),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .fillMaxSize()
+                .padding(horizontal = AlTheme.spacing.lg),
         ) {
-            state.successMessage?.let { msg ->
-                AlInlineBanner(
-                    message = msg,
-                    onDismiss = { onAction(MeasurementAction.DismissSuccess) },
-                )
-            }
-
-            SubjectRow(subject = state.subject, enabled = !state.isSubmitting, onChange = {
-                onAction(MeasurementAction.ChangeSubjectClick)
-            })
-
-            AlSelectField(
-                label = "Establecimiento",
-                value = state.selectedEstablishment?.name ?: "",
-                placeholder = "Elegí el establecimiento",
-                error = state.establishmentError,
-                enabled = !state.isSubmitting && state.establishmentOptions.isNotEmpty(),
-                onClick = { onAction(MeasurementAction.EstablishmentPickerOpen) },
-            )
-            if (state.establishmentOptions.isEmpty()) {
-                Text(
-                    text = "No tenés establecimientos aprobados.",
-                    style = AlTheme.typography.caption,
-                    color = AlTheme.colors.textMuted,
-                )
-            }
-
-            AlInput(
-                label = "Peso (kg)",
-                value = state.weight.value,
-                onValueChange = { onAction(MeasurementAction.WeightChanged(it)) },
-                onFocusChange = { onAction(MeasurementAction.WeightFocusChanged(it)) },
-                error = state.weight.displayError,
-                enabled = !state.isSubmitting,
-                scrollState = scrollState,
-                isImeVisible = isImeVisible,
-                placeholder = "Ej. 72,5",
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            )
-
-            AlInput(
-                label = "Talla (cm)",
-                value = state.height.value,
-                onValueChange = { onAction(MeasurementAction.HeightChanged(it)) },
-                onFocusChange = { onAction(MeasurementAction.HeightFocusChanged(it)) },
-                error = state.height.displayError,
-                enabled = !state.isSubmitting,
-                scrollState = scrollState,
-                isImeVisible = isImeVisible,
-                placeholder = "Ej. 170",
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            )
-
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(
-                    text = "Fecha de medición",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = styles.foreground,
-                )
-                Text(
-                    text = state.measuredAtDisplay,
-                    style = AlTheme.typography.body,
-                    color = AlTheme.colors.textMuted,
-                )
-            }
-        }
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp, bottom = AlTheme.spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            state.submitError?.let { error ->
-                Text(text = error, color = AlTheme.colors.danger, style = AlTheme.typography.body)
-            }
-            AlButton(
-                onClick = { onAction(MeasurementAction.Submit) },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = state.canSubmit,
-                loading = state.isSubmitting,
-                fullWidth = true,
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(scrollState)
+                    .padding(top = AlTheme.spacing.lg, bottom = AlTheme.spacing.md),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                Text("Guardar")
+                SubjectRow(subject = state.subject, enabled = !state.isSubmitting, onChange = {
+                    onAction(MeasurementAction.ChangeSubjectClick)
+                })
+
+                AlSelectField(
+                    label = "Establecimiento",
+                    value = state.selectedEstablishment?.name ?: "",
+                    placeholder = "Elegí el establecimiento",
+                    error = state.establishmentError,
+                    enabled = !state.isSubmitting && state.establishmentOptions.isNotEmpty(),
+                    onClick = { onAction(MeasurementAction.EstablishmentPickerOpen) },
+                )
+                if (state.establishmentOptions.isEmpty()) {
+                    Text(
+                        text = "No tenés establecimientos aprobados.",
+                        style = AlTheme.typography.caption,
+                        color = AlTheme.colors.textMuted,
+                    )
+                }
+
+                AlInput(
+                    label = "Peso (kg)",
+                    value = state.weight.value,
+                    onValueChange = { onAction(MeasurementAction.WeightChanged(it)) },
+                    onFocusChange = { onAction(MeasurementAction.WeightFocusChanged(it)) },
+                    error = state.weight.displayError,
+                    enabled = !state.isSubmitting,
+                    scrollState = scrollState,
+                    isImeVisible = isImeVisible,
+                    placeholder = "Ej. 72,5",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                )
+
+                AlInput(
+                    label = "Talla (cm)",
+                    value = state.height.value,
+                    onValueChange = { onAction(MeasurementAction.HeightChanged(it)) },
+                    onFocusChange = { onAction(MeasurementAction.HeightFocusChanged(it)) },
+                    error = state.height.displayError,
+                    enabled = !state.isSubmitting,
+                    scrollState = scrollState,
+                    isImeVisible = isImeVisible,
+                    placeholder = "Ej. 170",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                )
+
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "Fecha de medición",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = styles.foreground,
+                    )
+                    Text(
+                        text = state.measuredAtDisplay,
+                        style = AlTheme.typography.body,
+                        color = AlTheme.colors.textMuted,
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = AlTheme.spacing.lg),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                state.submitError?.let { error ->
+                    Text(text = error, color = AlTheme.colors.danger, style = AlTheme.typography.body)
+                }
+                AlButton(
+                    onClick = { onAction(MeasurementAction.Submit) },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = state.canSubmit,
+                    loading = state.isSubmitting,
+                    fullWidth = true,
+                ) {
+                    Text("Guardar")
+                }
             }
         }
+
+        AlToast(
+            message = state.successMessage,
+            onDismiss = { onAction(MeasurementAction.DismissSuccess) },
+        )
     }
 }
 

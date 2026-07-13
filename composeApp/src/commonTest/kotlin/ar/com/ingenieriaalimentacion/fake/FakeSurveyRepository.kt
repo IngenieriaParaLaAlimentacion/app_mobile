@@ -11,4 +11,6 @@ class FakeSurveyRepository : SurveyRepository {
     override suspend fun getAvailable(page: Int, pageSize: Int): Result<PagedSurveys> = availableResult
 
     override suspend fun getDetail(surveyId: String): Result<SurveyDetail> = detailResult
+
+    override suspend fun warmAvailableSurveys() = Unit
 }

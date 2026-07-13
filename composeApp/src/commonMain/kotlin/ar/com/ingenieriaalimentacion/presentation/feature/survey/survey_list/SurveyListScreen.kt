@@ -3,8 +3,10 @@ package ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_list
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -111,12 +113,12 @@ fun SurveyListScreen(
 
                     else -> Column(modifier = Modifier.fillMaxSize()) {
                         if (state.fromCache) {
+                            Spacer(modifier = Modifier.height(AlTheme.spacing.md))
                             AlInfoCard(
                                 title = "Sin conexión",
                                 description = "Mostrando encuestas guardadas",
                                 leadingIcon = Res.drawable.ic_mingcute_time,
                                 leadingIconTint = AlTheme.colors.textMuted,
-                                modifier = Modifier.padding(top = AlTheme.spacing.md),
                                 trailing = {
                                     AlButton(
                                         onClick = { onAction(SurveyListAction.RetryClick) },
@@ -124,6 +126,7 @@ fun SurveyListScreen(
                                     ) { Text("Reintentar") }
                                 },
                             )
+                            Spacer(modifier = Modifier.height(AlTheme.spacing.md))
                         }
                         LazyColumn(
                             state = listState,

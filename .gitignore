@@ -10,3 +10,11 @@ xcuserdata/
 *.xcuserstate
 DerivedData/
 Pods/
+
+# Release signing — NEVER commit these
+keystore.properties
+*.jks
+*.keystore
+# Firebase App Distribution config (contains project identifiers)
+google-services.json
+composeApp/google-services.json

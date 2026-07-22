@@ -1,4 +1,14 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
+
+// Release signing secrets live in keystore.properties (git-ignored), never in this
+// file or in git. Absent on machines that only build debug (e.g. CI without the key).
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) {
+        keystorePropertiesFile.inputStream().use { load(it) }
+    }
+}
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -115,10 +125,30 @@ android {
         versionName = "0.1.0"
     }
 
+    signingConfigs {
+        // Only wire the release signing config when keystore.properties is present,
+        // so debug-only builds (and CI without the key) still configure cleanly.
+        if (keystorePropertiesFile.exists()) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         getByName("debug") {
             isMinifyEnabled = false
             isDebuggable = true
+        }
+        getByName("release") {
+            // Keep R8/minification off for the first distributable builds — enabling it
+            // needs keep rules for Koin + kotlinx.serialization and can break silently.
+            isMinifyEnabled = false
+            isDebuggable = false
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 

@@ -7,6 +7,12 @@ sealed interface RegisterAction {
     data class PasswordChanged(val value: String) : RegisterAction
     data class NameChanged(val value: String) : RegisterAction
     data class LastNameChanged(val value: String) : RegisterAction
+    data class LocalityChanged(val value: String) : RegisterAction
+    data class LocalityFocusChanged(val focused: Boolean) : RegisterAction
+    data class DescriptionChanged(val value: String) : RegisterAction
+    data class DescriptionFocusChanged(val focused: Boolean) : RegisterAction
+    data class ContactPhoneChanged(val value: String) : RegisterAction
+    data class ContactPhoneFocusChanged(val focused: Boolean) : RegisterAction
     data object OpenEstablishmentSelector : RegisterAction
     data class EstablishmentsSelected(val establishments: List<Establishment>) : RegisterAction
     data object Submit : RegisterAction

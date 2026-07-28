@@ -10,4 +10,7 @@ data class RegisterFieldWorkerRequest(
     val name: String,
     @SerialName("last_name") val lastName: String,
     val establishments: List<String>,
+    val locality: String? = null,
+    val description: String? = null,
+    @SerialName("contact_phone") val contactPhone: String? = null,
 )

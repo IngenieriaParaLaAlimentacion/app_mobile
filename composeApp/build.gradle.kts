@@ -1,3 +1,4 @@
+import com.codingfeline.buildkonfig.compiler.FieldSpec
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
@@ -10,6 +11,70 @@ val keystoreProperties = Properties().apply {
     }
 }
 
+// Per-environment URLs live in local.properties (git-ignored). See local.properties.example
+// for the full key list. Absent on a fresh clone, which is why prod carries a default below.
+val localPropertiesFile = rootProject.file("local.properties")
+val localProperties = Properties().apply {
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { load(it) }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Environment selection (tst / prod)
+//
+// BuildKonfig generates a SINGLE `AlEnv` object into commonMain per Gradle
+// invocation, so exactly one environment can be resolved per build — building
+// both flavors at once would bake one env into both APKs. Resolution order:
+//   1. explicit -PtargetEnvironment=tst|prod   (used by CI and by iOS later)
+//   2. inferred from the requested Android variant task (assembleTstDebug -> tst)
+//   3. "tst" fallback — never silently prod.
+// ---------------------------------------------------------------------------
+val requestedTasks: String = gradle.startParameter.taskNames.joinToString(" ").lowercase()
+val explicitEnv: String? = (project.findProperty("targetEnvironment") as String?)?.lowercase()
+val tasksWantProd: Boolean = requestedTasks.contains("prod")
+val tasksWantTst: Boolean = requestedTasks.contains("tst")
+
+if (explicitEnv == null && tasksWantProd && tasksWantTst) {
+    error(
+        "Both 'tst' and 'prod' tasks were requested in one Gradle invocation. BuildKonfig can only " +
+            "bake one environment per build, so this would ship the wrong API_URL in one of them. " +
+            "Run them as separate invocations, or pass -PtargetEnvironment explicitly."
+    )
+}
+
+val targetEnv: String = explicitEnv ?: when {
+    tasksWantProd -> "prod"
+    tasksWantTst -> "tst"
+    else -> "tst"
+}
+
+require(targetEnv == "tst" || targetEnv == "prod") {
+    "Unknown -PtargetEnvironment='$targetEnv'. Expected 'tst' or 'prod'."
+}
+
+// Reads `key` from local.properties, treating a present-but-empty value as absent.
+fun localProperty(key: String, default: String = ""): String =
+    localProperties.getProperty(key)?.takeIf { it.isNotBlank() } ?: default
+
+val apiUrl: String = when (targetEnv) {
+    // Keep the known prod host as the default so a fresh clone (no local.properties)
+    // still builds and runs. tst has no default — it must be supplied.
+    "prod" -> localProperty("api_url_prod", "https://backend-production-b512.up.railway.app/")
+    else -> localProperty("api_url_tst")
+}
+
+// A blank base URL yields an app where every request fails in a confusing way, so hard-fail
+// as soon as the build would produce an installable artifact. Bare compile / metadata tasks
+// (scripts/compile.sh, CI type checks) stay green without a local.properties.
+if (apiUrl.isBlank()) {
+    val producesArtifact = listOf("assemble", "bundle", "install", "embedandsign")
+        .any { requestedTasks.contains(it) }
+    val message = "API base URL for environment '$targetEnv' is missing. Add 'api_url_$targetEnv=...' " +
+        "to local.properties (copy local.properties.example to get started)."
+    if (producesArtifact) error(message) else logger.warn("WARNING: $message")
+}
+
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
@@ -17,7 +82,25 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.jetbrains.kotlin.serialization)
     alias(libs.plugins.sqldelight)
+    alias(libs.plugins.buildkonfig)
 }
+
+buildkonfig {
+    packageName = "ar.com.ingenieriaalimentacion.env"
+    objectName = "AlEnv"
+
+    defaultConfigs {
+        buildConfigField(FieldSpec.Type.STRING, "APP_ENVIRONMENT", targetEnv)
+        buildConfigField(FieldSpec.Type.STRING, "API_URL", apiUrl)
+    }
+}
+
+// Pin targetEnv as an explicit task input so flipping environments always marks
+// generateBuildKonfig out-of-date. Without this, an env switch whose field values happen
+// to be unchanged can leave the task UP-TO-DATE and bake a STALE environment into the
+// build — the failure mode is a "prod" APK still pointing at the tst backend.
+tasks.matching { it.name.startsWith("generateBuildKonfig") }
+    .configureEach { inputs.property("targetEnvironment", targetEnv) }
 
 sqldelight {
     databases {
@@ -135,6 +218,25 @@ android {
                 keyAlias = keystoreProperties.getProperty("keyAlias")
                 keyPassword = keystoreProperties.getProperty("keyPassword")
             }
+        }
+    }
+
+    // Environment flavors. `applicationIdSuffix` is what lets a tst and a prod build sit on
+    // the same device without sharing the SQLDelight offline queue or the auth prefs — both
+    // are sandboxed per package, so queued writes can never flush to the wrong backend.
+    flavorDimensions += "environment"
+    productFlavors {
+        create("tst") {
+            dimension = "environment"
+            applicationIdSuffix = ".tst"
+            versionNameSuffix = "-tst"
+            resValue("string", "app_name", "Ing. Alimentación (Test)")
+            resValue("string", "deep_link_scheme", "ingenieriaalimentacion")
+        }
+        create("prod") {
+            dimension = "environment"
+            resValue("string", "app_name", "Ingeniería en Alimentación")
+            resValue("string", "deep_link_scheme", "ingenieriaalimentacion")
         }
     }
 

@@ -1,0 +1,15 @@
+# Copy this file to `local.properties` (git-ignored) and fill in the real values.
+# These are baked into the app at build time by BuildKonfig (see the `buildkonfig` block in
+# composeApp/build.gradle.kts) and read from Kotlin through `data/network/ApiConfig`.
+#
+# The environment is chosen by the Android flavor (assembleTstDebug / assembleProdDebug) or
+# explicitly with -PtargetEnvironment=tst|prod. Only one environment is baked per build.
+
+# Backend base URL, with trailing slash.
+# `api_url_prod` falls back to the known production host when omitted, so a fresh clone builds.
+# `api_url_tst` has no default — any tst APK/AAB build fails until you set it.
+api_url_tst=
+api_url_prod=
+
+# Android SDK path (written automatically by Android Studio).
+sdk.dir=/Users/YOUR_USERNAME/Library/Android/sdk

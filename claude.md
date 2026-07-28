@@ -198,6 +198,43 @@ Adopting this lets `ProfileScreenRoot` drop the `LifecycleResumeEffect` +
 `skipFirstResume` workaround (which re-fetches `/me` on every tab re-entry); the result
 key refreshes only after a confirmed save.
 
+## Environments (tst / prod)
+
+Two environments, `tst` and `prod`. Per-environment values live in the git-ignored
+`local.properties` (`api_url_tst`, `api_url_prod`); copy `local.properties.example` to get
+started. `api_url_prod` falls back to the known production host, `api_url_tst` has no default.
+
+**BuildKonfig is the single carrier.** The `buildkonfig` block in `composeApp/build.gradle.kts`
+reads `local.properties` and generates one `internal object AlEnv` into **commonMain**.
+`data/network/ApiConfig` is the only reader of `AlEnv`, so adding a new environment value means
+editing Gradle plus `ApiConfig` and nothing else. Do not read `AlEnv` directly elsewhere.
+
+**Android flavors** (`flavorDimensions "environment"`) give `tst` an `applicationIdSuffix = ".tst"`
+and a `-tst` version suffix, so both builds coexist on one device. That suffix is what keeps the
+SQLDelight offline queue and the auth prefs sandboxed per environment — without it, queued writes
+could flush to the wrong backend. `app_name` and `deep_link_scheme` are per-flavor `resValue`s;
+they are deliberately **not** in `res/values/strings.xml`, which would shadow them.
+
+Environment resolution, in order: `-PtargetEnvironment=tst|prod` → inferred from the requested
+Android variant task (`assembleTstDebug` → `tst`) → `tst` fallback (never silently prod).
+
+Two guardrails worth knowing before you touch that block:
+- `generateBuildKonfig` pins `targetEnvironment` as a task input. Without it, flipping
+  environments can leave the task `UP-TO-DATE` and bake a **stale** env into the build.
+- Only one environment can be baked per Gradle invocation, so requesting both flavors at once
+  (`./gradlew assembleTstDebug assembleProdDebug`) fails fast rather than shipping the wrong URL.
+
+A blank API URL hard-fails any `assemble`/`bundle`/`install` task and only warns for bare compile
+tasks, so `scripts/compile.sh` and CI type checks stay green without a `local.properties`.
+
+Both flavors currently claim the same `ingenieriaalimentacion://` deep-link scheme, so with both
+installed Android shows a chooser. Suffixing the tst scheme requires the tst backend to emit the
+suffixed reset-password link first — otherwise password reset breaks silently.
+
+iOS has no environment split yet — there is no Xcode project checked in (`iosApp/` holds only
+Swift sources). When one exists, mirror `../extra`: per-env build configurations backed by
+xcconfig, with a build phase mapping `$CONFIGURATION` to `-PtargetEnvironment`.
+
 ## Commands
 
 The project requires Java 21. `scripts/compile.sh` sets `JAVA_HOME` automatically.
@@ -208,9 +245,16 @@ The project requires Java 21. `scripts/compile.sh` sets `JAVA_HOME` automaticall
 ```
 
 ### Android build
+Every variant is flavored — there is no plain `assembleDebug`.
 ```bash
-./gradlew :composeApp:assembleDebug --no-daemon
+./gradlew :composeApp:assembleTstDebug --no-daemon
+./gradlew :composeApp:assembleProdDebug --no-daemon
+```
+
+### Tests
+```bash
+./gradlew :composeApp:testProdDebugUnitTest --no-daemon
 ```
 
 ### iOS
-Open `iosApp/iosApp.xcodeproj` in Xcode and run the `iosApp` scheme on a simulator.
+No Xcode project is checked in yet, so the app cannot be run on a simulator from this repo.

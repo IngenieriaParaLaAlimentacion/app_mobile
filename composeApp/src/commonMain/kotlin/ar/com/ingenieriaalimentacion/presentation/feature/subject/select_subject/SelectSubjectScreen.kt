@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
+import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButtonVariant
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlInput
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
@@ -121,14 +122,31 @@ fun SelectSubjectScreen(
                             AlButton(onClick = { onAction(SelectSubjectAction.RetryClick) }) {
                                 Text("Reintentar")
                             }
+                            // Offline with no local match lands here, not in "Sin resultados", so
+                            // the inline alta has to be reachable from this branch too — that is
+                            // exactly the field-without-signal case.
+                            AlButton(
+                                onClick = { onAction(SelectSubjectAction.CreateSubjectClick) },
+                                variant = AlButtonVariant.Outline,
+                            ) {
+                                Text("Crear sujeto")
+                            }
                         }
 
-                        state.results.isEmpty() -> Text(
-                            text = "Sin resultados",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = styles.mutedForeground,
+                        state.results.isEmpty() -> Column(
                             modifier = Modifier.align(Alignment.Center),
-                        )
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Text(
+                                text = "Sin resultados",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = styles.mutedForeground,
+                            )
+                            AlButton(onClick = { onAction(SelectSubjectAction.CreateSubjectClick) }) {
+                                Text("Crear sujeto")
+                            }
+                        }
 
                         else -> LazyColumn(
                             state = listState,

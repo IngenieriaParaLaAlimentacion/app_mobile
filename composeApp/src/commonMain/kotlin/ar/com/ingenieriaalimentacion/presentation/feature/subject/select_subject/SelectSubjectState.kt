@@ -14,4 +14,8 @@ data class SelectSubjectState(
 ) {
     val canLoadMore: Boolean
         get() = page < totalPages && !isLoading && !isLoadingMore && !loadError
+
+    /** Seeds the inline creation form, but only when what was typed actually looks like a DNI. */
+    val createDniPrefill: String
+        get() = query.trim().takeIf { it.isNotEmpty() && it.all(Char::isDigit) }.orEmpty()
 }

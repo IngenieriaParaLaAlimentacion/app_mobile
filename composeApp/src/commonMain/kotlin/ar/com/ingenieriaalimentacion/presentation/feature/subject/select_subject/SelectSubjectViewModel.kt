@@ -57,6 +57,11 @@ class SelectSubjectViewModel(
 
             SelectSubjectAction.RetryClick ->
                 viewModelScope.launch { search(_state.value.query) }
+
+            SelectSubjectAction.CreateSubjectClick ->
+                _state.update {
+                    it.copy(destination = SelectSubjectDestination.CreateSubject(it.createDniPrefill))
+                }
         }
     }
 

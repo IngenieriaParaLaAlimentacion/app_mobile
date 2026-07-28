@@ -150,4 +150,45 @@ class SelectSubjectViewModelTest {
             cancelAndIgnoreRemainingEvents()
         }
     }
+
+    @Test
+    fun `creating from a dni search prefills the new subject form`() = runTest(dispatcher) {
+        val repo = FakeSubjectQueryRepository().apply {
+            pages = mapOf(1 to SubjectPage(items = emptyList(), page = 1, totalPages = 1))
+        }
+        val vm = viewModel(repo)
+
+        vm.state.test {
+            awaitState { !it.isLoading }
+            vm.onAction(SelectSubjectAction.QueryChanged("12345678"))
+            advanceUntilIdle()
+
+            vm.onAction(SelectSubjectAction.CreateSubjectClick)
+            val destination = awaitState { it.destination != null }.destination
+            assertTrue(destination is SelectSubjectDestination.CreateSubject)
+            assertEquals("12345678", destination.prefillDni)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `creating from a name search leaves the dni blank`() = runTest(dispatcher) {
+        val repo = FakeSubjectQueryRepository().apply {
+            pages = mapOf(1 to SubjectPage(items = emptyList(), page = 1, totalPages = 1))
+        }
+        val vm = viewModel(repo)
+
+        vm.state.test {
+            awaitState { !it.isLoading }
+            vm.onAction(SelectSubjectAction.QueryChanged("perez"))
+            advanceUntilIdle()
+
+            vm.onAction(SelectSubjectAction.CreateSubjectClick)
+            val destination = awaitState { it.destination != null }.destination
+            assertTrue(destination is SelectSubjectDestination.CreateSubject)
+            // Only a digits-only query is a DNI; a name must not be typed into the DNI field.
+            assertEquals("", destination.prefillDni)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
 }

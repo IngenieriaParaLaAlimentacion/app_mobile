@@ -12,11 +12,11 @@ class FakeSubjectRepository : SubjectRepository {
     val enqueued = mutableListOf<NewSubject>()
     val retried = mutableListOf<String>()
     val deleted = mutableListOf<String>()
-    var enqueueResult: Result<Unit> = Result.success(Unit)
+    var enqueueResult: Result<String> = Result.success("local-id")
     var syncSummary: SyncSummary = SyncSummary()
     val uploads = MutableStateFlow<List<SubjectUpload>>(emptyList())
 
-    override suspend fun enqueue(newSubject: NewSubject): Result<Unit> {
+    override suspend fun enqueue(newSubject: NewSubject): Result<String> {
         enqueued += newSubject
         return enqueueResult
     }

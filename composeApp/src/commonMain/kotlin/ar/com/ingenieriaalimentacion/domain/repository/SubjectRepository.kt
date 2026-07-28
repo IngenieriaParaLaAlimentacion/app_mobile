@@ -6,8 +6,12 @@ import ar.com.ingenieriaalimentacion.domain.sync.SyncEngine
 import kotlinx.coroutines.flow.Flow
 
 interface SubjectRepository : SyncEngine {
-    /** Persist a new subject locally as PENDING. Returns immediately (offline-first). */
-    suspend fun enqueue(newSubject: NewSubject): Result<Unit>
+    /**
+     * Persist a new subject locally as PENDING. Returns immediately (offline-first) with the
+     * generated localId — also the POST idempotency key, and normally the server PK — so a
+     * measurement captured right afterwards can reference it without waiting for the sync.
+     */
+    suspend fun enqueue(newSubject: NewSubject): Result<String>
 
     /** Observe all locally-tracked uploads for the Uploads screen. */
     fun observeUploads(): Flow<List<SubjectUpload>>

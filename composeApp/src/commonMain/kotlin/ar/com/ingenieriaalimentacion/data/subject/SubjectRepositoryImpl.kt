@@ -26,8 +26,10 @@ class SubjectRepositoryImpl(
     private val now: () -> Long,
 ) : SubjectRepository {
 
-    override suspend fun enqueue(newSubject: NewSubject): Result<Unit> = runCatching {
-        local.insert(newSubject.toPendingUpload(id = idGenerator.newId(), now = now()))
+    override suspend fun enqueue(newSubject: NewSubject): Result<String> = runCatching {
+        val localId = idGenerator.newId()
+        local.insert(newSubject.toPendingUpload(id = localId, now = now()))
+        localId
     }
 
     override fun observeUploads(): Flow<List<SubjectUpload>> = local.observeAll()

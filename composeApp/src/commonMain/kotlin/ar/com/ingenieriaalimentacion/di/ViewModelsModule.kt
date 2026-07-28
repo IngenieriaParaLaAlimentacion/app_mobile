@@ -47,7 +47,9 @@ val viewModelsModule = module {
     }
     viewModelOf(::RegisterViewModel)
     viewModelOf(::LoginViewModel)
-    viewModelOf(::CreateSubjectViewModel)
+    viewModel { (route: Route.CreateSubject) ->
+        CreateSubjectViewModel(route = route, createSubject = get(), syncCoordinator = get())
+    }
     viewModelOf(::MeasurementViewModel)
     viewModelOf(::MeasurementUploadsViewModel)
     viewModelOf(::SelectSubjectViewModel)

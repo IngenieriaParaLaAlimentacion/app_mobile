@@ -21,9 +21,17 @@ sealed class Route {
     @SerialName("register_success")
     data object RegisterSuccess : Route()
 
+    /**
+     * [prefillDni] seeds the DNI field when the screen is opened from the subject picker after a
+     * fruitless search; [returnsResult] makes a successful save hand the new subject back to the
+     * measurement form instead of staying put with a confirmation banner.
+     */
     @Serializable
     @SerialName("create_subject")
-    data object CreateSubject : Route()
+    data class CreateSubject(
+        val prefillDni: String = "",
+        val returnsResult: Boolean = false,
+    ) : Route()
 
     @Serializable
     @SerialName("history")

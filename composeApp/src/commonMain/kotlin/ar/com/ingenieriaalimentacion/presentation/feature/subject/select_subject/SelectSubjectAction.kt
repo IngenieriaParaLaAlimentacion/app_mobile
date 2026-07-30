@@ -8,4 +8,5 @@ sealed interface SelectSubjectAction {
     data object LoadMore : SelectSubjectAction
     data object BackClick : SelectSubjectAction
     data object RetryClick : SelectSubjectAction
+    data object CreateSubjectClick : SelectSubjectAction
 }

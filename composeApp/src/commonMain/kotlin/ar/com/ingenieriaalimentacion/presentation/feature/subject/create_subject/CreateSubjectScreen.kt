@@ -38,12 +38,15 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.A
 import ar.com.ingenieriaalimentacion.core.design_system.components.toast.AlToast
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
+import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 import com.komoui.themes.styles
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @Composable
 fun CreateSubjectScreenRoot(
-    viewModel: CreateSubjectViewModel = koinViewModel(),
+    route: Route.CreateSubject,
+    viewModel: CreateSubjectViewModel = koinViewModel { parametersOf(route) },
     navigate: (CreateSubjectDestination) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()

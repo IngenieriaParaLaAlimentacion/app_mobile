@@ -5,9 +5,12 @@ import app.cash.turbine.test
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.di.AppScope
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
+import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.CreateSubjectUseCase
 import ar.com.ingenieriaalimentacion.fake.FakeConnectivityObserver
 import ar.com.ingenieriaalimentacion.fake.FakeSubjectRepository
+import ar.com.ingenieriaalimentacion.presentation.navigation.Route
+import kotlinx.serialization.json.Json
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -35,9 +38,12 @@ class CreateSubjectViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun viewModel(repo: FakeSubjectRepository): CreateSubjectViewModel {
+    private fun viewModel(
+        repo: FakeSubjectRepository,
+        route: Route.CreateSubject = Route.CreateSubject(),
+    ): CreateSubjectViewModel {
         val coordinator = SyncCoordinator(listOf(repo), FakeConnectivityObserver(), AppScope())
-        return CreateSubjectViewModel(CreateSubjectUseCase(repo), coordinator)
+        return CreateSubjectViewModel(route, CreateSubjectUseCase(repo), coordinator)
     }
 
     private fun CreateSubjectViewModel.fillValidForm() {
@@ -67,7 +73,7 @@ class CreateSubjectViewModelTest {
         vm.state.test {
             vm.onAction(CreateSubjectAction.Submit)
             val state = awaitState { it.successMessage != null }
-            assertEquals("Guardado. Se sincronizará automáticamente.", state.successMessage)
+            assertEquals("Sujeto guardado", state.successMessage)
             assertEquals("", state.dni.value)
             assertEquals("", state.name.value)
             cancelAndIgnoreRemainingEvents()
@@ -111,6 +117,44 @@ class CreateSubjectViewModelTest {
             vm.onAction(CreateSubjectAction.DniFocusChanged(false))
             val blurred = awaitState { it.dni.displayError != null }
             assertEquals("Ingresá un DNI válido (1 a 8 dígitos).", blurred.dni.displayError)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `prefilled dni seeds the form when opened from the picker`() = runTest(dispatcher) {
+        val repo = FakeSubjectRepository()
+        val vm = viewModel(repo, Route.CreateSubject(prefillDni = "12345678", returnsResult = true))
+
+        vm.state.test {
+            assertEquals("12345678", awaitItem().dni.value)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `returnsResult hands the new subject back instead of showing the banner`() = runTest(dispatcher) {
+        val repo = FakeSubjectRepository()
+        repo.enqueueResult = Result.success("new-local-id")
+        val vm = viewModel(repo, Route.CreateSubject(prefillDni = "12345678", returnsResult = true))
+
+        vm.fillValidForm()
+
+        vm.state.test {
+            vm.onAction(CreateSubjectAction.Submit)
+            val state = awaitState { it.destination != null }
+            val destination = state.destination
+            assertTrue(destination is CreateSubjectDestination.Created)
+            // The measurement form reads this back as a SubjectSummary; the id must be the localId
+            // the queue just generated, which is what the measurement will reference as its FK.
+            val summary = Json.decodeFromString<SubjectSummary>(destination.subjectJson)
+            assertEquals("new-local-id", summary.id)
+            assertEquals(12345678, summary.dni)
+            assertEquals("Juan", summary.name)
+            assertEquals("Pérez", summary.lastName)
+            assertEquals(Sex.Male, summary.sex)
+            // Stays on the form-confirmation path only when nobody is waiting for the subject.
+            assertEquals(null, state.successMessage)
             cancelAndIgnoreRemainingEvents()
         }
     }

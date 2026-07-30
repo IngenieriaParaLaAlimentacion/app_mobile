@@ -4,6 +4,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.composable
+import ar.com.ingenieriaalimentacion.presentation.feature.subject.create_subject.navigateToCreateSubject
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 
 /** Shared `savedStateHandle` key the picker writes its result under and the caller observes. */
@@ -31,5 +32,10 @@ internal fun navigate(
                 ?.savedStateHandle?.set(SELECTED_SUBJECT_RESULT, destination.subjectJson)
             navController.popBackStack()
         }
+        // The creation screen pops back past this picker and writes SELECTED_SUBJECT_RESULT itself.
+        is SelectSubjectDestination.CreateSubject -> navController.navigateToCreateSubject(
+            prefillDni = destination.prefillDni,
+            returnsResult = true,
+        )
     }
 }

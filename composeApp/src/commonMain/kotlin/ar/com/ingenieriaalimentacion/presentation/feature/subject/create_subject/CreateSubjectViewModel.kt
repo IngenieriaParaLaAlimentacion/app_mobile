@@ -3,13 +3,17 @@ package ar.com.ingenieriaalimentacion.presentation.feature.subject.create_subjec
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ar.com.ingenieriaalimentacion.core.validation.Rules
+import ar.com.ingenieriaalimentacion.core.validation.TextFieldState
 import ar.com.ingenieriaalimentacion.core.validation.Validator
 import ar.com.ingenieriaalimentacion.core.validation.onChange
 import ar.com.ingenieriaalimentacion.core.validation.onFocus
 import ar.com.ingenieriaalimentacion.core.validation.showError
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.domain.model.subject.NewSubject
+import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.CreateSubjectUseCase
+import ar.com.ingenieriaalimentacion.presentation.navigation.Route
+import kotlinx.serialization.json.Json
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -21,11 +25,14 @@ import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 
 class CreateSubjectViewModel(
+    private val route: Route.CreateSubject,
     private val createSubject: CreateSubjectUseCase,
     private val syncCoordinator: SyncCoordinator,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(CreateSubjectState())
+    private val _state = MutableStateFlow(
+        CreateSubjectState(dni = TextFieldState(value = route.prefillDni)),
+    )
     val state = _state.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5_000L),
@@ -121,13 +128,34 @@ class CreateSubjectViewModel(
         _state.update { validated.copy(isSubmitting = true, submitError = null, successMessage = null) }
         viewModelScope.launch {
             createSubject(newSubject).fold(
-                onSuccess = {
-                    _state.update {
-                        CreateSubjectState(
-                            successMessage = "Sujeto guardado",
-                        )
-                    }
+                onSuccess = { localId ->
                     syncCoordinator.requestSync() // fire-and-forget; UI does not wait on the result
+                    if (route.returnsResult) {
+                        // The subject is still PENDING, but its localId is the POST idempotency key
+                        // and normally becomes the server PK, so the measurement can reference it
+                        // right away — the sync engine holds the measurement until it lands.
+                        val summary = SubjectSummary(
+                            id = localId,
+                            dni = newSubject.dni,
+                            name = newSubject.name,
+                            lastName = newSubject.lastName,
+                            sex = newSubject.sex,
+                        )
+                        _state.update {
+                            it.copy(
+                                isSubmitting = false,
+                                destination = CreateSubjectDestination.Created(
+                                    Json.encodeToString(summary),
+                                ),
+                            )
+                        }
+                    } else {
+                        _state.update {
+                            CreateSubjectState(
+                                successMessage = "Sujeto guardado",
+                            )
+                        }
+                    }
                 },
                 onFailure = {
                     _state.update {

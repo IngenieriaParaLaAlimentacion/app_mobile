@@ -1,6 +1,7 @@
 package ar.com.ingenieriaalimentacion.data.subject
 
 import ar.com.ingenieriaalimentacion.domain.model.subject.MAX_SYNC_ATTEMPTS
+import ar.com.ingenieriaalimentacion.domain.model.subject.NewSubject
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectUpload
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
@@ -81,6 +82,26 @@ class SubjectSyncEngineTest {
         createdAt = createdAt,
         updatedAt = updatedAt,
     )
+
+    @Test
+    fun `enqueue returns the generated localId it persisted`() = runTest {
+        val newSubject = NewSubject(
+            dni = 12345678,
+            sex = Sex.Male,
+            name = "Juan",
+            lastName = "Pérez",
+            birthDate = LocalDate.parse("1990-01-01"),
+            isRural = false,
+            isIndigenous = false,
+        )
+
+        val localId = repo.enqueue(newSubject).getOrThrow()
+
+        // The caller needs this id to reference the subject from a measurement captured right after.
+        assertEquals("generated", localId)
+        assertEquals(SyncState.Pending, store.current(localId)?.syncState)
+        assertEquals(12345678, store.current(localId)?.dni)
+    }
 
     @Test
     fun `Created maps to Synced and counts`() = runTest {

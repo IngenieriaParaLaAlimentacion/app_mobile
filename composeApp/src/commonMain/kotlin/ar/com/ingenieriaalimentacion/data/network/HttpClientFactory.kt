@@ -39,7 +39,9 @@ object HttpClientFactory {
             install(ContentNegotiation) { json(json) }
             install(Logging) {
                 logger = object : Logger { override fun log(message: String) = println(message) }
-                level = LogLevel.NONE
+                // Method/URL/status on tst, silent on prod. Deliberately INFO and not
+                // HEADERS/ALL — those would print the Authorization header into logcat.
+                level = if (ApiConfig.IS_PROD) LogLevel.NONE else LogLevel.INFO
             }
             defaultRequest { url(ApiConfig.BASE_URL) }
         }
@@ -56,7 +58,9 @@ object HttpClientFactory {
         install(ContentNegotiation) { json(json) }
         install(Logging) {
             logger = object : Logger { override fun log(message: String) = println(message) }
-            level = LogLevel.NONE
+            // Method/URL/status on tst, silent on prod. Deliberately INFO and not
+            // HEADERS/ALL — those would print the Authorization header into logcat.
+            level = if (ApiConfig.IS_PROD) LogLevel.NONE else LogLevel.INFO
         }
         defaultRequest { url(ApiConfig.BASE_URL) }
         install(Auth) {

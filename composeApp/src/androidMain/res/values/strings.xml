@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Ingeniería en Alimentación</string>
+    <!--
+      app_name and deep_link_scheme are generated per environment flavor (tst / prod) by the
+      `productFlavors` block in composeApp/build.gradle.kts — defining them here too would
+      shadow the flavor values.
+    -->
 </resources>

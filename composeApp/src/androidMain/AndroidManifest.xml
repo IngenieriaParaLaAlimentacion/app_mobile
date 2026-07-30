@@ -25,8 +25,14 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+                <!--
+                  Scheme comes from the environment flavor (composeApp/build.gradle.kts). Both
+                  tst and prod currently claim "ingenieriaalimentacion", so with both installed
+                  Android shows a chooser. Suffixing the tst scheme requires the tst backend to
+                  emit the suffixed reset-password link first, or password reset breaks silently.
+                -->
                 <data
-                    android:scheme="ingenieriaalimentacion"
+                    android:scheme="@string/deep_link_scheme"
                     android:host="reset-password" />
             </intent-filter>
         </activity>

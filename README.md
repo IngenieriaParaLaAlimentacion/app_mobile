@@ -8,14 +8,27 @@ Compose Multiplatform app (Android + iOS).
 - Android Studio with Kotlin Multiplatform plugin
 - Xcode 15+ for iOS
 
+## Setup
+
+Copy `local.properties.example` to `local.properties` and fill in `api_url_tst`. It is
+git-ignored and holds the per-environment backend URLs.
+
 ## Build
 
+The app ships in two environments, `tst` and `prod`, as Android product flavors. The `tst`
+build installs alongside `prod` under its own application id (`…ingenieriaalimentacion.tst`),
+so the two never share the offline queue or the stored session.
+
 ```bash
-./scripts/compile.sh                                      # quick common-main type check
-./gradlew :composeApp:assembleDebug --no-daemon           # Android APK
+./scripts/compile.sh                                       # quick common-main type check
+./gradlew :composeApp:assembleTstDebug --no-daemon         # test-environment APK
+./gradlew :composeApp:assembleProdDebug --no-daemon        # production APK
 ```
 
-For iOS, open `iosApp/iosApp.xcodeproj` in Xcode and run the `iosApp` scheme on a simulator.
+Build one environment per Gradle invocation — requesting both at once fails fast, because
+only one environment can be baked into the generated config. See CLAUDE.md for the details.
+
+iOS has no environment split yet, and no Xcode project is checked in.
 
 ## Architecture
 

@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.register
 
+import ar.com.ingenieriaalimentacion.core.validation.TextFieldState
 import ar.com.ingenieriaalimentacion.domain.model.establishment.Establishment
 
 data class RegisterState(
@@ -8,14 +9,26 @@ data class RegisterState(
     val password: String = "",
     val name: String = "",
     val lastName: String = "",
+    /** Optional contact details — blur-aware validated, but never required to submit. */
+    val locality: TextFieldState = TextFieldState(),
+    val description: TextFieldState = TextFieldState(),
+    val contactPhone: TextFieldState = TextFieldState(),
     val selectedEstablishments: List<Establishment> = emptyList(),
     val isSubmitting: Boolean = false,
     val fieldErrors: RegisterFieldErrors = RegisterFieldErrors(),
     val submitError: String? = null,
 ) {
+    /**
+     * The optional fields never *enable* the button — they're valid while empty — but a
+     * filled-in value that breaks its rule blocks the submit until it's corrected.
+     */
+    private val optionalFieldsValid: Boolean
+        get() = locality.isValid && description.isValid && contactPhone.isValid
+
     val canSubmit: Boolean
         get() = email.isNotBlank() && password.isNotBlank() && name.isNotBlank() &&
-            lastName.isNotBlank() && selectedEstablishments.isNotEmpty() && !isSubmitting
+            lastName.isNotBlank() && selectedEstablishments.isNotEmpty() &&
+            optionalFieldsValid && !isSubmitting
 }
 
 data class RegisterFieldErrors(

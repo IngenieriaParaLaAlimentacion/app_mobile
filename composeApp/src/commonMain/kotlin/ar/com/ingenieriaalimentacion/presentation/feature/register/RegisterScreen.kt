@@ -170,6 +170,44 @@ fun RegisterScreen(
                         error = state.fieldErrors.establishments,
                         enabled = !state.isSubmitting,
                     )
+
+                    AlInput(
+                        label = "Localidad",
+                        value = state.locality.value,
+                        onValueChange = { onAction(RegisterAction.LocalityChanged(it)) },
+                        onFocusChange = { onAction(RegisterAction.LocalityFocusChanged(it)) },
+                        error = state.locality.displayError,
+                        enabled = !state.isSubmitting,
+                        scrollState = scrollState,
+                        isImeVisible = isImeVisible,
+                        placeholder = "Tu localidad (opcional)",
+                    )
+
+                    AlInput(
+                        label = "Descripción",
+                        value = state.description.value,
+                        onValueChange = { onAction(RegisterAction.DescriptionChanged(it)) },
+                        onFocusChange = { onAction(RegisterAction.DescriptionFocusChanged(it)) },
+                        error = state.description.displayError,
+                        enabled = !state.isSubmitting,
+                        singleLine = false,
+                        scrollState = scrollState,
+                        isImeVisible = isImeVisible,
+                        placeholder = "Contanos sobre tu actividad (opcional)",
+                    )
+
+                    AlInput(
+                        label = "Teléfono de contacto",
+                        value = state.contactPhone.value,
+                        onValueChange = { onAction(RegisterAction.ContactPhoneChanged(it)) },
+                        onFocusChange = { onAction(RegisterAction.ContactPhoneFocusChanged(it)) },
+                        error = state.contactPhone.displayError,
+                        enabled = !state.isSubmitting,
+                        scrollState = scrollState,
+                        isImeVisible = isImeVisible,
+                        placeholder = "+54 381 555 5555 (opcional)",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    )
                 }
             }
 

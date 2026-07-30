@@ -186,6 +186,153 @@ class RegisterViewModelTest {
     }
 
     @Test
+    fun `optional fields left empty travel as null`() = runTest(dispatcher) {
+        val registrationRepo = FakeRegistrationRepository()
+        val vm = viewModel(registrationRepo = registrationRepo)
+
+        vm.state.test {
+            awaitItem() // initial
+            fillValidForm(vm)
+            // Blank-but-touched fields must not be sent as empty strings.
+            vm.onAction(RegisterAction.LocalityChanged("   "))
+            vm.onAction(RegisterAction.Submit)
+
+            awaitState { it.destination != null }
+            val sent = registrationRepo.lastRegistration
+            assertNull(sent?.locality)
+            assertNull(sent?.description)
+            assertNull(sent?.contactPhone)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `optional fields are trimmed and sent when filled`() = runTest(dispatcher) {
+        val registrationRepo = FakeRegistrationRepository()
+        val vm = viewModel(registrationRepo = registrationRepo)
+
+        vm.state.test {
+            awaitItem() // initial
+            fillValidForm(vm)
+            vm.onAction(RegisterAction.LocalityChanged("  Yerba Buena "))
+            vm.onAction(RegisterAction.DescriptionChanged(" Relevo comedores del sur "))
+            vm.onAction(RegisterAction.ContactPhoneChanged(" +54 (381) 555-5555 "))
+            vm.onAction(RegisterAction.Submit)
+
+            awaitState { it.destination != null }
+            val sent = registrationRepo.lastRegistration
+            assertEquals("Yerba Buena", sent?.locality)
+            assertEquals("Relevo comedores del sur", sent?.description)
+            assertEquals("+54 (381) 555-5555", sent?.contactPhone)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `canSubmit stays true when optional fields are empty`() = runTest(dispatcher) {
+        val vm = viewModel()
+
+        vm.state.test {
+            awaitItem() // initial
+            fillValidForm(vm)
+            val ready = awaitState { it.selectedEstablishments.isNotEmpty() }
+            assertTrue(ready.canSubmit)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `canSubmit is false while contact phone has invalid characters`() = runTest(dispatcher) {
+        val vm = viewModel()
+
+        vm.state.test {
+            awaitItem() // initial
+            fillValidForm(vm)
+            vm.onAction(RegisterAction.ContactPhoneChanged("no-es-un-telefono"))
+            val invalid = awaitState { it.contactPhone.value == "no-es-un-telefono" }
+            assertFalse(invalid.canSubmit)
+            assertNotNull(invalid.contactPhone.error)
+
+            vm.onAction(RegisterAction.ContactPhoneChanged("+54 381 555 5555"))
+            val valid = awaitState { it.contactPhone.value == "+54 381 555 5555" }
+            assertTrue(valid.canSubmit)
+            assertNull(valid.contactPhone.error)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `canSubmit is false when contact phone exceeds 20 characters`() = runTest(dispatcher) {
+        val vm = viewModel()
+
+        vm.state.test {
+            awaitItem() // initial
+            fillValidForm(vm)
+            vm.onAction(RegisterAction.ContactPhoneChanged("1".repeat(21)))
+            val state = awaitState { it.contactPhone.value.length == 21 }
+            assertFalse(state.canSubmit)
+            assertNotNull(state.contactPhone.error)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `locality and description enforce their length limits`() = runTest(dispatcher) {
+        val vm = viewModel()
+
+        vm.state.test {
+            awaitItem() // initial
+            fillValidForm(vm)
+            vm.onAction(RegisterAction.LocalityChanged("a".repeat(101)))
+            vm.onAction(RegisterAction.DescriptionChanged("b".repeat(501)))
+            val tooLong = awaitState { it.locality.error != null && it.description.error != null }
+            assertFalse(tooLong.canSubmit)
+
+            vm.onAction(RegisterAction.LocalityChanged("a".repeat(100)))
+            vm.onAction(RegisterAction.DescriptionChanged("b".repeat(500)))
+            val atLimit = awaitState { it.locality.error == null && it.description.error == null }
+            assertTrue(atLimit.canSubmit)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `optional field errors stay hidden while typing and show after blur`() = runTest(dispatcher) {
+        val vm = viewModel()
+
+        vm.state.test {
+            awaitItem() // initial
+            vm.onAction(RegisterAction.ContactPhoneFocusChanged(true))
+            vm.onAction(RegisterAction.ContactPhoneChanged("abc"))
+            val typing = awaitState { it.contactPhone.value == "abc" }
+            assertNull(typing.contactPhone.displayError)
+
+            vm.onAction(RegisterAction.ContactPhoneFocusChanged(false))
+            val blurred = awaitState { !it.contactPhone.isFocused && it.contactPhone.hasBlurred }
+            assertNotNull(blurred.contactPhone.displayError)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `submit with invalid optional field forces its error and does not navigate`() = runTest(dispatcher) {
+        val registrationRepo = FakeRegistrationRepository()
+        val vm = viewModel(registrationRepo = registrationRepo)
+
+        vm.state.test {
+            awaitItem() // initial
+            fillValidForm(vm)
+            vm.onAction(RegisterAction.ContactPhoneChanged("abc"))
+            vm.onAction(RegisterAction.Submit)
+
+            val state = awaitState { it.contactPhone.displayError != null }
+            assertNull(state.destination)
+            assertNull(registrationRepo.lastRegistration)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun `submit success sets destination to Success`() = runTest(dispatcher) {
         val vm = viewModel()
 

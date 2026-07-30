@@ -9,4 +9,7 @@ fun FieldWorkerRegistration.toRequest() = RegisterFieldWorkerRequest(
     name = name,
     lastName = lastName,
     establishments = establishmentIds,
+    locality = locality,
+    description = description,
+    contactPhone = contactPhone,
 )

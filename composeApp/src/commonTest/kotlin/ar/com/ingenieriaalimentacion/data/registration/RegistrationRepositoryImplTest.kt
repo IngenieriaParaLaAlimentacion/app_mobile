@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.registration
 
+import ar.com.ingenieriaalimentacion.data.network.HttpClientFactory
 import ar.com.ingenieriaalimentacion.domain.model.registration.FieldWorkerRegistration
 import ar.com.ingenieriaalimentacion.domain.model.registration.RegistrationError
 import io.ktor.client.HttpClient
@@ -18,7 +19,6 @@ import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -49,7 +49,9 @@ class RegistrationRepositoryImplTest {
         val engine = MockEngine(handler)
         return HttpClient(engine) {
             expectSuccess = true
-            install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+            // Mirror the production codec (notably `encodeDefaults = true`) so body assertions
+            // reflect what the app actually puts on the wire.
+            install(ContentNegotiation) { json(HttpClientFactory.json()) }
             defaultRequest { url("https://api.example.com/") }
         }
     }
@@ -92,6 +94,50 @@ class RegistrationRepositoryImplTest {
         assertTrue(body != null && body.contains("\"last_name\""), "body should contain last_name: $body")
         assertTrue(body.contains("\"establishments\""), "body should contain establishments: $body")
         assertTrue(body.contains("est-1") && body.contains("est-2"), "body should contain establishment ids: $body")
+    }
+
+    @Test
+    fun `request body serializes optional contact fields with snake_case contact_phone`() = runTest {
+        var capturedBody: String? = null
+        val repo = repository { request ->
+            capturedBody = (request.body as TextContent).text
+            respond(
+                content = successBody,
+                status = HttpStatusCode.Created,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+
+        repo.registerFieldWorker(
+            registration.copy(
+                locality = "Yerba Buena",
+                description = "Relevo comedores del sur",
+                contactPhone = "+54 381 555 5555",
+            ),
+        )
+
+        val body = capturedBody
+        assertTrue(body != null && body.contains("\"locality\":\"Yerba Buena\""), "body: $body")
+        assertTrue(body.contains("\"description\":\"Relevo comedores del sur\""), "body: $body")
+        assertTrue(body.contains("\"contact_phone\":\"+54 381 555 5555\""), "body: $body")
+    }
+
+    @Test
+    fun `request body never sends empty strings for omitted optional fields`() = runTest {
+        var capturedBody: String? = null
+        val repo = repository { request ->
+            capturedBody = (request.body as TextContent).text
+            respond(
+                content = successBody,
+                status = HttpStatusCode.Created,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+
+        repo.registerFieldWorker(registration)
+
+        val body = capturedBody
+        assertTrue(body != null && !body.contains("\"\""), "body should carry no empty strings: $body")
     }
 
     @Test

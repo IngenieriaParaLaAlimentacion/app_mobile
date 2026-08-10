@@ -72,12 +72,7 @@ class RegisterViewModel(
                 }
 
             is RegisterAction.EstablishmentsSelected ->
-                _state.update {
-                    it.copy(
-                        selectedEstablishments = action.establishments,
-                        fieldErrors = it.fieldErrors.copy(establishments = null),
-                    )
-                }
+                _state.update { it.copy(selectedEstablishments = action.establishments) }
 
             RegisterAction.Submit -> submit()
             RegisterAction.DismissError -> _state.update { it.copy(submitError = null) }
@@ -148,7 +143,6 @@ class RegisterViewModel(
         },
         name = if (state.name.isBlank()) "Ingresá tu nombre." else null,
         lastName = if (state.lastName.isBlank()) "Ingresá tu apellido." else null,
-        establishments = if (state.selectedEstablishments.isEmpty()) "Seleccioná al menos un establecimiento." else null,
     )
 
     /** Optional fields go out as `null` rather than `""` — the backend enforces `min_length=1`. */

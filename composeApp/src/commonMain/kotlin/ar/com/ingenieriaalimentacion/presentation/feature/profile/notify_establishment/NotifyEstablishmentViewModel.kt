@@ -24,36 +24,44 @@ class NotifyEstablishmentViewModel(
     private val _state = MutableStateFlow(NotifyEstablishmentState())
     val state = _state.asStateFlow()
 
-    // Every field is optional; the backend only rejects values over 100 chars.
-    private val fieldValidator: Validator = Rules.of(
-        Rules.maxLength(MAX_FIELD_LENGTH, "Máximo $MAX_FIELD_LENGTH caracteres."),
+    // The backend requires name and address; city and province stay optional.
+    // Every field is capped at 100 chars.
+    private val maxLengthRule = Rules.maxLength(MAX_FIELD_LENGTH, "Máximo $MAX_FIELD_LENGTH caracteres.")
+    private val nameValidator: Validator = Rules.of(
+        Rules.required("Ingresá el nombre del comedor."),
+        maxLengthRule,
     )
+    private val addressValidator: Validator = Rules.of(
+        Rules.required("Ingresá la dirección."),
+        maxLengthRule,
+    )
+    private val optionalFieldValidator: Validator = Rules.of(maxLengthRule)
 
     fun onAction(action: NotifyEstablishmentAction) {
         when (action) {
             is NotifyEstablishmentAction.NameChanged ->
-                _state.update { it.copy(name = it.name.onChange(action.value, fieldValidator)) }
+                _state.update { it.copy(name = it.name.onChange(action.value, nameValidator)) }
 
             is NotifyEstablishmentAction.NameFocusChanged ->
-                _state.update { it.copy(name = it.name.onFocus(action.focused, fieldValidator)) }
+                _state.update { it.copy(name = it.name.onFocus(action.focused, nameValidator)) }
 
             is NotifyEstablishmentAction.AddressChanged ->
-                _state.update { it.copy(address = it.address.onChange(action.value, fieldValidator)) }
+                _state.update { it.copy(address = it.address.onChange(action.value, addressValidator)) }
 
             is NotifyEstablishmentAction.AddressFocusChanged ->
-                _state.update { it.copy(address = it.address.onFocus(action.focused, fieldValidator)) }
+                _state.update { it.copy(address = it.address.onFocus(action.focused, addressValidator)) }
 
             is NotifyEstablishmentAction.CityChanged ->
-                _state.update { it.copy(city = it.city.onChange(action.value, fieldValidator)) }
+                _state.update { it.copy(city = it.city.onChange(action.value, optionalFieldValidator)) }
 
             is NotifyEstablishmentAction.CityFocusChanged ->
-                _state.update { it.copy(city = it.city.onFocus(action.focused, fieldValidator)) }
+                _state.update { it.copy(city = it.city.onFocus(action.focused, optionalFieldValidator)) }
 
             is NotifyEstablishmentAction.ProvinceChanged ->
-                _state.update { it.copy(province = it.province.onChange(action.value, fieldValidator)) }
+                _state.update { it.copy(province = it.province.onChange(action.value, optionalFieldValidator)) }
 
             is NotifyEstablishmentAction.ProvinceFocusChanged ->
-                _state.update { it.copy(province = it.province.onFocus(action.focused, fieldValidator)) }
+                _state.update { it.copy(province = it.province.onFocus(action.focused, optionalFieldValidator)) }
 
             NotifyEstablishmentAction.SubmitClick -> submit()
 
@@ -71,10 +79,10 @@ class NotifyEstablishmentViewModel(
         if (current.isSubmitting) return
 
         val validated = current.copy(
-            name = current.name.showError(fieldValidator),
-            address = current.address.showError(fieldValidator),
-            city = current.city.showError(fieldValidator),
-            province = current.province.showError(fieldValidator),
+            name = current.name.showError(nameValidator),
+            address = current.address.showError(addressValidator),
+            city = current.city.showError(optionalFieldValidator),
+            province = current.province.showError(optionalFieldValidator),
         )
         _state.value = validated
         if (!validated.isFormValid) return

@@ -235,11 +235,13 @@ class ProfileRepositoryImplTest {
             )
         }
 
-        repo.notifyEstablishmentAbsence(EstablishmentAbsenceNotice(name = "Comedor Norte")).getOrThrow()
+        repo.notifyEstablishmentAbsence(
+            EstablishmentAbsenceNotice(name = "Comedor Norte", formattedAddress = "Av. Siempre Viva 742"),
+        ).getOrThrow()
 
         assertEquals("/api/v1/establishments/requests", capturedPath)
         assertEquals(
-            """{"name":"Comedor Norte","formatted_address":null,"city":null,"province":null}""",
+            """{"name":"Comedor Norte","formatted_address":"Av. Siempre Viva 742","city":null,"province":null}""",
             capturedBody,
         )
     }
@@ -248,7 +250,7 @@ class ProfileRepositoryImplTest {
     fun `notifyEstablishmentAbsence maps 401 to Unauthorized`() = runTest {
         val repo = repository { respond("no token", HttpStatusCode.Unauthorized) }
 
-        val failure = repo.notifyEstablishmentAbsence(EstablishmentAbsenceNotice()).exceptionOrNull()
+        val failure = repo.notifyEstablishmentAbsence(EstablishmentAbsenceNotice(name = "Comedor", formattedAddress = "Calle 1")).exceptionOrNull()
 
         assertTrue(failure is EstablishmentAbsenceFailure)
         assertEquals(EstablishmentAbsenceError.Unauthorized, failure.error)
@@ -258,7 +260,7 @@ class ProfileRepositoryImplTest {
     fun `notifyEstablishmentAbsence maps 422 to Validation`() = runTest {
         val repo = repository { respond("too long", HttpStatusCode.UnprocessableEntity) }
 
-        val failure = repo.notifyEstablishmentAbsence(EstablishmentAbsenceNotice()).exceptionOrNull()
+        val failure = repo.notifyEstablishmentAbsence(EstablishmentAbsenceNotice(name = "Comedor", formattedAddress = "Calle 1")).exceptionOrNull()
 
         assertTrue(failure is EstablishmentAbsenceFailure)
         assertEquals(EstablishmentAbsenceError.Validation, failure.error)
@@ -268,7 +270,7 @@ class ProfileRepositoryImplTest {
     fun `notifyEstablishmentAbsence maps 400 to Validation`() = runTest {
         val repo = repository { respond("bad request", HttpStatusCode.BadRequest) }
 
-        val failure = repo.notifyEstablishmentAbsence(EstablishmentAbsenceNotice()).exceptionOrNull()
+        val failure = repo.notifyEstablishmentAbsence(EstablishmentAbsenceNotice(name = "Comedor", formattedAddress = "Calle 1")).exceptionOrNull()
 
         assertTrue(failure is EstablishmentAbsenceFailure)
         assertEquals(EstablishmentAbsenceError.Validation, failure.error)
@@ -278,7 +280,7 @@ class ProfileRepositoryImplTest {
     fun `notifyEstablishmentAbsence maps 500 to Network`() = runTest {
         val repo = repository { respond("boom", HttpStatusCode.InternalServerError) }
 
-        val failure = repo.notifyEstablishmentAbsence(EstablishmentAbsenceNotice()).exceptionOrNull()
+        val failure = repo.notifyEstablishmentAbsence(EstablishmentAbsenceNotice(name = "Comedor", formattedAddress = "Calle 1")).exceptionOrNull()
 
         assertTrue(failure is EstablishmentAbsenceFailure)
         assertEquals(EstablishmentAbsenceError.Network, failure.error)

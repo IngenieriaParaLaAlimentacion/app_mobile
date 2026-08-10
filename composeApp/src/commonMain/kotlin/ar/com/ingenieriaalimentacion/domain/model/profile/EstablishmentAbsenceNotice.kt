@@ -2,12 +2,12 @@ package ar.com.ingenieriaalimentacion.domain.model.profile
 
 /**
  * A field worker's notice that an establishment is missing from the catalog.
- * Every field is optional — the worker provides as much as they know, possibly
- * nothing; the authenticated user travels in the token.
+ * The backend requires name and address; city and province are optional — the
+ * authenticated user travels in the token.
  */
 data class EstablishmentAbsenceNotice(
-    val name: String? = null,
-    val formattedAddress: String? = null,
+    val name: String,
+    val formattedAddress: String,
     val city: String? = null,
     val province: String? = null,
 )

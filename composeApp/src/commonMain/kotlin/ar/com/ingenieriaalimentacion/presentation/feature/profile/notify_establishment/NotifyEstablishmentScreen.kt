@@ -77,7 +77,7 @@ fun NotifyEstablishmentScreen(
                 ) {
                     Text(
                         text = "Contanos qué comedor no encontraste y un administrador " +
-                            "lo va a revisar y crear. Todos los campos son opcionales.",
+                            "lo va a revisar y crear. Necesitamos al menos el nombre y la dirección.",
                         style = AlTheme.typography.body,
                         color = AlTheme.colors.textMuted,
                     )
@@ -115,7 +115,7 @@ fun NotifyEstablishmentScreen(
                         enabled = !state.isSubmitting,
                         scrollState = scrollState,
                         isImeVisible = isImeVisible,
-                        placeholder = "Ciudad",
+                        placeholder = "Ciudad (opcional)",
                     )
 
                     AlInput(
@@ -127,7 +127,7 @@ fun NotifyEstablishmentScreen(
                         enabled = !state.isSubmitting,
                         scrollState = scrollState,
                         isImeVisible = isImeVisible,
-                        placeholder = "Provincia",
+                        placeholder = "Provincia (opcional)",
                     )
                 }
 

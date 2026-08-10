@@ -12,10 +12,10 @@ data class NotifyEstablishmentState(
     val isSubmitting: Boolean = false,
     val submitError: EstablishmentAbsenceError? = null,
 ) {
-    /** Every field is optional, so validity only guards content rules (max length). */
+    /** Name and address are required; city and province only guard max length. */
     val isFormValid: Boolean
         get() = name.isValid && address.isValid && city.isValid && province.isValid
 
-    /** The notice may be sent completely empty — only an in-flight submit blocks. */
+    /** Submit stays tappable so it can force-show the required errors; only an in-flight submit blocks. */
     val canSubmit: Boolean get() = !isSubmitting
 }

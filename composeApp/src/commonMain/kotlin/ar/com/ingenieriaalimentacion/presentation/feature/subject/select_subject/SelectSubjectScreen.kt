@@ -27,9 +27,12 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlInput
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
+import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
 import com.komoui.components.Spinner
 import com.komoui.themes.styles
+import ingenieria_alimentacion.composeapp.generated.resources.Res
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_add_line
 import kotlinx.coroutines.flow.distinctUntilChanged
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -152,6 +155,22 @@ fun SelectSubjectScreen(
                             state = listState,
                             modifier = Modifier.fillMaxSize(),
                         ) {
+                            // With no query typed there is nothing to search-miss on, so the
+                            // alta has to be offered upfront instead of behind a failed search.
+                            if (state.query.isBlank()) {
+                                item(key = CREATE_SUBJECT_ITEM_KEY) {
+                                    AlListRow(
+                                        horizontalPadding = 0.dp,
+                                        title = "Crear sujeto nuevo",
+                                        titleColor = AlTheme.colors.accent,
+                                        leadingIcon = Res.drawable.ic_mingcute_add_line,
+                                        leadingIconTint = AlTheme.colors.accent,
+                                        onClick = {
+                                            onAction(SelectSubjectAction.CreateSubjectClick)
+                                        },
+                                    )
+                                }
+                            }
                             items(items = state.results, key = { it.id }) { subject ->
                                 AlListRow(
                                     // The list lives inside the 24.dp-padded column, so drop the
@@ -188,3 +207,4 @@ private fun sexLabel(sex: Sex): String = when (sex) {
 }
 
 private const val LOAD_MORE_THRESHOLD = 3
+private const val CREATE_SUBJECT_ITEM_KEY = "create-subject-cta"

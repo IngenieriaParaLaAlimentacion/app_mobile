@@ -60,7 +60,7 @@ fun localProperty(key: String, default: String = ""): String =
 val apiUrl: String = when (targetEnv) {
     // Keep the known prod host as the default so a fresh clone (no local.properties)
     // still builds and runs. tst has no default — it must be supplied.
-    "prod" -> localProperty("api_url_prod", "https://backend-production-b512.up.railway.app/")
+    "prod" -> localProperty("api_url_prod", "https://inpla.up.railway.app/")
     else -> localProperty("api_url_tst")
 }
 
@@ -204,8 +204,8 @@ android {
         applicationId = "ar.com.ingenieriaalimentacion"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.1.1"
     }
 
     signingConfigs {

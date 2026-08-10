@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.profile
 
+import ar.com.ingenieriaalimentacion.data.profile.dto.EstablishmentAbsenceRequest
 import ar.com.ingenieriaalimentacion.data.profile.dto.EstablishmentWithStatusResponse
 import ar.com.ingenieriaalimentacion.data.profile.dto.PaginatedAvailableResponse
 import ar.com.ingenieriaalimentacion.data.profile.dto.ProfileResponse
@@ -52,4 +53,12 @@ class ProfileApi(private val client: HttpClient) {
             contentType(ContentType.Application.Json)
             setBody(body)
         }.body()
+
+    /** 201 on success; the created request's body is irrelevant to the app. */
+    suspend fun notifyEstablishmentAbsence(body: EstablishmentAbsenceRequest) {
+        client.post("api/v1/establishments/requests") {
+            contentType(ContentType.Application.Json)
+            setBody(body)
+        }
+    }
 }

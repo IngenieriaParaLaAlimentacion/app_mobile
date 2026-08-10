@@ -15,6 +15,7 @@ data class RequestEstablishmentState(
     val loadError: Boolean = false,
     val isSubmitting: Boolean = false,
     val submitError: EstablishmentRequestError? = null,
+    val successMessage: String? = null,
 ) {
     val canLoadMore: Boolean get() = page < totalPages && !isLoadingMore && !isLoading
     val selectedCount: Int get() = selectedIds.size

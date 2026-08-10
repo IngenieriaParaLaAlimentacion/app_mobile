@@ -25,8 +25,8 @@ class EstablishmentRepositoryImplTest {
     private val paginatedBody = """
         {
           "items": [
-            { "id": "1", "name": "Comedor Norte", "address": "Calle 1" },
-            { "id": "2", "name": "Comedor Sur", "address": "Calle 2" }
+            { "id": "1", "name": "Comedor Norte", "formatted_address": "Calle 1" },
+            { "id": "2", "name": "Comedor Sur", "formatted_address": "Calle 2" }
           ],
           "total": 2,
           "page": 1,

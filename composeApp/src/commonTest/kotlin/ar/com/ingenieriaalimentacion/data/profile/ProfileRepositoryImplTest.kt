@@ -2,6 +2,8 @@ package ar.com.ingenieriaalimentacion.data.profile
 
 import ar.com.ingenieriaalimentacion.fake.FakeCurrentEstablishmentLocalStore
 import ar.com.ingenieriaalimentacion.fake.FakeEstablishmentLocalStore
+import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentAbsenceError
+import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentAbsenceNotice
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentRequestError
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.ProfileError
@@ -215,5 +217,70 @@ class ProfileRepositoryImplTest {
 
         assertTrue(failure is EstablishmentRequestFailure)
         assertEquals(EstablishmentRequestError.EstablishmentNotFound, failure.error)
+    }
+
+    // --- notify establishment absence ---
+
+    @Test
+    fun `notifyEstablishmentAbsence posts the notice with nulls for missing fields`() = runTest {
+        var capturedPath: String? = null
+        var capturedBody: String? = null
+        val repo = repository { request ->
+            capturedPath = request.url.encodedPath
+            capturedBody = (request.body as? TextContent)?.text
+            respondJson(
+                this,
+                """{"id":"r1","user_id":"u1","status":"pending","created_at":"2026-08-10T00:00:00Z"}""",
+                HttpStatusCode.Created,
+            )
+        }
+
+        repo.notifyEstablishmentAbsence(EstablishmentAbsenceNotice(name = "Comedor Norte")).getOrThrow()
+
+        assertEquals("/api/v1/establishments/requests", capturedPath)
+        assertEquals(
+            """{"name":"Comedor Norte","formatted_address":null,"city":null,"province":null}""",
+            capturedBody,
+        )
+    }
+
+    @Test
+    fun `notifyEstablishmentAbsence maps 401 to Unauthorized`() = runTest {
+        val repo = repository { respond("no token", HttpStatusCode.Unauthorized) }
+
+        val failure = repo.notifyEstablishmentAbsence(EstablishmentAbsenceNotice()).exceptionOrNull()
+
+        assertTrue(failure is EstablishmentAbsenceFailure)
+        assertEquals(EstablishmentAbsenceError.Unauthorized, failure.error)
+    }
+
+    @Test
+    fun `notifyEstablishmentAbsence maps 422 to Validation`() = runTest {
+        val repo = repository { respond("too long", HttpStatusCode.UnprocessableEntity) }
+
+        val failure = repo.notifyEstablishmentAbsence(EstablishmentAbsenceNotice()).exceptionOrNull()
+
+        assertTrue(failure is EstablishmentAbsenceFailure)
+        assertEquals(EstablishmentAbsenceError.Validation, failure.error)
+    }
+
+    @Test
+    fun `notifyEstablishmentAbsence maps 400 to Validation`() = runTest {
+        val repo = repository { respond("bad request", HttpStatusCode.BadRequest) }
+
+        val failure = repo.notifyEstablishmentAbsence(EstablishmentAbsenceNotice()).exceptionOrNull()
+
+        assertTrue(failure is EstablishmentAbsenceFailure)
+        assertEquals(EstablishmentAbsenceError.Validation, failure.error)
+    }
+
+    @Test
+    fun `notifyEstablishmentAbsence maps 500 to Network`() = runTest {
+        val repo = repository { respond("boom", HttpStatusCode.InternalServerError) }
+
+        val failure = repo.notifyEstablishmentAbsence(EstablishmentAbsenceNotice()).exceptionOrNull()
+
+        assertTrue(failure is EstablishmentAbsenceFailure)
+        assertEquals(EstablishmentAbsenceError.Network, failure.error)
     }
 }

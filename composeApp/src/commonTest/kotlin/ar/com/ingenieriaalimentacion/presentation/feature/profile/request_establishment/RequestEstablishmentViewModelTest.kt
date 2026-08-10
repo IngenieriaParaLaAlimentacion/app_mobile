@@ -21,6 +21,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -179,5 +180,30 @@ class RequestEstablishmentViewModelTest {
             assertFalse(state.isSubmitting)
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun `notify absence click emits the NotifyAbsence destination`() = runTest(dispatcher) {
+        val vm = viewModel(pagedRepo())
+        advanceUntilIdle()
+
+        vm.onAction(RequestEstablishmentAction.NotifyAbsenceClick)
+
+        assertEquals(RequestEstablishmentDestination.NotifyAbsence, vm.state.value.destination)
+    }
+
+    @Test
+    fun `absence notice sent shows the confirmation toast and dismiss clears it`() = runTest(dispatcher) {
+        val vm = viewModel(pagedRepo())
+        advanceUntilIdle()
+
+        vm.onAction(RequestEstablishmentAction.AbsenceNoticeSent)
+        assertEquals(
+            RequestEstablishmentViewModel.ABSENCE_NOTICE_SENT_MESSAGE,
+            vm.state.value.successMessage,
+        )
+
+        vm.onAction(RequestEstablishmentAction.SuccessToastDismissed)
+        assertNull(vm.state.value.successMessage)
     }
 }

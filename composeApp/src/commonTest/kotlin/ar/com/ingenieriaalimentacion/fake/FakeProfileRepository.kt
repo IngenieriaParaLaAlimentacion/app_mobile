@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.fake
 
+import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentAbsenceNotice
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.PagedEstablishments
 import ar.com.ingenieriaalimentacion.domain.model.profile.Profile
@@ -79,5 +80,18 @@ class FakeProfileRepository : ProfileRepository {
     override suspend fun requestEstablishmentAccess(ids: List<String>): Result<List<EstablishmentWithStatus>> {
         lastRequestedIds = ids
         return requestResult
+    }
+
+    var notifyAbsenceResult: Result<Unit> = Result.success(Unit)
+    var lastAbsenceNotice: EstablishmentAbsenceNotice? = null
+    var notifyAbsenceCount: Int = 0
+
+    /** Optional responder to hold the call in flight; falls back to [notifyAbsenceResult]. */
+    var notifyAbsenceResponder: (suspend (EstablishmentAbsenceNotice) -> Result<Unit>)? = null
+
+    override suspend fun notifyEstablishmentAbsence(notice: EstablishmentAbsenceNotice): Result<Unit> {
+        notifyAbsenceCount++
+        lastAbsenceNotice = notice
+        return notifyAbsenceResponder?.invoke(notice) ?: notifyAbsenceResult
     }
 }

@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.domain.repository
 
+import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentAbsenceNotice
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.PagedEstablishments
 import ar.com.ingenieriaalimentacion.domain.model.profile.Profile
@@ -34,4 +35,7 @@ interface ProfileRepository {
     ): Result<PagedEstablishments>
 
     suspend fun requestEstablishmentAccess(ids: List<String>): Result<List<EstablishmentWithStatus>>
+
+    /** Notifies an admin that an establishment is missing from the catalog. */
+    suspend fun notifyEstablishmentAbsence(notice: EstablishmentAbsenceNotice): Result<Unit>
 }

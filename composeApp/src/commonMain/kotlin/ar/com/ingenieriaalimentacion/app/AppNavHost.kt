@@ -13,6 +13,7 @@ import ar.com.ingenieriaalimentacion.presentation.feature.get_started.getStarted
 import ar.com.ingenieriaalimentacion.presentation.feature.measurement.create_measurement.createMeasurementScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.profile.edit.editProfileScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.profile.establishments.myEstablishmentsScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.profile.notify_establishment.notifyEstablishmentScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.profile.request_establishment.requestEstablishmentScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.register.registerScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.create_subject.createSubjectScreen
@@ -42,6 +43,7 @@ fun AppNavHost(
             selectSubjectScreen(navController)
             editProfileScreen(navController)
             requestEstablishmentScreen(navController)
+            notifyEstablishmentScreen(navController)
             myEstablishmentsScreen(navController)
             resetPasswordScreen(navController)
             forgotPasswordScreen(navController)

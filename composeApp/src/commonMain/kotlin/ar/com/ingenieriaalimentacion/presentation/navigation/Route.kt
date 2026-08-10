@@ -83,6 +83,10 @@ sealed class Route {
     data object RequestEstablishment : Route()
 
     @Serializable
+    @SerialName("notify_establishment")
+    data object NotifyEstablishment : Route()
+
+    @Serializable
     @SerialName("my_establishments")
     data object MyEstablishments : Route()
 

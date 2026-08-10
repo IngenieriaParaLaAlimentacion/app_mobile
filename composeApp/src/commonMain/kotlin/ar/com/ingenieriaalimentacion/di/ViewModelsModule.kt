@@ -11,6 +11,7 @@ import ar.com.ingenieriaalimentacion.presentation.feature.measurement.create_mea
 import ar.com.ingenieriaalimentacion.presentation.feature.measurement.uploads.MeasurementUploadsViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.profile.edit.EditProfileViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.profile.establishments.MyEstablishmentsViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.profile.notify_establishment.NotifyEstablishmentViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.profile.request_establishment.RequestEstablishmentViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.profile.view.ProfileViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.register.RegisterViewModel
@@ -57,6 +58,7 @@ val viewModelsModule = module {
     viewModelOf(::ForgotPasswordViewModel)
     viewModelOf(::ProfileViewModel)
     viewModelOf(::RequestEstablishmentViewModel)
+    viewModelOf(::NotifyEstablishmentViewModel)
     viewModelOf(::MyEstablishmentsViewModel)
     viewModel { (route: Route.SelectEstablishment) ->
         SelectEstablishmentViewModel(route = route, getEstablishments = get())

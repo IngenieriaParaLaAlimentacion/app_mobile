@@ -1,10 +1,13 @@
 package ar.com.ingenieriaalimentacion.data.profile
 
+import ar.com.ingenieriaalimentacion.data.profile.dto.EstablishmentAbsenceRequest
 import ar.com.ingenieriaalimentacion.data.profile.dto.RequestEstablishmentsRequest
 import ar.com.ingenieriaalimentacion.data.profile.dto.UpdateProfileRequest
 import ar.com.ingenieriaalimentacion.data.profile.local.CurrentEstablishmentLocalStore
 import ar.com.ingenieriaalimentacion.data.profile.local.EstablishmentLocalStore
 import ar.com.ingenieriaalimentacion.data.profile.mapper.toDomain
+import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentAbsenceError
+import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentAbsenceNotice
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentRequestError
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.PagedEstablishments
@@ -86,6 +89,20 @@ class ProfileRepositoryImpl(
             api.requestEstablishmentAccess(RequestEstablishmentsRequest(ids)).map { it.toDomain() }
         }.recoverCatching { throw EstablishmentRequestFailure(mapRequestError(it), it) }
 
+    override suspend fun notifyEstablishmentAbsence(
+        notice: EstablishmentAbsenceNotice,
+    ): Result<Unit> =
+        runCatching {
+            api.notifyEstablishmentAbsence(
+                EstablishmentAbsenceRequest(
+                    name = notice.name,
+                    formattedAddress = notice.formattedAddress,
+                    city = notice.city,
+                    province = notice.province,
+                ),
+            )
+        }.recoverCatching { throw EstablishmentAbsenceFailure(mapAbsenceError(it), it) }
+
     private fun mapProfileError(t: Throwable): ProfileError = when (t) {
         is ClientRequestException -> when (t.response.status) {
             HttpStatusCode.Unauthorized -> ProfileError.Unauthorized
@@ -107,10 +124,27 @@ class ProfileRepositoryImpl(
         is ResponseException -> EstablishmentRequestError.Network
         else -> EstablishmentRequestError.Unknown(t)
     }
+
+    private fun mapAbsenceError(t: Throwable): EstablishmentAbsenceError = when (t) {
+        is ClientRequestException -> when (t.response.status) {
+            HttpStatusCode.Unauthorized -> EstablishmentAbsenceError.Unauthorized
+            HttpStatusCode.Forbidden -> EstablishmentAbsenceError.Forbidden
+            HttpStatusCode.BadRequest,
+            HttpStatusCode.UnprocessableEntity,
+            -> EstablishmentAbsenceError.Validation
+
+            else -> EstablishmentAbsenceError.Network
+        }
+        is ResponseException -> EstablishmentAbsenceError.Network
+        else -> EstablishmentAbsenceError.Unknown(t)
+    }
 }
 
 class ProfileFailure(val error: ProfileError, cause: Throwable?) :
     Exception(error.toString(), cause)
 
 class EstablishmentRequestFailure(val error: EstablishmentRequestError, cause: Throwable?) :
+    Exception(error.toString(), cause)
+
+class EstablishmentAbsenceFailure(val error: EstablishmentAbsenceError, cause: Throwable?) :
     Exception(error.toString(), cause)

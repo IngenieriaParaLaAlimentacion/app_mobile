@@ -7,4 +7,9 @@ sealed interface RequestEstablishmentAction {
     data object SubmitClick : RequestEstablishmentAction
     data object RetryClick : RequestEstablishmentAction
     data object BackClick : RequestEstablishmentAction
+    data object NotifyAbsenceClick : RequestEstablishmentAction
+
+    /** The notify-absence child popped back after a 201 — show the confirmation toast. */
+    data object AbsenceNoticeSent : RequestEstablishmentAction
+    data object SuccessToastDismissed : RequestEstablishmentAction
 }

@@ -51,6 +51,15 @@ class RequestEstablishmentViewModel(
 
             RequestEstablishmentAction.BackClick ->
                 _state.update { it.copy(destination = RequestEstablishmentDestination.Back) }
+
+            RequestEstablishmentAction.NotifyAbsenceClick ->
+                _state.update { it.copy(destination = RequestEstablishmentDestination.NotifyAbsence) }
+
+            RequestEstablishmentAction.AbsenceNoticeSent ->
+                _state.update { it.copy(successMessage = ABSENCE_NOTICE_SENT_MESSAGE) }
+
+            RequestEstablishmentAction.SuccessToastDismissed ->
+                _state.update { it.copy(successMessage = null) }
         }
     }
 
@@ -136,8 +145,10 @@ class RequestEstablishmentViewModel(
         }
     }
 
-    private companion object {
-        const val DEBOUNCE_MS = 300L
-        const val PAGE_SIZE = 20
+    companion object {
+        private const val DEBOUNCE_MS = 300L
+        private const val PAGE_SIZE = 20
+        const val ABSENCE_NOTICE_SENT_MESSAGE =
+            "Tu aviso fue enviado, un administrador lo va a revisar."
     }
 }

@@ -135,7 +135,7 @@ class MeasurementViewModelTest {
 
             vm.onAction(MeasurementAction.Submit)
             val done = awaitState { it.successMessage != null }
-            assertEquals("Medición guardada. Se sincronizará automáticamente.", done.successMessage)
+            assertEquals("Medición guardada", done.successMessage)
             assertEquals("", done.weight.value)
             assertEquals("", done.height.value)
             assertEquals("subj-1", done.subject?.id)

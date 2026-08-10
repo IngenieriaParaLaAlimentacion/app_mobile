@@ -1,4 +1,5 @@
 import com.codingfeline.buildkonfig.compiler.FieldSpec
+import com.google.firebase.appdistribution.gradle.firebaseAppDistribution
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
@@ -8,6 +9,15 @@ val keystorePropertiesFile = rootProject.file("keystore.properties")
 val keystoreProperties = Properties().apply {
     if (keystorePropertiesFile.exists()) {
         keystorePropertiesFile.inputStream().use { load(it) }
+    }
+}
+
+// Firebase App Distribution config (app ID, tester group) lives in firebase.properties
+// (git-ignored) to keep project identifiers out of git, mirroring keystore.properties above.
+val firebasePropertiesFile = rootProject.file("firebase.properties")
+val firebaseProperties = Properties().apply {
+    if (firebasePropertiesFile.exists()) {
+        firebasePropertiesFile.inputStream().use { load(it) }
     }
 }
 
@@ -83,6 +93,7 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.serialization)
     alias(libs.plugins.sqldelight)
     alias(libs.plugins.buildkonfig)
+    alias(libs.plugins.firebase.appdistribution)
 }
 
 buildkonfig {
@@ -251,6 +262,15 @@ android {
             isMinifyEnabled = false
             isDebuggable = false
             signingConfig = signingConfigs.findByName("release")
+
+            // Only wire App Distribution when firebase.properties is present, so builds
+            // without it (e.g. CI without the config) still configure cleanly.
+            if (firebasePropertiesFile.exists()) {
+                firebaseAppDistribution {
+                    appId = firebaseProperties.getProperty("appId")
+                    groups = firebaseProperties.getProperty("groups")
+                }
+            }
         }
     }
 

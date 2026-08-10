@@ -84,19 +84,14 @@ class RegisterViewModelTest {
     }
 
     @Test
-    fun `EstablishmentsSelected updates selection and clears field error`() = runTest(dispatcher) {
+    fun `EstablishmentsSelected updates selection`() = runTest(dispatcher) {
         val vm = viewModel()
 
         vm.state.test {
             awaitItem() // initial
-            // Force the establishment field error via an empty-selection submit.
-            vm.onAction(RegisterAction.Submit)
-            awaitState { it.fieldErrors.establishments != null }
-
             vm.onAction(RegisterAction.EstablishmentsSelected(establishments))
             val state = awaitState { it.selectedEstablishments.size == 2 }
             assertEquals(establishments, state.selectedEstablishments)
-            assertNull(state.fieldErrors.establishments)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -123,7 +118,7 @@ class RegisterViewModelTest {
     }
 
     @Test
-    fun `canSubmit is false when fields blank or no establishment selected`() = runTest(dispatcher) {
+    fun `canSubmit is false while a required field is blank`() = runTest(dispatcher) {
         val vm = viewModel()
 
         vm.state.test {
@@ -133,14 +128,49 @@ class RegisterViewModelTest {
             vm.onAction(RegisterAction.EmailChanged("manager@example.com"))
             vm.onAction(RegisterAction.PasswordChanged("password123"))
             vm.onAction(RegisterAction.NameChanged("Ana"))
-            vm.onAction(RegisterAction.LastNameChanged("García"))
-            // Still no establishment selected.
-            val withoutEstablishment = awaitState { it.lastName == "García" }
-            assertFalse(withoutEstablishment.canSubmit)
+            val withoutLastName = awaitState { it.name == "Ana" }
+            assertFalse(withoutLastName.canSubmit)
 
-            vm.onAction(RegisterAction.EstablishmentsSelected(listOf(establishments[0])))
-            val ready = awaitState { it.selectedEstablishments.isNotEmpty() }
+            vm.onAction(RegisterAction.LastNameChanged("García"))
+            val ready = awaitState { it.lastName == "García" }
             assertTrue(ready.canSubmit)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `canSubmit is true with no establishment selected`() = runTest(dispatcher) {
+        val vm = viewModel()
+
+        vm.state.test {
+            awaitItem() // initial
+            vm.onAction(RegisterAction.EmailChanged("manager@example.com"))
+            vm.onAction(RegisterAction.PasswordChanged("password123"))
+            vm.onAction(RegisterAction.NameChanged("Ana"))
+            vm.onAction(RegisterAction.LastNameChanged("García"))
+            val ready = awaitState { it.lastName == "García" }
+            assertTrue(ready.selectedEstablishments.isEmpty())
+            assertTrue(ready.canSubmit)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `submit without establishments sends an empty list`() = runTest(dispatcher) {
+        val registrationRepo = FakeRegistrationRepository()
+        val vm = viewModel(registrationRepo = registrationRepo)
+
+        vm.state.test {
+            awaitItem() // initial
+            vm.onAction(RegisterAction.EmailChanged("manager@example.com"))
+            vm.onAction(RegisterAction.PasswordChanged("password123"))
+            vm.onAction(RegisterAction.NameChanged("Ana"))
+            vm.onAction(RegisterAction.LastNameChanged("García"))
+            vm.onAction(RegisterAction.Submit)
+
+            val state = awaitState { it.destination != null }
+            assertEquals(RegisterDestination.Success, state.destination)
+            assertEquals(emptyList(), registrationRepo.lastRegistration?.establishmentIds)
             cancelAndIgnoreRemainingEvents()
         }
     }

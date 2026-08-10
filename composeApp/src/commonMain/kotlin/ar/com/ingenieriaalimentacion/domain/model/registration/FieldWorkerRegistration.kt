@@ -4,6 +4,9 @@ package ar.com.ingenieriaalimentacion.domain.model.registration
  * Self-registration payload. [locality], [description] and [contactPhone] are optional
  * contact details the admin sees when reviewing the account; they must be `null` (never
  * blank) when the user leaves them empty — the backend rejects empty strings.
+ *
+ * [establishmentIds] is optional as well and may be empty: it only *requests* access to
+ * those establishments, so approval no longer depends on it.
  */
 data class FieldWorkerRegistration(
     val email: String,

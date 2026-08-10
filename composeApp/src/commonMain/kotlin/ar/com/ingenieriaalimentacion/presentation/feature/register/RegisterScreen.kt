@@ -165,9 +165,8 @@ fun RegisterScreen(
                     AlSelectField(
                         label = "Establecimientos",
                         value = selectionLabel,
-                        placeholder = "Seleccionar establecimiento",
+                        placeholder = "Seleccionar establecimiento (opcional)",
                         onClick = { onAction(RegisterAction.OpenEstablishmentSelector) },
-                        error = state.fieldErrors.establishments,
                         enabled = !state.isSubmitting,
                     )
 

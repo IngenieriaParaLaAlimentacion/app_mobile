@@ -13,6 +13,11 @@ data class RegisterState(
     val locality: TextFieldState = TextFieldState(),
     val description: TextFieldState = TextFieldState(),
     val contactPhone: TextFieldState = TextFieldState(),
+    /**
+     * Optional too: the backend accepts a registration with no establishments (they are only a
+     * request for access, not a precondition for the account), and the user can ask for more
+     * from their profile once approved.
+     */
     val selectedEstablishments: List<Establishment> = emptyList(),
     val isSubmitting: Boolean = false,
     val fieldErrors: RegisterFieldErrors = RegisterFieldErrors(),
@@ -27,8 +32,7 @@ data class RegisterState(
 
     val canSubmit: Boolean
         get() = email.isNotBlank() && password.isNotBlank() && name.isNotBlank() &&
-            lastName.isNotBlank() && selectedEstablishments.isNotEmpty() &&
-            optionalFieldsValid && !isSubmitting
+            lastName.isNotBlank() && optionalFieldsValid && !isSubmitting
 }
 
 data class RegisterFieldErrors(
@@ -36,5 +40,4 @@ data class RegisterFieldErrors(
     val password: String? = null,
     val name: String? = null,
     val lastName: String? = null,
-    val establishments: String? = null,
 )

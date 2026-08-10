@@ -235,6 +235,18 @@ iOS has no environment split yet — there is no Xcode project checked in (`iosA
 Swift sources). When one exists, mirror `../extra`: per-env build configurations backed by
 xcconfig, with a build phase mapping `$CONFIGURATION` to `-PtargetEnvironment`.
 
+## Git workflow
+
+Gitflow-lite with two long-lived branches:
+
+- `develop` — integration branch. All feature/fix branches start from `develop` and merge back
+  into `develop` via PR. Base new branches on `develop`, never on `main`.
+- `main` — release branch. It only receives **release PRs from `develop`** (`develop` → `main`);
+  never merge feature branches or commit directly to `main`.
+
+When creating a PR, target `develop` unless the user explicitly asks for a release, in which case
+open a `develop` → `main` PR.
+
 ## Commands
 
 The project requires Java 21. `scripts/compile.sh` sets `JAVA_HOME` automatically.

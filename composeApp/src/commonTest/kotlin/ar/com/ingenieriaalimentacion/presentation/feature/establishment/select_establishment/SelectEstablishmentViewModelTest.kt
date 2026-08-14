@@ -19,6 +19,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -46,8 +47,9 @@ class SelectEstablishmentViewModelTest {
         repo: FakeEstablishmentRepository = FakeEstablishmentRepository().apply {
             result = Result.success(establishments)
         },
+        singleSelect: Boolean = false,
     ) = SelectEstablishmentViewModel(
-        route = Route.SelectEstablishment(Json.encodeToString(preselected)),
+        route = Route.SelectEstablishment(Json.encodeToString(preselected), singleSelect),
         getEstablishments = GetEstablishmentsUseCase(repo),
     )
 
@@ -129,6 +131,50 @@ class SelectEstablishmentViewModelTest {
             val state = awaitState { it.loadError }
             assertTrue(state.loadError)
             assertFalse(state.isLoading)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `single-select replaces the selection instead of accumulating and confirms on the spot`() =
+        runTest(dispatcher) {
+            val vm = viewModel(singleSelect = true)
+            advanceUntilIdle()
+
+            vm.state.test {
+                awaitState { !it.isLoading }
+
+                vm.onAction(SelectEstablishmentAction.EstablishmentToggled(establishments[0]))
+                val first = awaitState { it.destination != null }
+                assertEquals(listOf(establishments[0]), first.selected)
+                assertEquals(
+                    SelectEstablishmentDestination.Confirm(Json.encodeToString(listOf(establishments[0]))),
+                    first.destination,
+                )
+
+                vm.clearDestination()
+                vm.onAction(SelectEstablishmentAction.EstablishmentToggled(establishments[1]))
+                val second = awaitState { it.destination != null }
+                // Replaced, not accumulated — and re-confirmed with the new choice.
+                assertEquals(listOf(establishments[1]), second.selected)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `multi-select still accumulates and waits for Listo`() = runTest(dispatcher) {
+        val vm = viewModel()
+        advanceUntilIdle()
+
+        vm.state.test {
+            awaitState { !it.isLoading }
+
+            vm.onAction(SelectEstablishmentAction.EstablishmentToggled(establishments[0]))
+            vm.onAction(SelectEstablishmentAction.EstablishmentToggled(establishments[1]))
+
+            val both = awaitState { it.selectedCount == 2 }
+            assertEquals(establishments, both.selected)
+            assertNull(both.destination)
             cancelAndIgnoreRemainingEvents()
         }
     }

@@ -41,9 +41,15 @@ sealed class Route {
     @SerialName("create_measurement")
     data object CreateMeasurement : Route()
 
+    /** [singleSelect] turns the multi-select registration picker into a one-tap chooser: the first
+     *  tap confirms with a one-element list and the *Listo* button is hidden. The result key is
+     *  unchanged, so registration is untouched. */
     @Serializable
     @SerialName("select_establishment")
-    data class SelectEstablishment(val preselectedJson: String = "[]") : Route()
+    data class SelectEstablishment(
+        val preselectedJson: String = "[]",
+        val singleSelect: Boolean = false,
+    ) : Route()
 
     @Serializable
     @SerialName("select_subject")

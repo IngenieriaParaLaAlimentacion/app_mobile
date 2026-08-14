@@ -3,9 +3,13 @@ package ar.com.ingenieriaalimentacion.data.survey.local
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import ar.com.ingenieriaalimentacion.data.db.PendingSurveyResponseQueries
+import ar.com.ingenieriaalimentacion.data.survey.mapper.toDbString
 import ar.com.ingenieriaalimentacion.data.survey.mapper.toDomain
 import ar.com.ingenieriaalimentacion.data.survey.mapper.toSurveyDbString
+import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseConflict
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseUpload
+import ar.com.ingenieriaalimentacion.domain.model.survey.id
+import ar.com.ingenieriaalimentacion.domain.model.survey.label
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -39,13 +43,16 @@ class DefaultSurveyResponseLocalStore(
             localId = upload.localId,
             surveyId = upload.surveyId,
             surveyName = upload.surveyName,
-            establishmentId = upload.establishmentId,
-            establishmentName = upload.establishmentName,
+            responseTarget = upload.target.toDbString(),
+            targetId = upload.target.id,
+            targetLabel = upload.target.label,
             answersJson = upload.answersJson,
             eventAt = upload.eventAt,
             syncState = upload.syncState.toSurveyDbString(),
             canonicalId = upload.canonicalId,
             errorMessage = upload.errorMessage,
+            conflictBy = upload.conflict?.submittedByName,
+            conflictAt = upload.conflict?.eventAt,
             attemptCount = upload.attemptCount.toLong(),
             createdAt = upload.createdAt,
             updatedAt = upload.updatedAt,
@@ -66,6 +73,20 @@ class DefaultSurveyResponseLocalStore(
 
     override suspend fun markFailed(localId: String, reason: String): Unit = withContext(dispatcher) {
         queries.markFailed(errorMessage = reason, updatedAt = now(), localId = localId)
+    }
+
+    override suspend fun markConflict(localId: String, conflict: ResponseConflict): Unit =
+        withContext(dispatcher) {
+            queries.markConflict(
+                conflictBy = conflict.submittedByName,
+                conflictAt = conflict.eventAt,
+                updatedAt = now(),
+                localId = localId,
+            )
+        }
+
+    override suspend fun delete(localId: String): Unit = withContext(dispatcher) {
+        queries.deleteById(localId)
     }
 
     override suspend fun bumpRetry(localId: String, reason: String): Unit = withContext(dispatcher) {

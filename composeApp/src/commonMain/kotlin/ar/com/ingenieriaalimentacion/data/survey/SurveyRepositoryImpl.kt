@@ -2,6 +2,7 @@ package ar.com.ingenieriaalimentacion.data.survey
 
 import ar.com.ingenieriaalimentacion.data.survey.local.SurveyLocalStore
 import ar.com.ingenieriaalimentacion.data.survey.mapper.toDomain
+import ar.com.ingenieriaalimentacion.data.survey.mapper.toDomainOrNull
 import ar.com.ingenieriaalimentacion.domain.model.survey.Survey
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyDetail
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyFeatureError
@@ -24,7 +25,7 @@ class SurveyRepositoryImpl(
     override suspend fun getAvailable(page: Int, pageSize: Int): Result<PagedSurveys> {
         val remote = runCatching {
             val response = api.available(page, pageSize)
-            local.upsertSummaries(response.items.map { it.toDomain() })
+            local.upsertSummaries(response.items.mapNotNull { it.toDomainOrNull() })
             response.toDomain()
         }
         if (remote.isSuccess || page != 1) return remote
@@ -64,7 +65,7 @@ class SurveyRepositoryImpl(
         var totalPages: Int
         do {
             val result = runCatching { api.available(page, WARM_PAGE_SIZE) }.getOrNull() ?: return
-            all += result.items.map { it.toDomain() }
+            all += result.items.mapNotNull { it.toDomainOrNull() }
             totalPages = result.totalPages
             page++
         } while (page <= totalPages && page <= MAX_WARM_PAGES)

@@ -11,6 +11,7 @@ import kotlin.time.Duration
 class FakeSurveyResponseRepository : SurveyResponseRepository {
     val enqueued = mutableListOf<NewSurveyResponse>()
     val retried = mutableListOf<String>()
+    val deleted = mutableListOf<String>()
     var enqueueResult: Result<Unit> = Result.success(Unit)
     var syncSummary: SyncSummary = SyncSummary()
     val uploads = MutableStateFlow<List<SurveyResponseUpload>>(emptyList())
@@ -26,6 +27,12 @@ class FakeSurveyResponseRepository : SurveyResponseRepository {
 
     override suspend fun retry(localId: String): Result<Unit> {
         retried += localId
+        return Result.success(Unit)
+    }
+
+    override suspend fun delete(localId: String): Result<Unit> {
+        deleted += localId
+        uploads.value = uploads.value.filterNot { it.localId == localId }
         return Result.success(Unit)
     }
 

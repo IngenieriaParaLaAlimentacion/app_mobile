@@ -2,14 +2,16 @@ package ar.com.ingenieriaalimentacion.domain.model.survey
 
 import kotlinx.serialization.Serializable
 
+/** Who a survey is answered *for*. Decides which picker (if any) runs before the questionnaire,
+ *  and which id the POST body carries. */
 @Serializable
-enum class SurveyScope { Generic, Targeted }
+enum class SurveyResponseTarget { Subject, Establishment, Anonymous }
 
 /** Summary shape from GET /surveys/available — no questions. */
 data class Survey(
     val id: String,
     val name: String,
-    val scope: SurveyScope,
+    val responseTarget: SurveyResponseTarget,
     val isActive: Boolean,
     val questionCount: Int,
 )
@@ -37,7 +39,7 @@ data class SurveyQuestion(
 data class SurveyDetail(
     val id: String,
     val name: String,
-    val scope: SurveyScope,
+    val responseTarget: SurveyResponseTarget,
     val isActive: Boolean,
     val questions: List<SurveyQuestion>,
 )

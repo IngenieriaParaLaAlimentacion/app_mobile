@@ -104,15 +104,26 @@ sealed class Route {
     @SerialName("survey_list")
     data object SurveyList : Route()
 
+    /**
+     * The *kind* of target is deliberately not a route argument — the form reads it from
+     * `SurveyDetail.responseTarget`, which it already loads and which is cached offline. One
+     * source of truth. [targetId]/[targetLabel] are null for an anonymous survey, and for an
+     * establishment survey entered without a pick (the Home default then pre-fills it).
+     */
     @Serializable
     @SerialName("survey_response_form")
-    data class SurveyResponseForm(val surveyId: String) : Route()
+    data class SurveyResponseForm(
+        val surveyId: String,
+        val targetId: String? = null,
+        val targetLabel: String? = null,
+    ) : Route()
 
+    /** [surveyId] is a path segment of every response endpoint, so it travels with the response id. */
     @Serializable
     @SerialName("survey_response_detail")
-    data class SurveyResponseDetail(val responseId: String) : Route()
+    data class SurveyResponseDetail(val surveyId: String, val responseId: String) : Route()
 
     @Serializable
     @SerialName("survey_response_edit")
-    data class SurveyResponseEdit(val responseId: String) : Route()
+    data class SurveyResponseEdit(val surveyId: String, val responseId: String) : Route()
 }

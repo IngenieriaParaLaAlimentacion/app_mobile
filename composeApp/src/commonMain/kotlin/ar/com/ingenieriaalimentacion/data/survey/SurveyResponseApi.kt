@@ -1,5 +1,7 @@
 package ar.com.ingenieriaalimentacion.data.survey
 
+import ar.com.ingenieriaalimentacion.data.survey.dto.SURVEY_RESPONSE_CONFLICT_TYPE
+import ar.com.ingenieriaalimentacion.data.survey.dto.SurveyResponseConflictProblem
 import ar.com.ingenieriaalimentacion.data.survey.dto.SurveyResponseEditRequest
 import ar.com.ingenieriaalimentacion.data.survey.dto.SurveyResponseRequest
 import ar.com.ingenieriaalimentacion.data.survey.dto.SurveyResponseResponse
@@ -16,12 +18,15 @@ import kotlinx.coroutines.CancellationException
 /**
  * Survey-response create/edit/detail endpoints. Same status-branching convention as
  * [ar.com.ingenieriaalimentacion.data.subject.SubjectApi] / [SurveyApi].
+ *
+ * Every route is nested under its survey (`/surveys/{survey_id}/responses`) — the responses router
+ * moved there server-side, so `surveyId` is a path segment, not a body field.
  */
 class SurveyResponseApi(private val client: HttpClient) {
 
-    suspend fun create(body: SurveyResponseRequest): SurveyResponseUploadOutcome =
+    suspend fun create(surveyId: String, body: SurveyResponseRequest): SurveyResponseUploadOutcome =
         runCatching {
-            val response = client.post("api/v1/survey-responses") {
+            val response = client.post("api/v1/surveys/$surveyId/responses") {
                 contentType(ContentType.Application.Json)
                 setBody(body)
             }
@@ -31,6 +36,19 @@ class SurveyResponseApi(private val client: HttpClient) {
                 401 -> SurveyResponseUploadOutcome.Unauthorized
                 403 -> SurveyResponseUploadOutcome.Forbidden
                 404 -> SurveyResponseUploadOutcome.NotFound
+                409 -> {
+                    val problem = runCatching { response.body<SurveyResponseConflictProblem>() }.getOrNull()
+                    if (problem?.type == SURVEY_RESPONSE_CONFLICT_TYPE) {
+                        SurveyResponseUploadOutcome.AlreadyAnswered(
+                            submittedByName = problem.existingResponse?.submittedBy?.name,
+                            eventAt = problem.existingResponse?.eventAt,
+                        )
+                    } else {
+                        // A 409 this build doesn't recognize: surface it as a terminal failure
+                        // rather than spinning on a retry that can only conflict again.
+                        SurveyResponseUploadOutcome.InvalidData
+                    }
+                }
                 else -> SurveyResponseUploadOutcome.Retryable(null)
             }
         }.getOrElse { t ->
@@ -38,9 +56,13 @@ class SurveyResponseApi(private val client: HttpClient) {
             SurveyResponseUploadOutcome.Retryable(t)
         }
 
-    suspend fun edit(responseId: String, body: SurveyResponseEditRequest): SurveyResponseEditOutcome =
+    suspend fun edit(
+        surveyId: String,
+        responseId: String,
+        body: SurveyResponseEditRequest,
+    ): SurveyResponseEditOutcome =
         runCatching {
-            val response = client.put("api/v1/survey-responses/$responseId") {
+            val response = client.put("api/v1/surveys/$surveyId/responses/$responseId") {
                 contentType(ContentType.Application.Json)
                 setBody(body)
             }
@@ -57,8 +79,8 @@ class SurveyResponseApi(private val client: HttpClient) {
             SurveyResponseEditOutcome.Retryable(t)
         }
 
-    suspend fun detail(responseId: String): SurveyResponseDetailOutcome = runCatching {
-        val response = client.get("api/v1/survey-responses/$responseId")
+    suspend fun detail(surveyId: String, responseId: String): SurveyResponseDetailOutcome = runCatching {
+        val response = client.get("api/v1/surveys/$surveyId/responses/$responseId")
         when (response.status.value) {
             200 -> SurveyResponseDetailOutcome.Found(response.body())
             403 -> SurveyResponseDetailOutcome.Forbidden
@@ -73,6 +95,15 @@ class SurveyResponseApi(private val client: HttpClient) {
 
 sealed interface SurveyResponseUploadOutcome {
     data class Created(val response: SurveyResponseResponse) : SurveyResponseUploadOutcome
+
+    /** `409` + the survey-response conflict `type`: this survey is already answered for this
+     *  target. Terminal — a retry with the same target can only conflict again. Both fields are
+     *  nullable because the server may omit the `existing_response` detail. */
+    data class AlreadyAnswered(
+        val submittedByName: String?,
+        val eventAt: String?,
+    ) : SurveyResponseUploadOutcome
+
     data object InvalidData : SurveyResponseUploadOutcome
     data object Forbidden : SurveyResponseUploadOutcome
     data object NotFound : SurveyResponseUploadOutcome

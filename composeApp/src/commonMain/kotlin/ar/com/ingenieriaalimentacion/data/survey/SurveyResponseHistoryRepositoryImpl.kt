@@ -10,6 +10,8 @@ import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyFeatureError
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyFeatureFailure
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseDetail
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseSummary
+import ar.com.ingenieriaalimentacion.domain.model.survey.id
+import ar.com.ingenieriaalimentacion.domain.model.survey.label
 import ar.com.ingenieriaalimentacion.domain.repository.SurveyRepository
 import ar.com.ingenieriaalimentacion.domain.repository.SurveyResponseHistoryRepository
 import kotlinx.coroutines.flow.Flow
@@ -87,14 +89,18 @@ class SurveyResponseHistoryRepositoryImpl(
     private fun SurveyResponseSummary.eventAtMillis(): Long =
         runCatching { Instant.parse(eventAt).toEpochMilliseconds() }.getOrDefault(0L)
 
-    override suspend fun getDetail(responseId: String): Result<SurveyResponseDetail> =
-        when (val outcome = api.detail(responseId)) {
+    override suspend fun getDetail(surveyId: String, responseId: String): Result<SurveyResponseDetail> =
+        when (val outcome = api.detail(surveyId, responseId)) {
             is SurveyResponseDetailOutcome.Found -> {
                 val response = outcome.response
+                // The read endpoint returns flat ids and no names, so the label can only come from
+                // this device's own queue row (when one still exists); the screen falls back to the
+                // id otherwise.
                 decodeDetail(
                     surveyId = response.surveyId,
                     id = response.id,
-                    establishmentId = response.establishmentId,
+                    targetId = response.subjectId ?: response.establishmentId,
+                    targetLabel = local.find(responseId)?.target?.label,
                     submittedById = response.submittedById,
                     answers = response.answers,
                     eventAt = response.eventAt,
@@ -117,7 +123,8 @@ class SurveyResponseHistoryRepositoryImpl(
         return decodeDetail(
             surveyId = upload.surveyId,
             id = upload.canonicalId ?: upload.localId,
-            establishmentId = upload.establishmentId,
+            targetId = upload.target.id,
+            targetLabel = upload.target.label,
             // null → "this device's own submission" per SurveyResponseDetail's contract.
             submittedById = null,
             answers = answers,
@@ -128,12 +135,15 @@ class SurveyResponseHistoryRepositoryImpl(
     private suspend fun decodeDetail(
         surveyId: String,
         id: String,
-        establishmentId: String,
+        targetId: String?,
+        targetLabel: String?,
         submittedById: String?,
         answers: Map<String, JsonElement>,
         eventAt: String,
     ): Result<SurveyResponseDetail> {
-        val questions = surveys.getDetail(surveyId).getOrElse { return Result.failure(it) }.questions
+        // The survey definition is fetched anyway (for the questions), so its responseTarget is
+        // the authoritative answer to "what kind of target is this" — no need to infer it.
+        val survey = surveys.getDetail(surveyId).getOrElse { return Result.failure(it) }
         // answers.toAnswerValues/Instant.parse can throw on malformed external data (e.g. a
         // question's response_type changed server-side since this device last cached it) —
         // never trust it blindly; surface as a typed failure like every other read here.
@@ -141,9 +151,11 @@ class SurveyResponseHistoryRepositoryImpl(
             SurveyResponseDetail(
                 id = id,
                 surveyId = surveyId,
-                establishmentId = establishmentId,
+                responseTarget = survey.responseTarget,
+                targetId = targetId,
+                targetLabel = targetLabel,
                 submittedById = submittedById,
-                answers = answers.toAnswerValues(questions),
+                answers = answers.toAnswerValues(survey.questions),
                 eventAtMs = Instant.parse(eventAt).toEpochMilliseconds(),
             )
         }

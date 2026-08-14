@@ -2,6 +2,7 @@ package ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseTarget
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.GetAvailableSurveysUseCase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,10 +28,34 @@ class SurveyListViewModel(
 
     fun onAction(action: SurveyListAction) {
         when (action) {
-            is SurveyListAction.SurveyClick ->
-                _state.update {
-                    it.copy(destination = SurveyListDestination.SurveyResponseForm(action.surveyId))
+            // Route by the survey's own target: subject picker, establishment picker, or straight
+            // into the questionnaire for an anonymous survey.
+            is SurveyListAction.SurveyClick -> _state.update {
+                when (action.survey.responseTarget) {
+                    SurveyResponseTarget.Subject -> it.copy(
+                        pendingSurveyId = action.survey.id,
+                        destination = SurveyListDestination.SelectSubject,
+                    )
+                    SurveyResponseTarget.Establishment -> it.copy(
+                        pendingSurveyId = action.survey.id,
+                        destination = SurveyListDestination.SelectEstablishment,
+                    )
+                    SurveyResponseTarget.Anonymous -> it.copy(
+                        pendingSurveyId = null,
+                        destination = SurveyListDestination.SurveyResponseForm(action.survey.id),
+                    )
                 }
+            }
+
+            is SurveyListAction.SubjectPicked -> openForm(
+                targetId = action.subject.id,
+                targetLabel = "${action.subject.name} ${action.subject.lastName}",
+            )
+
+            is SurveyListAction.EstablishmentPicked -> openForm(
+                targetId = action.establishment.id,
+                targetLabel = action.establishment.name,
+            )
 
             SurveyListAction.LoadMore -> if (_state.value.canLoadMore) load(page = _state.value.page + 1)
             SurveyListAction.RetryClick -> load(page = 1)
@@ -40,6 +65,18 @@ class SurveyListViewModel(
 
     fun clearDestination() {
         _state.update { it.copy(destination = null) }
+    }
+
+    /** A picker result with no pending survey is a stale [savedStateHandle] value (e.g. left over
+     *  from a different consumer) — ignore it rather than opening an arbitrary form. */
+    private fun openForm(targetId: String, targetLabel: String) {
+        _state.update { current ->
+            val surveyId = current.pendingSurveyId ?: return@update current
+            current.copy(
+                pendingSurveyId = null,
+                destination = SurveyListDestination.SurveyResponseForm(surveyId, targetId, targetLabel),
+            )
+        }
     }
 
     private fun load(page: Int) {

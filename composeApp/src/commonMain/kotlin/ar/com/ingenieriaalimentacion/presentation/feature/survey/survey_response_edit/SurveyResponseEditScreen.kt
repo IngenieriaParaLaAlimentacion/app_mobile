@@ -103,7 +103,7 @@ fun SurveyResponseEditScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         Text(
-                            text = state.establishmentName,
+                            text = state.targetLabel,
                             style = AlTheme.typography.body,
                             color = AlTheme.colors.textMuted,
                         )

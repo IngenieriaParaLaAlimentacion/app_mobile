@@ -32,6 +32,7 @@ import ar.com.ingenieriaalimentacion.domain.usecase.subject.GetSubjectsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.ObserveSubjectUploadsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.RetrySubjectUploadUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.SyncSubjectsUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.survey.DiscardSurveyResponseUploadUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.EditSurveyResponseUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.GetAvailableSurveysUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.GetSurveyDetailUseCase
@@ -86,6 +87,7 @@ val useCasesModule = module {
     factory { ObserveSurveyResponseUploadsUseCase(get()) }
     factory { GetSurveyResponseDetailUseCase(get()) }
     factory { RetrySurveyResponseUploadUseCase(get()) }
+    factory { DiscardSurveyResponseUploadUseCase(get()) }
     factory { EditSurveyResponseUseCase(get()) }
     factory { ObserveSurveyResponseEditStatusUseCase(get()) }
     factory { RetrySurveyResponseEditUploadUseCase(get()) }

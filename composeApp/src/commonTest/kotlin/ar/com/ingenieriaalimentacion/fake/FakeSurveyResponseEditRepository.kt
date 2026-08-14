@@ -10,6 +10,7 @@ import kotlin.time.Duration
 
 data class EnqueuedEdit(
     val responseId: String,
+    val surveyId: String,
     val surveyName: String,
     val establishmentName: String,
     val answers: Map<String, SurveyAnswerValue>,
@@ -24,12 +25,13 @@ class FakeSurveyResponseEditRepository : SurveyResponseEditRepository {
 
     override suspend fun enqueueEdit(
         responseId: String,
+        surveyId: String,
         surveyName: String,
         establishmentName: String,
         answers: Map<String, SurveyAnswerValue>,
         eventAtMs: Long,
     ): Result<Unit> {
-        enqueued += EnqueuedEdit(responseId, surveyName, establishmentName, answers, eventAtMs)
+        enqueued += EnqueuedEdit(responseId, surveyId, surveyName, establishmentName, answers, eventAtMs)
         return enqueueResult
     }
 

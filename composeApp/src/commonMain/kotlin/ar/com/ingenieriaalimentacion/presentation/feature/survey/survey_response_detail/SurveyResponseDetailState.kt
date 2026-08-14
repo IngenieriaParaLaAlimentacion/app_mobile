@@ -12,7 +12,7 @@ data class SurveyResponseDetailState(
     val responseId: String = "",
     val surveyId: String = "",
     val surveyName: String = "",
-    val establishmentLabel: String = "",
+    val targetLabel: String = "",
     val eventAtLabel: String = "",
     val answeredQuestions: List<AnsweredQuestionUi> = emptyList(),
     val canEdit: Boolean = false,

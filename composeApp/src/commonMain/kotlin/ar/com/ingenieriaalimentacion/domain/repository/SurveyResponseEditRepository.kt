@@ -10,6 +10,7 @@ interface SurveyResponseEditRepository : SyncEngine {
      *  same response instead of minting a new idempotency key (see ADR-0004). */
     suspend fun enqueueEdit(
         responseId: String,
+        surveyId: String,
         surveyName: String,
         establishmentName: String,
         answers: Map<String, SurveyAnswerValue>,

@@ -15,5 +15,6 @@ class FakeSurveyResponseHistoryRepository : SurveyResponseHistoryRepository {
 
     override suspend fun getPage(page: Int, pageSize: Int): Result<List<SurveyResponseSummary>> = pageResult
 
-    override suspend fun getDetail(responseId: String): Result<SurveyResponseDetail> = detailResult
+    override suspend fun getDetail(surveyId: String, responseId: String): Result<SurveyResponseDetail> =
+        detailResult
 }

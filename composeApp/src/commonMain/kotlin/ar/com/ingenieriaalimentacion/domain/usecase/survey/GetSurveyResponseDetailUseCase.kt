@@ -5,5 +5,6 @@ import ar.com.ingenieriaalimentacion.domain.repository.SurveyResponseHistoryRepo
 
 /** Live-first: falls back to the local queue only when offline and it's this device's own row. */
 class GetSurveyResponseDetailUseCase(private val repository: SurveyResponseHistoryRepository) {
-    suspend operator fun invoke(responseId: String): Result<SurveyResponseDetail> = repository.getDetail(responseId)
+    suspend operator fun invoke(surveyId: String, responseId: String): Result<SurveyResponseDetail> =
+        repository.getDetail(surveyId, responseId)
 }

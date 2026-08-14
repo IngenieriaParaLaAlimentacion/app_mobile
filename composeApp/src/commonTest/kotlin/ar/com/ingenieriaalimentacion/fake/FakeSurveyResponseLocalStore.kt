@@ -2,6 +2,7 @@ package ar.com.ingenieriaalimentacion.fake
 
 import ar.com.ingenieriaalimentacion.data.survey.local.SurveyResponseLocalStore
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
+import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseConflict
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseUpload
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -54,6 +55,21 @@ class FakeSurveyResponseLocalStore(private val now: () -> Long = { 0L }) : Surve
             )
         }
 
+    override suspend fun markConflict(localId: String, conflict: ResponseConflict) =
+        mutate(localId) {
+            it.copy(
+                syncState = SyncState.Failed,
+                errorMessage = null,
+                conflict = conflict,
+                attemptCount = it.attemptCount + 1,
+                updatedAt = now(),
+            )
+        }
+
+    override suspend fun delete(localId: String) {
+        rows.value = rows.value.filterNot { it.localId == localId }
+    }
+
     override suspend fun bumpRetry(localId: String, reason: String) =
         mutate(localId) {
             it.copy(
@@ -66,7 +82,13 @@ class FakeSurveyResponseLocalStore(private val now: () -> Long = { 0L }) : Surve
 
     override suspend fun resetForRetry(localId: String) =
         mutate(localId) {
-            it.copy(syncState = SyncState.Pending, errorMessage = null, attemptCount = 0, updatedAt = now())
+            it.copy(
+                syncState = SyncState.Pending,
+                errorMessage = null,
+                conflict = null,
+                attemptCount = 0,
+                updatedAt = now(),
+            )
         }
 
     override suspend fun resetStuckSyncing() {

@@ -1,31 +1,41 @@
 -- Same single-id design as PendingSubject/PendingMeasurement: localId is both the SQLDelight
--- PK and the wire idempotency `id`. surveyName/establishmentName are denormalized (like
+-- PK and the wire idempotency `id`. surveyName/targetLabel are denormalized (like
 -- PendingMeasurement's subject*/establishment* columns) so the "My survey responses" list
--- renders fully offline with no cross-table join. No MERGED state: no per-survey uniqueness
--- constraint exists server-side, so there is no conflict/dedup case to model.
+-- renders fully offline with no cross-table join.
+--
+-- A single targetId/targetLabel pair rather than four columns: exactly one target can ever be
+-- set, and a two-column shape makes "both set" unrepresentable instead of merely invalid.
+--
+-- Still no MERGED syncState. A 409 (survey already answered for that target) is modelled as a
+-- payload on a FAILED row — conflictBy/conflictAt — rather than a new SyncState, because
+-- SyncState is shared with subjects and measurements and a new variant would ripple through
+-- every unrelated exhaustive `when`.
 CREATE TABLE PendingSurveyResponse (
-    localId           TEXT    NOT NULL PRIMARY KEY,
-    surveyId          TEXT    NOT NULL,
-    surveyName        TEXT    NOT NULL,
-    establishmentId   TEXT    NOT NULL,
-    establishmentName TEXT    NOT NULL,
-    answersJson       TEXT    NOT NULL,   -- Map<String, JsonElement>, wire-ready
-    eventAt           TEXT    NOT NULL,   -- ISO-8601 instant, client clock
-    syncState         TEXT    NOT NULL,   -- PENDING|SYNCING|SYNCED|FAILED
-    canonicalId       TEXT,               -- server id once synced (== localId, always)
-    errorMessage      TEXT,
-    attemptCount      INTEGER NOT NULL DEFAULT 0,
-    createdAt         INTEGER NOT NULL,
-    updatedAt         INTEGER NOT NULL
+    localId        TEXT    NOT NULL PRIMARY KEY,
+    surveyId       TEXT    NOT NULL,
+    surveyName     TEXT    NOT NULL,
+    responseTarget TEXT    NOT NULL,   -- 'SUBJECT' | 'ESTABLISHMENT' | 'ANONYMOUS'
+    targetId       TEXT,               -- subject or establishment id; NULL when anonymous
+    targetLabel    TEXT,               -- denormalized display name; NULL when anonymous
+    answersJson    TEXT    NOT NULL,   -- Map<String, JsonElement>, wire-ready
+    eventAt        TEXT    NOT NULL,   -- ISO-8601 instant, client clock
+    syncState      TEXT    NOT NULL,   -- PENDING|SYNCING|SYNCED|FAILED
+    canonicalId    TEXT,               -- server id once synced (== localId, always)
+    errorMessage   TEXT,
+    conflictBy     TEXT,               -- 409: existing_response.submitted_by.name
+    conflictAt     TEXT,               -- 409: existing_response.event_at (ISO-8601)
+    attemptCount   INTEGER NOT NULL DEFAULT 0,
+    createdAt      INTEGER NOT NULL,
+    updatedAt      INTEGER NOT NULL
 );
 
 CREATE INDEX PendingSurveyResponse_state ON PendingSurveyResponse(syncState);
 
 insert:
-INSERT INTO PendingSurveyResponse(localId, surveyId, surveyName, establishmentId,
-    establishmentName, answersJson, eventAt, syncState, canonicalId, errorMessage,
-    attemptCount, createdAt, updatedAt)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO PendingSurveyResponse(localId, surveyId, surveyName, responseTarget, targetId,
+    targetLabel, answersJson, eventAt, syncState, canonicalId, errorMessage, conflictBy,
+    conflictAt, attemptCount, createdAt, updatedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectAll:
 SELECT * FROM PendingSurveyResponse ORDER BY createdAt DESC;
@@ -58,9 +68,21 @@ markFailed:
 UPDATE PendingSurveyResponse SET syncState = 'FAILED', errorMessage = ?,
     attemptCount = attemptCount + 1, updatedAt = ? WHERE localId = ?;
 
+-- Terminal by construction: SurveyResponseUpload.isEligibleAt returns false while conflict != null,
+-- so the backoff sweep never picks this row up again. Only an explicit Descartar clears it.
+markConflict:
+UPDATE PendingSurveyResponse SET syncState = 'FAILED', errorMessage = NULL, conflictBy = ?,
+    conflictAt = ?, attemptCount = attemptCount + 1, updatedAt = ? WHERE localId = ?;
+
+-- Clears the conflict columns too. The UI never offers Reintentar on a conflicted row, but if it
+-- ever did, leaving them set would wedge the row in a PENDING state that isEligibleAt permanently
+-- skips: invisible to the sweep and no longer rendered as a conflict.
 resetForRetry:
-UPDATE PendingSurveyResponse SET syncState = 'PENDING', errorMessage = NULL, attemptCount = 0,
-    updatedAt = ? WHERE localId = ?;
+UPDATE PendingSurveyResponse SET syncState = 'PENDING', errorMessage = NULL, conflictBy = NULL,
+    conflictAt = NULL, attemptCount = 0, updatedAt = ? WHERE localId = ?;
+
+deleteById:
+DELETE FROM PendingSurveyResponse WHERE localId = ?;
 
 deleteAll:
 DELETE FROM PendingSurveyResponse;

@@ -3,6 +3,7 @@ package ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_respons
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
+import ar.com.ingenieriaalimentacion.domain.usecase.survey.DiscardSurveyResponseUploadUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.GetSurveyResponseHistoryPageUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.ObserveSurveyResponseUploadsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.RetrySurveyResponseUploadUseCase
@@ -22,6 +23,7 @@ class SurveyResponseHistoryViewModel(
     private val observeUploads: ObserveSurveyResponseUploadsUseCase,
     private val getHistoryPage: GetSurveyResponseHistoryPageUseCase,
     private val retrySurveyResponseUpload: RetrySurveyResponseUploadUseCase,
+    private val discardSurveyResponseUpload: DiscardSurveyResponseUploadUseCase,
     private val syncCoordinator: SyncCoordinator,
 ) : ViewModel() {
 
@@ -39,10 +41,18 @@ class SurveyResponseHistoryViewModel(
     fun onAction(action: SurveyResponseHistoryAction) {
         when (action) {
             is SurveyResponseHistoryAction.ResponseClick ->
-                _state.update { it.copy(navigateToResponseId = action.responseId) }
+                _state.update {
+                    it.copy(
+                        navigateToResponse = SurveyResponseTargetRoute(action.surveyId, action.responseId),
+                    )
+                }
             is SurveyResponseHistoryAction.RetryUploadClick -> viewModelScope.launch {
                 retrySurveyResponseUpload(action.responseId)
                 syncCoordinator.requestSync()
+            }
+            is SurveyResponseHistoryAction.DiscardClick -> viewModelScope.launch {
+                // The reactive queue collector drops the row from `items` on its own.
+                discardSurveyResponseUpload(action.responseId)
             }
             SurveyResponseHistoryAction.LoadMore -> loadMore()
             SurveyResponseHistoryAction.RetryLoad -> viewModelScope.launch { refreshPage1() }
@@ -50,7 +60,7 @@ class SurveyResponseHistoryViewModel(
     }
 
     fun clearNavigation() {
-        _state.update { it.copy(navigateToResponseId = null) }
+        _state.update { it.copy(navigateToResponse = null) }
     }
 
     private suspend fun refreshPage1() {

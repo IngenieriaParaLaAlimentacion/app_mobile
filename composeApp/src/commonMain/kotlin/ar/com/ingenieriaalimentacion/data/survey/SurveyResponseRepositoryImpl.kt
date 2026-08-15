@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.survey
 
+import ar.com.ingenieriaalimentacion.data.subject.local.SubjectLocalStore
 import ar.com.ingenieriaalimentacion.data.survey.local.SurveyResponseLocalStore
 import ar.com.ingenieriaalimentacion.data.survey.mapper.toAnswersJson
 import ar.com.ingenieriaalimentacion.data.survey.mapper.toRequest
@@ -7,6 +8,8 @@ import ar.com.ingenieriaalimentacion.domain.model.subject.MAX_SYNC_ATTEMPTS
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncSummary
 import ar.com.ingenieriaalimentacion.domain.model.survey.NewSurveyResponse
+import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseConflict
+import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseTargetRef
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseUpload
 import ar.com.ingenieriaalimentacion.domain.model.survey.isEligibleAt
 import ar.com.ingenieriaalimentacion.domain.repository.SurveyResponseRepository
@@ -24,12 +27,14 @@ import kotlin.time.Instant
  * Offline-first survey-response repository: the local DB is the source of truth. [enqueue] writes a
  * PENDING row instantly; [syncPending] pushes eligible rows and reconciles each outcome into a local
  * state transition. A direct structural port of
- * [ar.com.ingenieriaalimentacion.data.subject.SubjectRepositoryImpl], with no MERGED branch — no
- * per-survey uniqueness exists server-side — and a NotFound branch (stale survey/establishment id).
+ * [ar.com.ingenieriaalimentacion.data.subject.SubjectRepositoryImpl]. There is no MERGED state:
+ * a per-survey+target uniqueness conflict is a terminal `AlreadyAnswered` row carrying who already
+ * answered, not a merge.
  */
 class SurveyResponseRepositoryImpl(
     private val api: SurveyResponseApi,
     private val local: SurveyResponseLocalStore,
+    private val subjects: SubjectLocalStore,
     private val idGenerator: IdGenerator,
     private val json: Json,
     private val now: () -> Long,
@@ -47,13 +52,13 @@ class SurveyResponseRepositoryImpl(
                 localId = idGenerator.newId(),
                 surveyId = newResponse.surveyId,
                 surveyName = newResponse.surveyName,
-                establishmentId = newResponse.establishmentId,
-                establishmentName = newResponse.establishmentName,
+                target = newResponse.target,
                 answersJson = answersJson,
                 eventAt = eventAt,
                 syncState = SyncState.Pending,
                 canonicalId = null,
                 errorMessage = null,
+                conflict = null,
                 attemptCount = 0,
                 createdAt = nowMs,
                 updatedAt = nowMs,
@@ -68,11 +73,50 @@ class SurveyResponseRepositoryImpl(
         var failed = 0
         var pending = 0
         local.syncable().filter { it.isEligibleAt(now()) }.forEach { upload ->
+            // A subject target may point at a subject this device queued offline. Resolve it to
+            // the server's canonical id (set when that subject 409'd on DNI) and hold the response
+            // back while the parent is still in flight — same gate as MeasurementRepositoryImpl.
+            // Ordering is already guaranteed: SubjectRepository runs before this engine in the
+            // SyncCoordinator's list, so within a single sweep the subject lands first.
+            val target = upload.target
+            val resolvedSubjectId: String? = if (target is ResponseTargetRef.Subject) {
+                val subject = subjects.find(target.id)
+                when {
+                    // Pre-existing server subject (no local row) → POST as-is.
+                    subject == null -> target.id
+                    subject.syncState == SyncState.Synced || subject.syncState == SyncState.Merged ->
+                        subject.canonicalId ?: target.id
+                    // Subject dead-lettered → the FK can never resolve; dead-letter the response too.
+                    subject.syncState == SyncState.Failed -> {
+                        local.markFailed(upload.localId, "El sujeto no se pudo sincronizar.")
+                        failed++
+                        return@forEach
+                    }
+                    // Subject still PENDING/SYNCING → hold; a later pass retries once it lands.
+                    else -> {
+                        pending++
+                        return@forEach
+                    }
+                }
+            } else {
+                null
+            }
+
             local.markSyncing(upload.localId)
-            when (val outcome = api.create(upload.toRequest(json))) {
+            when (val outcome = api.create(upload.surveyId, upload.toRequest(json, resolvedSubjectId))) {
                 is SurveyResponseUploadOutcome.Created -> {
                     local.markSynced(upload.localId, outcome.response.id)
                     synced++
+                }
+                is SurveyResponseUploadOutcome.AlreadyAnswered -> {
+                    local.markConflict(
+                        upload.localId,
+                        ResponseConflict(
+                            submittedByName = outcome.submittedByName ?: "otro relevador",
+                            eventAt = outcome.eventAt.orEmpty(),
+                        ),
+                    )
+                    failed++
                 }
                 SurveyResponseUploadOutcome.InvalidData -> {
                     local.markFailed(upload.localId, "Las respuestas no son válidas.")
@@ -83,7 +127,7 @@ class SurveyResponseRepositoryImpl(
                     failed++
                 }
                 SurveyResponseUploadOutcome.NotFound -> {
-                    local.markFailed(upload.localId, "La encuesta o el establecimiento no existen.")
+                    local.markFailed(upload.localId, "La encuesta o el destinatario no existen.")
                     failed++
                 }
                 SurveyResponseUploadOutcome.Unauthorized ->
@@ -105,6 +149,8 @@ class SurveyResponseRepositoryImpl(
         }
 
     override suspend fun retry(localId: String): Result<Unit> = runCatching { local.resetForRetry(localId) }
+
+    override suspend fun delete(localId: String): Result<Unit> = runCatching { local.delete(localId) }
 
     override suspend fun resetStuckSyncing() {
         local.resetStuckSyncing()

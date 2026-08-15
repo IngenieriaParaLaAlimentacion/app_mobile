@@ -4,7 +4,7 @@ import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import ar.com.ingenieriaalimentacion.data.db.AppDatabase
 import ar.com.ingenieriaalimentacion.domain.model.survey.Survey
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyDetail
-import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyScope
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseTarget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -30,7 +30,7 @@ class DefaultSurveyLocalStoreTest {
     private fun survey(id: String, name: String, isActive: Boolean = true, questionCount: Int = 3) = Survey(
         id = id,
         name = name,
-        scope = SurveyScope.Generic,
+        responseTarget = SurveyResponseTarget.Establishment,
         isActive = isActive,
         questionCount = questionCount,
     )
@@ -38,7 +38,7 @@ class DefaultSurveyLocalStoreTest {
     private fun detail(id: String) = SurveyDetail(
         id = id,
         name = "Detail $id",
-        scope = SurveyScope.Generic,
+        responseTarget = SurveyResponseTarget.Establishment,
         isActive = true,
         questions = emptyList(),
     )
@@ -51,7 +51,7 @@ class DefaultSurveyLocalStoreTest {
 
         assertEquals(listOf("Alpha", "Beta"), summaries.map { it.name })
         val beta = summaries.first { it.id == "b" }
-        assertEquals(SurveyScope.Generic, beta.scope)
+        assertEquals(SurveyResponseTarget.Establishment, beta.responseTarget)
         assertEquals(false, beta.isActive)
         assertEquals(5, beta.questionCount)
     }

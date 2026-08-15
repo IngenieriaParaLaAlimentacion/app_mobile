@@ -131,7 +131,7 @@ fun SurveyResponseDetailScreen(
                             }
 
                             ResponseMetaHeader(
-                                establishmentLabel = state.establishmentLabel,
+                                targetLabel = state.targetLabel,
                                 eventAtLabel = state.eventAtLabel,
                             )
 
@@ -177,7 +177,7 @@ fun SurveyResponseDetailScreen(
 }
 
 @Composable
-private fun ResponseMetaHeader(establishmentLabel: String, eventAtLabel: String) {
+private fun ResponseMetaHeader(targetLabel: String, eventAtLabel: String) {
     Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
@@ -190,7 +190,7 @@ private fun ResponseMetaHeader(establishmentLabel: String, eventAtLabel: String)
                 modifier = Modifier.size(18.dp),
             )
             Text(
-                text = establishmentLabel,
+                text = targetLabel,
                 style = AlTheme.typography.body.copy(fontWeight = FontWeight.Medium),
                 color = AlTheme.colors.textBase,
             )

@@ -6,8 +6,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 
-fun NavController.navigateToSurveyResponseDetail(responseId: String) =
-    navigate(Route.SurveyResponseDetail(responseId))
+fun NavController.navigateToSurveyResponseDetail(surveyId: String, responseId: String) =
+    navigate(Route.SurveyResponseDetail(surveyId, responseId))
 
 fun NavGraphBuilder.surveyResponseDetailScreen(navController: NavController) {
     composable<Route.SurveyResponseDetail> { entry ->
@@ -27,6 +27,6 @@ internal fun navigate(
     when (destination) {
         SurveyResponseDetailDestination.Back -> navController.popBackStack()
         is SurveyResponseDetailDestination.SurveyResponseEdit ->
-            navController.navigate(Route.SurveyResponseEdit(destination.responseId))
+            navController.navigate(Route.SurveyResponseEdit(destination.surveyId, destination.responseId))
     }
 }

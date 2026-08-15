@@ -28,6 +28,7 @@ class SelectEstablishmentViewModel(
             selected = runCatching {
                 Json.decodeFromString<List<Establishment>>(route.preselectedJson)
             }.getOrDefault(emptyList()),
+            singleSelect = route.singleSelect,
         ),
     )
     val state = _state.asStateFlow()
@@ -75,6 +76,16 @@ class SelectEstablishmentViewModel(
 
     private fun toggle(establishment: Establishment) {
         _state.update { current ->
+            // Single-select replaces rather than accumulates, and confirms on the spot — a picker
+            // with exactly one choice has nothing left to confirm.
+            if (current.singleSelect) {
+                return@update current.copy(
+                    selected = listOf(establishment),
+                    destination = SelectEstablishmentDestination.Confirm(
+                        Json.encodeToString(listOf(establishment)),
+                    ),
+                )
+            }
             val selected = if (current.isSelected(establishment.id)) {
                 current.selected.filterNot { it.id == establishment.id }
             } else {

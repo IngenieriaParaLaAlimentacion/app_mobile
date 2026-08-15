@@ -10,20 +10,22 @@ import ar.com.ingenieriaalimentacion.domain.model.survey.Survey
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyDetail
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyOption
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyQuestion
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseTarget
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseType
-import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyScope
 import ar.com.ingenieriaalimentacion.domain.repository.PagedSurveys
 
-internal fun SurveyListItemResponse.toDomain(): Survey = Survey(
+/** Null when this build doesn't recognize the survey's target — the row is then dropped from the
+ *  list rather than taking the whole page down. See [toDomainResponseTargetOrNull]. */
+internal fun SurveyListItemResponse.toDomainOrNull(): Survey? = Survey(
     id = id,
     name = name,
-    scope = scope.toDomainScope(),
+    responseTarget = responseTarget.toDomainResponseTargetOrNull() ?: return null,
     isActive = isActive,
     questionCount = questionCount,
 )
 
 internal fun PaginatedSurveysResponse.toDomain(): PagedSurveys = PagedSurveys(
-    items = items.map { it.toDomain() },
+    items = items.mapNotNull { it.toDomainOrNull() },
     page = page,
     totalPages = totalPages,
 )
@@ -38,10 +40,13 @@ internal fun SurveyQuestionResponse.toDomain(): SurveyQuestion = SurveyQuestion(
     options = options.map { it.toDomain() },
 )
 
+/** Unlike the list mapper this one still throws on an unknown target: there is nothing sensible to
+ *  render for a survey this build cannot decide a target for, so it surfaces as a load failure. */
 internal fun SurveyDetailResponse.toDomain(): SurveyDetail = SurveyDetail(
     id = id,
     name = name,
-    scope = scope.toDomainScope(),
+    responseTarget = responseTarget.toDomainResponseTargetOrNull()
+        ?: error("Unknown survey response_target: $responseTarget"),
     isActive = isActive,
     questions = questions.map { it.toDomain() },
 )
@@ -49,25 +54,32 @@ internal fun SurveyDetailResponse.toDomain(): SurveyDetail = SurveyDetail(
 internal fun SurveyResponseResponse.toDomain(): SurveyResponseResponseDomain = SurveyResponseResponseDomain(
     id = id,
     surveyId = surveyId,
+    subjectId = subjectId,
     establishmentId = establishmentId,
     submittedById = submittedById,
     eventAt = eventAt,
 )
 
 /** Thin projection of [SurveyResponseResponse] the sync engines/history repo need — `answers` are
- *  interpreted separately via [toAnswerValues], keyed against a specific survey's questions. */
+ *  interpreted separately via [toAnswerValues], keyed against a specific survey's questions.
+ *  Both target ids are nullable: an anonymous response carries neither. */
 data class SurveyResponseResponseDomain(
     val id: String,
     val surveyId: String,
-    val establishmentId: String,
+    val subjectId: String?,
+    val establishmentId: String?,
     val submittedById: String,
     val eventAt: String,
 )
 
-private fun String.toDomainScope(): SurveyScope = when (this) {
-    "generic" -> SurveyScope.Generic
-    "targeted" -> SurveyScope.Targeted
-    else -> error("Unknown survey scope: $this")
+/** Lenient on purpose: a target value this build doesn't know is not fatal. Callers drop the row
+ *  (list) or fail that one read (detail) — a fourth server-side target must never take down the
+ *  whole survey list on an older app. */
+internal fun String.toDomainResponseTargetOrNull(): SurveyResponseTarget? = when (this) {
+    "subject" -> SurveyResponseTarget.Subject
+    "establishment" -> SurveyResponseTarget.Establishment
+    "anonymous" -> SurveyResponseTarget.Anonymous
+    else -> null
 }
 
 private fun String.toDomainResponseType(): SurveyResponseType = when (this) {

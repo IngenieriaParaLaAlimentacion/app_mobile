@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.domain.model.auth.canRespondToSurveys
-import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseTarget
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyProfileUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.GetSurveyDetailUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.GetSurveyResponseDetailUseCase
@@ -26,13 +26,14 @@ class SurveyResponseDetailViewModel(
     private val getSurveyResponseDetail: GetSurveyResponseDetailUseCase,
     private val getSurveyDetail: GetSurveyDetailUseCase,
     private val getMyProfile: GetMyProfileUseCase,
-    private val getMyEstablishments: GetMyEstablishmentsUseCase,
     observeEditStatus: ObserveSurveyResponseEditStatusUseCase,
     private val retryEditUpload: RetrySurveyResponseEditUploadUseCase,
     private val syncCoordinator: SyncCoordinator,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(SurveyResponseDetailState(responseId = route.responseId))
+    private val _state = MutableStateFlow(
+        SurveyResponseDetailState(surveyId = route.surveyId, responseId = route.responseId),
+    )
     val state = _state.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5_000L),
@@ -58,7 +59,12 @@ class SurveyResponseDetailViewModel(
         when (action) {
             SurveyResponseDetailAction.EditClick ->
                 _state.update {
-                    it.copy(destination = SurveyResponseDetailDestination.SurveyResponseEdit(it.responseId))
+                    it.copy(
+                        destination = SurveyResponseDetailDestination.SurveyResponseEdit(
+                            surveyId = it.surveyId,
+                            responseId = it.responseId,
+                        ),
+                    )
                 }
             SurveyResponseDetailAction.RetryLoad -> load()
             SurveyResponseDetailAction.BackClick ->
@@ -86,7 +92,7 @@ class SurveyResponseDetailViewModel(
     private fun load() {
         _state.update { it.copy(isLoading = true, loadError = false) }
         viewModelScope.launch {
-            val detail = getSurveyResponseDetail(_state.value.responseId).getOrNull()
+            val detail = getSurveyResponseDetail(_state.value.surveyId, _state.value.responseId).getOrNull()
             if (detail == null) {
                 _state.update { it.copy(isLoading = false, loadError = true) }
                 return@launch
@@ -104,7 +110,6 @@ class SurveyResponseDetailViewModel(
             }
 
             val profile = getMyProfile().getOrNull()
-            val establishments = getMyEstablishments().getOrNull().orEmpty()
             val canEdit = profile != null && canRespondToSurveys(profile.role) &&
                 (detail.submittedById == null || detail.submittedById == profile.id || profile.role in ADMIN_ROLES)
 
@@ -114,8 +119,13 @@ class SurveyResponseDetailViewModel(
                     loadError = false,
                     surveyId = detail.surveyId,
                     surveyName = surveyDetail?.name ?: it.surveyName,
-                    establishmentLabel = establishments.firstOrNull { e -> e.id == detail.establishmentId }?.name
-                        ?: detail.establishmentId,
+                    // No getMyEstablishments lookup any more: any establishment is answerable now
+                    // (CA4), so that lookup would miss by construction. The label comes from the
+                    // queue row when this device submitted it, and degrades to the raw id.
+                    targetLabel = when (detail.responseTarget) {
+                        SurveyResponseTarget.Anonymous -> "Anónima"
+                        else -> detail.targetLabel ?: detail.targetId.orEmpty()
+                    },
                     eventAtLabel = formatEventAt(detail.eventAtMs),
                     answeredQuestions = answered,
                     canEdit = canEdit,

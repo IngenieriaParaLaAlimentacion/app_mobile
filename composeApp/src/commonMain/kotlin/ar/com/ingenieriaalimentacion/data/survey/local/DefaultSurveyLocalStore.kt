@@ -42,7 +42,7 @@ class DefaultSurveyLocalStore(
                 queries.insertOrReplace(
                     id = survey.id,
                     name = survey.name,
-                    scope = survey.scope.toDbString(),
+                    responseTarget = survey.responseTarget.toDbString(),
                     isActive = if (survey.isActive) 1L else 0L,
                     questionCount = survey.questionCount.toLong(),
                     detailJson = existingDetailJson,
@@ -56,7 +56,7 @@ class DefaultSurveyLocalStore(
         queries.insertOrReplace(
             id = detail.id,
             name = detail.name,
-            scope = detail.scope.toDbString(),
+            responseTarget = detail.responseTarget.toDbString(),
             isActive = if (detail.isActive) 1L else 0L,
             questionCount = detail.questions.size.toLong(),
             detailJson = json.encodeToString(detail),
@@ -80,7 +80,7 @@ class DefaultSurveyLocalStore(
                 queries.insertOrReplace(
                     id = survey.id,
                     name = survey.name,
-                    scope = survey.scope.toDbString(),
+                    responseTarget = survey.responseTarget.toDbString(),
                     isActive = if (survey.isActive) 1L else 0L,
                     questionCount = survey.questionCount.toLong(),
                     detailJson = existingDetailJson[survey.id],

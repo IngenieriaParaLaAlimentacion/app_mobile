@@ -29,6 +29,8 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRo
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
+import ar.com.ingenieriaalimentacion.domain.model.establishment.Establishment
+import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
 import com.komoui.components.Spinner
 import com.komoui.themes.styles
 import ingenieria_alimentacion.composeapp.generated.resources.Res
@@ -38,6 +40,9 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun SurveyListScreenRoot(
+    pickedSubject: SubjectSummary? = null,
+    pickedEstablishment: Establishment? = null,
+    onResultConsumed: () -> Unit = {},
     viewModel: SurveyListViewModel = koinViewModel(),
     navigate: (SurveyListDestination) -> Unit,
 ) {
@@ -47,6 +52,20 @@ fun SurveyListScreenRoot(
         state.destination?.let {
             navigate(it)
             viewModel.clearDestination()
+        }
+    }
+
+    LaunchedEffect(pickedSubject) {
+        pickedSubject?.let {
+            viewModel.onAction(SurveyListAction.SubjectPicked(it))
+            onResultConsumed()
+        }
+    }
+
+    LaunchedEffect(pickedEstablishment) {
+        pickedEstablishment?.let {
+            viewModel.onAction(SurveyListAction.EstablishmentPicked(it))
+            onResultConsumed()
         }
     }
 
@@ -137,7 +156,7 @@ fun SurveyListScreen(
                                     horizontalPadding = 0.dp,
                                     title = survey.name,
                                     subtitle = "${survey.questionCount} preguntas",
-                                    onClick = { onAction(SurveyListAction.SurveyClick(survey.id)) },
+                                    onClick = { onAction(SurveyListAction.SurveyClick(survey)) },
                                 )
                             }
                             if (state.isLoadingMore) {

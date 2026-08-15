@@ -1,0 +1,65 @@
+-- v6 -> v7: the survey-response "target" release.
+--
+-- 1. PendingSurveyResponseEdit gains surveyId — the PUT URL is now
+--    /surveys/{surveyId}/responses/{responseId}, so the edit queue must carry the survey id.
+--    Additive, so a plain ALTER works on the pinned sqlite_3_18 dialect. Existing rows get '';
+--    they are pre-relocation rows that could never have synced against the new routes anyway.
+ALTER TABLE PendingSurveyResponseEdit ADD COLUMN surveyId TEXT NOT NULL DEFAULT '';
+
+-- 2. CachedSurvey.scope ('GENERIC'|'TARGETED') becomes responseTarget
+--    ('SUBJECT'|'ESTABLISHMENT'|'ANONYMOUS'). Old values map to nothing, and detailJson holds a
+--    SurveyDetail whose shape changed with it, so the table is dropped rather than converted — it
+--    is a pure read-through cache and re-warms via WarmSurveyCacheUseCase on the next online launch.
+DROP TABLE IF EXISTS CachedSurvey;
+CREATE TABLE CachedSurvey (
+    id             TEXT NOT NULL PRIMARY KEY,
+    name           TEXT NOT NULL,
+    responseTarget TEXT NOT NULL,
+    isActive       INTEGER NOT NULL,
+    questionCount  INTEGER NOT NULL,
+    detailJson     TEXT,
+    updatedAt      INTEGER NOT NULL
+);
+
+-- 3. SurveyResponseSummary gained surveyId + target fields, so cached payloads no longer decode.
+--    Scoped to SURVEY_RESPONSE on purpose: this table also holds SUBJECT and MEASUREMENT rows
+--    (CachedActivityItem.sq), whose payloads are unaffected and must not be discarded.
+DELETE FROM CachedActivityItem WHERE type = 'SURVEY_RESPONSE';
+
+-- 4. PendingSurveyResponse learns about targets. establishmentId/establishmentName must become
+--    nullable, which ALTER TABLE cannot do, so the table is recreated and copied. Existing rows
+--    are establishment-scoped by construction, so they map cleanly to 'ESTABLISHMENT'.
+ALTER TABLE PendingSurveyResponse RENAME TO PendingSurveyResponse_old;
+-- RENAME carries the index over to the renamed table under its original name, so it has to go
+-- before the new table's index can reuse that name.
+DROP INDEX IF EXISTS PendingSurveyResponse_state;
+
+CREATE TABLE PendingSurveyResponse (
+    localId        TEXT    NOT NULL PRIMARY KEY,
+    surveyId       TEXT    NOT NULL,
+    surveyName     TEXT    NOT NULL,
+    responseTarget TEXT    NOT NULL,
+    targetId       TEXT,
+    targetLabel    TEXT,
+    answersJson    TEXT    NOT NULL,
+    eventAt        TEXT    NOT NULL,
+    syncState      TEXT    NOT NULL,
+    canonicalId    TEXT,
+    errorMessage   TEXT,
+    conflictBy     TEXT,
+    conflictAt     TEXT,
+    attemptCount   INTEGER NOT NULL DEFAULT 0,
+    createdAt      INTEGER NOT NULL,
+    updatedAt      INTEGER NOT NULL
+);
+
+INSERT INTO PendingSurveyResponse(localId, surveyId, surveyName, responseTarget, targetId,
+    targetLabel, answersJson, eventAt, syncState, canonicalId, errorMessage, conflictBy,
+    conflictAt, attemptCount, createdAt, updatedAt)
+SELECT localId, surveyId, surveyName, 'ESTABLISHMENT', establishmentId, establishmentName,
+    answersJson, eventAt, syncState, canonicalId, errorMessage, NULL, NULL,
+    attemptCount, createdAt, updatedAt
+FROM PendingSurveyResponse_old;
+
+DROP TABLE PendingSurveyResponse_old;
+CREATE INDEX PendingSurveyResponse_state ON PendingSurveyResponse(syncState);

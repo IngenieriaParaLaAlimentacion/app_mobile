@@ -2,23 +2,25 @@ package ar.com.ingenieriaalimentacion.data.survey.mapper
 
 import ar.com.ingenieriaalimentacion.data.db.CachedSurvey
 import ar.com.ingenieriaalimentacion.domain.model.survey.Survey
-import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyScope
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseTarget
 
-internal fun SurveyScope.toDbString(): String = when (this) {
-    SurveyScope.Generic -> "GENERIC"
-    SurveyScope.Targeted -> "TARGETED"
+internal fun SurveyResponseTarget.toDbString(): String = when (this) {
+    SurveyResponseTarget.Subject -> "SUBJECT"
+    SurveyResponseTarget.Establishment -> "ESTABLISHMENT"
+    SurveyResponseTarget.Anonymous -> "ANONYMOUS"
 }
 
-internal fun String.toDomainSurveyScope(): SurveyScope = when (this) {
-    "GENERIC" -> SurveyScope.Generic
-    "TARGETED" -> SurveyScope.Targeted
-    else -> error("Unknown survey scope stored: $this")
+internal fun String.toDomainSurveyResponseTarget(): SurveyResponseTarget = when (this) {
+    "SUBJECT" -> SurveyResponseTarget.Subject
+    "ESTABLISHMENT" -> SurveyResponseTarget.Establishment
+    "ANONYMOUS" -> SurveyResponseTarget.Anonymous
+    else -> error("Unknown survey responseTarget stored: $this")
 }
 
 internal fun CachedSurvey.toDomainSurvey(): Survey = Survey(
     id = id,
     name = name,
-    scope = scope.toDomainSurveyScope(),
+    responseTarget = responseTarget.toDomainSurveyResponseTarget(),
     isActive = isActive == 1L,
     questionCount = questionCount.toInt(),
 )

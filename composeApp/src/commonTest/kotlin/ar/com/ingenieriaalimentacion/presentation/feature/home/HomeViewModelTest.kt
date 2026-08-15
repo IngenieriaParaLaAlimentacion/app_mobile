@@ -11,6 +11,7 @@ import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseSummary
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseTarget
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.ObserveMeasurementsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
@@ -211,8 +212,10 @@ class HomeViewModelTest {
             surveyResponseRepo.localMerged.value = listOf(
                 SurveyResponseSummary(
                     id = "sr1",
+                    surveyId = "s1",
                     surveyName = "Encuesta nutricional",
-                    establishmentName = "Escuela 1",
+                    responseTarget = SurveyResponseTarget.Establishment,
+                    targetLabel = "Escuela 1",
                     eventAt = "2026-06-29T12:00:00Z",
                     syncState = SyncState.Pending,
                     isLocal = true,

@@ -87,7 +87,6 @@ val viewModelsModule = module {
             getSurveyResponseDetail = get(),
             getSurveyDetail = get(),
             getMyProfile = get(),
-            getMyEstablishments = get(),
             observeEditStatus = get(),
             retryEditUpload = get(),
             syncCoordinator = get(),
@@ -98,7 +97,6 @@ val viewModelsModule = module {
             route = route,
             getSurveyResponseDetail = get(),
             getSurveyDetail = get(),
-            getMyEstablishments = get(),
             editSurveyResponse = get(),
             syncCoordinator = get(),
         )

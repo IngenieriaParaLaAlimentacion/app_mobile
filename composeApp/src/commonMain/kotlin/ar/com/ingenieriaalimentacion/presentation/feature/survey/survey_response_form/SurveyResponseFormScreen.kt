@@ -11,14 +11,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,8 +28,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ar.com.ingenieriaalimentacion.core.design_system.components.banner.AlBannerVariant
 import ar.com.ingenieriaalimentacion.core.design_system.components.banner.AlInlineBanner
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
-import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlSelectField
-import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.components.toast.AlToast
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
@@ -62,7 +56,6 @@ fun SurveyResponseFormScreenRoot(
     SurveyResponseFormScreen(state = state, onAction = viewModel::onAction)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SurveyResponseFormScreen(
     state: SurveyResponseFormState,
@@ -70,7 +63,6 @@ fun SurveyResponseFormScreen(
 ) {
     val scrollState = rememberScrollState()
     val isImeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-    val sheetState = rememberModalBottomSheetState()
 
     AlScaffold {
         Column(
@@ -112,29 +104,6 @@ fun SurveyResponseFormScreen(
                 )
             }
         }
-
-        if (state.showEstablishmentPicker) {
-            ModalBottomSheet(
-                onDismissRequest = { onAction(SurveyResponseFormAction.EstablishmentPickerDismiss) },
-                sheetState = sheetState,
-            ) {
-                Column(modifier = Modifier.navigationBarsPadding()) {
-                    Text(
-                        text = "Elegí el establecimiento",
-                        style = AlTheme.typography.body,
-                        color = AlTheme.colors.textBase,
-                        modifier = Modifier.padding(horizontal = AlTheme.spacing.md, vertical = AlTheme.spacing.sm),
-                    )
-                    state.establishmentOptions.forEach { establishment ->
-                        AlListRow(
-                            title = establishment.name,
-                            subtitle = establishment.formattedAddress,
-                            onClick = { onAction(SurveyResponseFormAction.EstablishmentSelected(establishment)) },
-                        )
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -156,21 +125,26 @@ private fun SurveyResponseFormBody(
                     .padding(top = AlTheme.spacing.lg, bottom = AlTheme.spacing.md),
                 verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg),
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
-                    AlSelectField(
-                        label = "Establecimiento",
-                        value = state.selectedEstablishment?.name ?: "",
-                        placeholder = "Elegí el establecimiento",
-                        error = state.establishmentError,
-                        required = true,
-                        enabled = !state.isSubmitting && state.establishmentOptions.isNotEmpty(),
-                        onClick = { onAction(SurveyResponseFormAction.EstablishmentPickerOpen) },
+                // Read-only: the target was chosen before this screen and is immutable on a response.
+                Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
+                    Text(
+                        text = state.targetHeading,
+                        style = AlTheme.typography.caption.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 0.5.sp,
+                        ),
+                        color = AlTheme.colors.textMuted,
                     )
-                    if (state.establishmentOptions.isEmpty()) {
+                    Text(
+                        text = state.targetLabel ?: "Anónima",
+                        style = AlTheme.typography.body.copy(fontWeight = FontWeight.Medium),
+                        color = AlTheme.colors.textBase,
+                    )
+                    state.targetError?.let { error ->
                         Text(
-                            text = "No tenés establecimientos aprobados.",
+                            text = error,
                             style = AlTheme.typography.caption,
-                            color = AlTheme.colors.textMuted,
+                            color = AlTheme.colors.danger,
                         )
                     }
                 }

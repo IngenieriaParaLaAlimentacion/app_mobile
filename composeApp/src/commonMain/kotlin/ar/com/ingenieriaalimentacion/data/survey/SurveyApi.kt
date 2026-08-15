@@ -41,6 +41,10 @@ class SurveyApi(private val client: HttpClient) {
 
 sealed interface SurveyDetailOutcome {
     data class Found(val response: SurveyDetailResponse) : SurveyDetailOutcome
+
+    /** For a field worker this now means **the survey is deactivated** — nothing more. The old
+     *  reading ("no approved establishment for this targeted survey") died with the targeted-audience
+     *  concept: every active survey is now visible and answerable by every field worker. */
     data object Forbidden : SurveyDetailOutcome
     data object NotFound : SurveyDetailOutcome
     data class Retryable(val cause: Throwable?) : SurveyDetailOutcome

@@ -7,12 +7,13 @@ import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.di.AppScope
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
+import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseTargetRef
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyAnswerValue
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyDetail
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyOption
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyQuestion
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseType
-import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyScope
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseTarget
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.GetSurveyDetailUseCase
@@ -33,6 +34,8 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -77,7 +80,7 @@ class SurveyResponseFormViewModelTest {
     private val detail = SurveyDetail(
         id = "sv-1",
         name = "Encuesta FIES",
-        scope = SurveyScope.Generic,
+        responseTarget = SurveyResponseTarget.Establishment,
         isActive = true,
         questions = questions,
     )
@@ -100,10 +103,11 @@ class SurveyResponseFormViewModelTest {
         profileRepo: FakeProfileRepository = FakeProfileRepository().apply {
             myEstablishmentsResult = Result.success(listOf(establishment("a")))
         },
+        route: Route.SurveyResponseForm = Route.SurveyResponseForm(surveyId = "sv-1"),
     ): SurveyResponseFormViewModel {
         val coordinator = SyncCoordinator(listOf(responseRepo), FakeConnectivityObserver(), AppScope())
         return SurveyResponseFormViewModel(
-            route = Route.SurveyResponseForm(surveyId = "sv-1"),
+            route = route,
             getSurveyDetail = GetSurveyDetailUseCase(surveyRepo),
             getMyEstablishments = GetMyEstablishmentsUseCase(profileRepo),
             getCurrentEstablishment = GetCurrentEstablishmentUseCase(profileRepo),
@@ -127,7 +131,7 @@ class SurveyResponseFormViewModelTest {
         val vm = viewModel(responseRepo = responseRepo)
 
         vm.state.test {
-            awaitState { !it.isLoading && it.selectedEstablishment != null }
+            awaitState { !it.isLoading && it.target != null }
 
             vm.onAction(SurveyResponseFormAction.Submit)
             val blocked = awaitState {
@@ -148,7 +152,7 @@ class SurveyResponseFormViewModelTest {
         val vm = viewModel(responseRepo = responseRepo)
 
         vm.state.test {
-            awaitState { !it.isLoading && it.selectedEstablishment != null }
+            awaitState { !it.isLoading && it.target != null }
 
             vm.onAction(
                 SurveyResponseFormAction.AnswerChanged(
@@ -171,17 +175,104 @@ class SurveyResponseFormViewModelTest {
             awaitState { (it.answers["q3"] as? SurveyAnswerFieldState.Numeric)?.field?.value == "3.5" }
 
             vm.onAction(SurveyResponseFormAction.Submit)
-            val done = awaitState { it.successMessage != null }
-            assertEquals("Respuesta guardada", done.successMessage)
+            // An establishment target is consumed by the submit, so the form pops instead of
+            // clearing itself for another interview.
+            val done = awaitState { it.destination != null }
+            assertEquals(SurveyResponseFormDestination.Done, done.destination)
             cancelAndIgnoreRemainingEvents()
         }
 
         assertEquals(1, responseRepo.enqueued.size)
         val enqueued = responseRepo.enqueued.first()
         assertEquals("sv-1", enqueued.surveyId)
-        assertEquals("a", enqueued.establishmentId)
+        assertEquals(ResponseTargetRef.Establishment("a", "Escuela a"), enqueued.target)
         assertEquals(SurveyAnswerValue.SingleChoice("opt-a"), enqueued.answers["q1"])
         assertEquals(SurveyAnswerValue.Text("hola"), enqueued.answers["q2"])
         assertEquals(SurveyAnswerValue.Numeric(3.5), enqueued.answers["q3"])
     }
+
+    @Test
+    fun `a subject survey opened without a target id cannot submit`() = runTest(dispatcher) {
+        val responseRepo = FakeSurveyResponseRepository()
+        val vm = viewModel(
+            surveyRepo = FakeSurveyRepository().apply {
+                detailResult = Result.success(detail.copy(responseTarget = SurveyResponseTarget.Subject))
+            },
+            responseRepo = responseRepo,
+            // No targetId: the picker was skipped, so there is nobody to answer for.
+            route = Route.SurveyResponseForm(surveyId = "sv-1"),
+        )
+
+        vm.state.test {
+            val loaded = awaitState { !it.isLoading }
+            assertNull(loaded.target)
+            assertFalse(loaded.canSubmit)
+
+            vm.onAction(SurveyResponseFormAction.Submit)
+            val blocked = awaitState { it.targetError != null }
+            assertEquals("Elegí para quién es esta respuesta.", blocked.targetError)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        assertTrue(responseRepo.enqueued.isEmpty())
+    }
+
+    @Test
+    fun `a subject survey takes its target from the route arguments`() = runTest(dispatcher) {
+        val vm = viewModel(
+            surveyRepo = FakeSurveyRepository().apply {
+                detailResult = Result.success(detail.copy(responseTarget = SurveyResponseTarget.Subject))
+            },
+            route = Route.SurveyResponseForm("sv-1", targetId = "subj-1", targetLabel = "Ana García"),
+        )
+
+        vm.state.test {
+            val loaded = awaitState { !it.isLoading }
+            assertEquals(ResponseTargetRef.Subject("subj-1", "Ana García"), loaded.target)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `an anonymous survey resolves its target with no picker and no establishment lookup`() =
+        runTest(dispatcher) {
+            val responseRepo = FakeSurveyResponseRepository()
+            val vm = viewModel(
+                surveyRepo = FakeSurveyRepository().apply {
+                    detailResult = Result.success(detail.copy(responseTarget = SurveyResponseTarget.Anonymous))
+                },
+                responseRepo = responseRepo,
+                profileRepo = FakeProfileRepository().apply {
+                    myEstablishmentsResult = Result.success(emptyList())
+                },
+            )
+
+            vm.state.test {
+                val loaded = awaitState { !it.isLoading }
+                assertEquals(ResponseTargetRef.Anonymous, loaded.target)
+
+                vm.onAction(
+                    SurveyResponseFormAction.AnswerChanged(
+                        "q1",
+                        SurveyAnswerFieldState.SingleChoice(selectedId = "opt-a"),
+                    ),
+                )
+                vm.onAction(
+                    SurveyResponseFormAction.AnswerChanged(
+                        "q2",
+                        SurveyAnswerFieldState.Text(field = TextFieldState(value = "hola")),
+                    ),
+                )
+                awaitState { (it.answers["q2"] as? SurveyAnswerFieldState.Text)?.field?.value == "hola" }
+
+                vm.onAction(SurveyResponseFormAction.Submit)
+                // Anonymous has no uniqueness rule, so the form stays put for the next interview.
+                val done = awaitState { it.successMessage != null }
+                assertEquals("Respuesta guardada", done.successMessage)
+                assertNull(done.destination)
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            assertEquals(ResponseTargetRef.Anonymous, responseRepo.enqueued.single().target)
+        }
 }

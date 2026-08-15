@@ -136,14 +136,16 @@ fun SelectEstablishmentScreen(
                     }
                 }
 
-                AlButton(
-                    onClick = { onAction(SelectEstablishmentAction.ConfirmClick) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = AlTheme.spacing.lg),
-                    fullWidth = true,
-                ) {
-                    Text(if (state.selectedCount > 0) "Listo (${state.selectedCount})" else "Listo")
+                if (!state.singleSelect) {
+                    AlButton(
+                        onClick = { onAction(SelectEstablishmentAction.ConfirmClick) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = AlTheme.spacing.lg),
+                        fullWidth = true,
+                    ) {
+                        Text(if (state.selectedCount > 0) "Listo (${state.selectedCount})" else "Listo")
+                    }
                 }
             }
         }

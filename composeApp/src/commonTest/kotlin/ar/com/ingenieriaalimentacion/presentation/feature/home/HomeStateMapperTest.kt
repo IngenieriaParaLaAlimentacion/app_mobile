@@ -7,6 +7,7 @@ import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseSummary
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseTarget
 import kotlinx.datetime.TimeZone
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -79,8 +80,10 @@ class HomeStateMapperTest {
         establishmentName: String = "Escuela 1",
     ) = SurveyResponseSummary(
         id = id,
+        surveyId = "s1",
         surveyName = surveyName,
-        establishmentName = establishmentName,
+        responseTarget = SurveyResponseTarget.Establishment,
+        targetLabel = establishmentName,
         eventAt = eventAt,
         syncState = syncState,
         isLocal = true,

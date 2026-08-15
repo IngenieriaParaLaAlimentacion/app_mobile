@@ -125,6 +125,7 @@ val repositoriesModule = module {
         SurveyResponseRepositoryImpl(
             api = get(),
             local = get(),
+            subjects = get(),
             idGenerator = get(),
             json = get(named("auth")),
             now = { Clock.System.now().toEpochMilliseconds() },

@@ -2,12 +2,15 @@
 -- value as responseId. responseId is a plain string, not a SQL foreign key: the
 -- parent response may live in PendingSurveyResponse (this device's own submission) or may
 -- never have a local row at all (an edit of a response fetched from another device via
--- GET /survey-responses/{id}) — both are valid and gated at the app level (Phase 3), not
--- the schema level.
+-- GET /surveys/{surveyId}/responses/{responseId}) — both are valid and gated at the app
+-- level, not the schema level.
 CREATE TABLE PendingSurveyResponseEdit (
     editId             TEXT    NOT NULL PRIMARY KEY,
     responseId         TEXT    NOT NULL,
     surveyName         TEXT    NOT NULL,
+    -- Denormalized display label for the response's target. Named for the establishment-only era;
+    -- it now also holds a subject name, or "Anónima". The target itself is immutable on a response
+    -- and absent from the PUT body, so the edit queue never needs the id — only something to show.
     establishmentName  TEXT    NOT NULL,
     answersJson        TEXT    NOT NULL,
     eventAt            TEXT    NOT NULL,
@@ -15,7 +18,11 @@ CREATE TABLE PendingSurveyResponseEdit (
     errorMessage       TEXT,
     attemptCount       INTEGER NOT NULL DEFAULT 0,
     createdAt          INTEGER NOT NULL,
-    updatedAt          INTEGER NOT NULL
+    updatedAt          INTEGER NOT NULL,
+    -- Added in 6.sqm via ALTER TABLE ADD COLUMN, which can only append — so it must stay LAST
+    -- here or verifyMigrations fails on the ordinal mismatch. Path segment of the PUT URL:
+    -- /surveys/{surveyId}/responses/{responseId}.
+    surveyId           TEXT    NOT NULL DEFAULT ''
 );
 
 CREATE INDEX PendingSurveyResponseEdit_state ON PendingSurveyResponseEdit(syncState);
@@ -23,8 +30,8 @@ CREATE INDEX PendingSurveyResponseEdit_responseId ON PendingSurveyResponseEdit(r
 
 insert:
 INSERT INTO PendingSurveyResponseEdit(editId, responseId, surveyName, establishmentName,
-    answersJson, eventAt, syncState, errorMessage, attemptCount, createdAt, updatedAt)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    answersJson, eventAt, syncState, errorMessage, attemptCount, createdAt, updatedAt, surveyId)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectAll:
 SELECT * FROM PendingSurveyResponseEdit ORDER BY createdAt DESC;

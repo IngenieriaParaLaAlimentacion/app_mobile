@@ -10,6 +10,7 @@ import kotlinx.serialization.json.JsonElement
 internal fun PendingSurveyResponseEdit.toDomain(): SurveyResponseEditUpload = SurveyResponseEditUpload(
     editId = editId,
     responseId = responseId,
+    surveyId = surveyId,
     surveyName = surveyName,
     establishmentName = establishmentName,
     answersJson = answersJson,

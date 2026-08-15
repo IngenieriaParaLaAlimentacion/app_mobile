@@ -14,6 +14,8 @@ import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 data class SurveyResponseEditUpload(
     val editId: String,
     val responseId: String,
+    /** Path segment of the PUT URL — `/surveys/{surveyId}/responses/{responseId}`. */
+    val surveyId: String,
     val surveyName: String,
     val establishmentName: String,
     val answersJson: String,

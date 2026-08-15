@@ -52,6 +52,7 @@ class DefaultSurveyResponseEditLocalStore(
         queries.insert(
             editId = edit.editId,
             responseId = edit.responseId,
+            surveyId = edit.surveyId,
             surveyName = edit.surveyName,
             establishmentName = edit.establishmentName,
             answersJson = edit.answersJson,

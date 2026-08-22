@@ -137,7 +137,7 @@ private fun SurveyResponseFormBody(
                     )
                     Text(
                         text = state.targetLabel ?: "Anónima",
-                        style = AlTheme.typography.body.copy(fontWeight = FontWeight.Medium),
+                        style = AlTheme.typography.bodyStrong,
                         color = AlTheme.colors.textBase,
                     )
                     state.targetError?.let { error ->

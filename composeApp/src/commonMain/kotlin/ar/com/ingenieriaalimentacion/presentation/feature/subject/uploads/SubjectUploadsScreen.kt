@@ -22,7 +22,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -117,7 +116,7 @@ private fun SubjectUploadRow(
             ) {
                 Text(
                     text = upload.title,
-                    style = AlTheme.typography.body.copy(fontWeight = FontWeight.Medium),
+                    style = AlTheme.typography.bodyStrong,
                     color = AlTheme.colors.textBase,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

@@ -9,7 +9,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 
 /**
@@ -33,7 +32,7 @@ fun EmptyState(
         ) {
             Text(
                 text = title,
-                style = AlTheme.typography.body.copy(fontWeight = FontWeight.Medium),
+                style = AlTheme.typography.bodyStrong,
                 color = AlTheme.colors.textBase,
             )
             Text(

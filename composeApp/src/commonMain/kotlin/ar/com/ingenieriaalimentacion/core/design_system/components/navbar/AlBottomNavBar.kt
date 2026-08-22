@@ -12,11 +12,13 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ingenieria_alimentacion.composeapp.generated.resources.Res
@@ -32,6 +34,11 @@ enum class AlBottomNavTab(val label: String, val icon: DrawableResource) {
     Profile("Perfil", Res.drawable.ic_mingcute_user_3_line),
 }
 
+/**
+ * The app's brand anchor: a dark-earth bar carrying the three root tabs, the
+ * mobile counterpart of the web sidebar. The selected tab sits on a mid-earth
+ * pill and is tinted mustard; the rest are dimmed paper.
+ */
 @Composable
 fun AlBottomNavBar(
     selected: AlBottomNavTab,
@@ -41,7 +48,7 @@ fun AlBottomNavBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(AlTheme.colors.surfaceBase)
+            .background(AlTheme.colors.brandSurface)
             .windowInsetsPadding(WindowInsets.navigationBars)
             .height(64.dp)
             .padding(horizontal = AlTheme.spacing.sm),
@@ -50,11 +57,24 @@ fun AlBottomNavBar(
     ) {
         AlBottomNavTab.entries.forEach { tab ->
             val isSelected = tab == selected
-            val tint = if (isSelected) AlTheme.colors.accent else AlTheme.colors.textMuted
+            val tint = if (isSelected) {
+                AlTheme.colors.primary
+            } else {
+                // Dimmed paper rather than textMuted: ink-on-earth is unreadable.
+                AlTheme.colors.textInverted.copy(alpha = INACTIVE_TAB_ALPHA)
+            }
             Column(
                 modifier = Modifier
+                    .clip(RoundedCornerShape(AlTheme.corners.md))
                     .clickable { onSelected(tab) }
-                    .padding(AlTheme.spacing.sm),
+                    .then(
+                        if (isSelected) {
+                            Modifier.background(AlTheme.colors.brandSurfaceRaised)
+                        } else {
+                            Modifier
+                        },
+                    )
+                    .padding(horizontal = AlTheme.spacing.md, vertical = AlTheme.spacing.sm),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
@@ -73,3 +93,6 @@ fun AlBottomNavBar(
         }
     }
 }
+
+/** Keeps the inactive label at ~6.8:1 on the dark-earth bar. */
+private const val INACTIVE_TAB_ALPHA = 0.72f

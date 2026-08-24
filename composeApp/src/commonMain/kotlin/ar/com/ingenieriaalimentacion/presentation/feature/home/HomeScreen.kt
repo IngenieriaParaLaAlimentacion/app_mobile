@@ -303,7 +303,7 @@ private fun StatCell(value: String, label: String, modifier: Modifier = Modifier
     ) {
         Text(
             text = value,
-            style = AlTheme.typography.title,
+            style = AlTheme.typography.dataLarge,
             color = AlTheme.colors.textBase,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),

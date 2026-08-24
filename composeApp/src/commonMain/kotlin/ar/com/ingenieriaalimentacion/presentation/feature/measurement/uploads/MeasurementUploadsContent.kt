@@ -24,7 +24,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import ar.com.ingenieriaalimentacion.core.design_system.components.EmptyState
@@ -132,7 +131,7 @@ private fun MeasurementUploadRow(
                 ) {
                     Text(
                         text = upload.title,
-                        style = AlTheme.typography.body.copy(fontWeight = FontWeight.Medium),
+                        style = AlTheme.typography.bodyStrong,
                         color = AlTheme.colors.textBase,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -181,7 +180,7 @@ private fun MeasurementUploadRow(
                         ) {
                             Text(
                                 text = "IMC ${upload.bmiValue}",
-                                style = AlTheme.typography.body.copy(fontWeight = FontWeight.Medium),
+                                style = AlTheme.typography.data,
                                 color = AlTheme.colors.textBase,
                             )
                             upload.bmiCategory?.let { category ->
@@ -193,21 +192,21 @@ private fun MeasurementUploadRow(
                         }
                         Text(
                             text = upload.measurements,
-                            style = AlTheme.typography.caption,
+                            style = AlTheme.typography.dataSmall,
                             color = AlTheme.colors.textMuted,
                         )
                     } else {
                         // No reading yet: the raw weight/height is the headline.
                         Text(
                             text = upload.measurements,
-                            style = AlTheme.typography.body.copy(fontWeight = FontWeight.Medium),
+                            style = AlTheme.typography.data,
                             color = AlTheme.colors.textBase,
                         )
                     }
                 }
                 Text(
                     text = upload.measuredAtLabel,
-                    style = AlTheme.typography.caption,
+                    style = AlTheme.typography.dataSmall,
                     color = AlTheme.colors.textMuted,
                 )
             }

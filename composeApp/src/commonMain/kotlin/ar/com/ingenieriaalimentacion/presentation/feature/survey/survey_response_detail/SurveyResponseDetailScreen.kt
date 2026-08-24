@@ -191,7 +191,7 @@ private fun ResponseMetaHeader(targetLabel: String, eventAtLabel: String) {
             )
             Text(
                 text = targetLabel,
-                style = AlTheme.typography.body.copy(fontWeight = FontWeight.Medium),
+                style = AlTheme.typography.bodyStrong,
                 color = AlTheme.colors.textBase,
             )
         }

@@ -1,0 +1,185 @@
+// Template: {FeatureName}Screen.kt
+// Location: presentation/feature/{feature_group}/{feature_path}/{FeatureName}Screen.kt
+
+package com.extra.marketplace.presentation.feature.{feature_group}.{feature_path}
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.extra.marketplace.core.ui.ExScaffold
+import com.extra.marketplace.core.design_system.theme.ExTheme
+import com.extra.marketplace.core.design_system.components.top_app_bar.ExBackTopAppBar
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
+
+// =============================================================================
+// Root Composable - Stateful, handles ViewModel and navigation
+// =============================================================================
+
+@Composable
+fun {FeatureName}ScreenRoot(
+    // Route object (if screen has navigation parameters):
+    // route: Route.{FeatureName},
+
+    // ViewModel injection:
+    viewModel: {FeatureName}ViewModel = koinViewModel(),
+    // With route params (pass the Route object, not individual params):
+    // viewModel: {FeatureName}ViewModel = koinViewModel { parametersOf(route) },
+
+    // Navigation callback (REQUIRED):
+    navigate: ({FeatureName}Destination) -> Unit,
+
+    // Optional: Back result callback
+    // setBackResult: (Boolean) -> Unit = {},
+) {
+    // Collect state from ViewModel
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    // Observe destination changes for navigation
+    LaunchedEffect(state.destination) {
+        state.destination?.let { destination ->
+            navigate(destination)
+            viewModel.clearDestination()
+        }
+    }
+
+    // Call the stateless Screen composable
+    {FeatureName}Screen(
+        state = state,
+        onAction = { action ->
+            // Optional: Handle side effects before forwarding
+            // when (action) {
+            //     is {FeatureName}Action.SaveClick -> setBackResult(true)
+            //     else -> Unit
+            // }
+            viewModel.onAction(action)
+        }
+    )
+}
+
+// =============================================================================
+// Screen Composable - Stateless, pure UI
+// =============================================================================
+
+@Composable
+fun {FeatureName}Screen(
+    state: {FeatureName}State,
+    onAction: ({FeatureName}Action) -> Unit,
+) {
+    ExScaffold(
+        screenError = state.screenError,
+        modifier = Modifier.fillMaxSize(),
+        topBar = {
+            ExBackTopAppBar(
+                onClick = { onAction({FeatureName}Action.BackClick) }
+            )
+        },
+        screenErrorBackClick = { onAction({FeatureName}Action.BackClick) },
+        // Optional: Bottom sheet support
+        // exBottomSheetState = state.exBottomSheetState,
+        // onBottomSheetDismissed = { onAction({FeatureName}Action.BottomSheetDismissed) },
+        // bottomSheet = {
+        //     when (state.bottomSheetType) {
+        //         {FeatureName}BottomSheetType.OPTIONS -> { /* Content */ }
+        //         null -> {}
+        //     }
+        // }
+    ) { paddingValues ->
+        // Loading state
+        if (state.isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            // Main content
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = ExTheme.spacing.space16)
+            ) {
+                // =============================================================
+                // Screen content goes here
+                // =============================================================
+
+                // Example: Form with input
+                // ExInput(
+                //     text = state.inputValue,
+                //     onTextChange = { onAction({FeatureName}Action.InputChanged(it)) },
+                //     isError = state.inputError,
+                //     hint = state.inputHint,
+                //     label = "Label",
+                // )
+
+                Spacer(Modifier.weight(1f))
+
+                // Example: Action button
+                // ExButton(
+                //     text = "Save",
+                //     onClick = { onAction({FeatureName}Action.SaveClick) },
+                //     enabled = state.buttonEnabled,
+                //     loading = state.buttonLoading,
+                //     modifier = Modifier.fillMaxWidth()
+                // )
+
+                // =============================================================
+            }
+        }
+    }
+
+    // Dialogs rendered outside scaffold
+    // if (state.showConfirmationDialog) {
+    //     ConfirmationDialog(
+    //         onConfirm = { onAction({FeatureName}Action.ConfirmClick) },
+    //         onDismiss = { onAction({FeatureName}Action.CancelClick) }
+    //     )
+    // }
+}
+
+// =============================================================================
+// Preview (optional)
+// =============================================================================
+
+// @Preview
+// @Composable
+// fun {FeatureName}ScreenPreview() {
+//     ExTheme {
+//         {FeatureName}Screen(
+//             state = {FeatureName}State(isLoading = false),
+//             onAction = {}
+//         )
+//     }
+// }
+
+// =============================================================================
+// GUIDELINES:
+// =============================================================================
+// 1. TWO composables: ScreenRoot (stateful) and Screen (stateless)
+// 2. ScreenRoot handles:
+//    - ViewModel injection with koinViewModel()
+//    - State collection with collectAsStateWithLifecycle()
+//    - Navigation observation with LaunchedEffect(state.destination)
+//    - ALWAYS call viewModel.clearDestination() after navigating
+// 3. Screen is a pure function:
+//    - Receives state and emits actions
+//    - No ViewModel reference
+//    - No side effects
+// 4. Use ExScaffold as root layout
+// 5. Use design system components from core/design_system/
+// 6. Dialogs render OUTSIDE the scaffold
+// 7. Use ExTheme.spacing for consistent spacing
+// =============================================================================

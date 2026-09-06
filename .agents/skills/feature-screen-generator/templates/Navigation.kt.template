@@ -1,0 +1,113 @@
+// Template: {FeatureName}Navigation.kt
+// Location: presentation/feature/{feature_group}/{feature_path}/{FeatureName}Navigation.kt
+
+package com.extra.marketplace.presentation.feature.{feature_group}.{feature_path}
+
+import androidx.navigation.NavController
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavOptions
+import androidx.navigation.compose.composable
+import androidx.navigation.toRoute
+import com.extra.marketplace.presentation.navigation.Route
+
+// =============================================================================
+// Navigation Extension - Call this to navigate TO this screen
+// =============================================================================
+
+// Simple navigation (no parameters):
+fun NavController.navigateTo{FeatureName}(navOptions: NavOptions? = null) =
+    navigate(Route.{FeatureName}, navOptions)
+
+// Navigation with parameters:
+// fun NavController.navigateTo{FeatureName}(
+//     someParam: String,
+//     navOptions: NavOptions? = null
+// ) = navigate(Route.{FeatureName}(someParam), navOptions)
+
+// =============================================================================
+// NavGraphBuilder Extension - Registers this screen's composable
+// =============================================================================
+
+fun NavGraphBuilder.{featureName}Screen(
+    navController: NavController,
+) {
+    // For routes WITHOUT parameters:
+    composable<Route.{FeatureName}> {
+        {FeatureName}ScreenRoot(
+            navigate = { destination ->
+                navigate(
+                    destination = destination,
+                    navController = navController,
+                )
+            }
+        )
+    }
+
+    // For routes WITH parameters (pass Route object, not individual params):
+    // composable<Route.{FeatureName}> { backStackEntry ->
+    //     val route = backStackEntry.toRoute<Route.{FeatureName}>()
+    //
+    //     {FeatureName}ScreenRoot(
+    //         route = route,
+    //         navigate = { destination ->
+    //             navigate(
+    //                 destination = destination,
+    //                 navController = navController,
+    //             )
+    //         },
+    //         // Optional: for passing results back
+    //         setBackResult = { result ->
+    //             navController.previousBackStackEntry?.savedStateHandle?.set(
+    //                 RESULT_KEY,
+    //                 result
+    //             )
+    //         }
+    //     )
+    // }
+}
+
+// =============================================================================
+// Internal Navigation Handler
+// =============================================================================
+
+internal fun navigate(
+    destination: {FeatureName}Destination,
+    navController: NavController,
+) {
+    when (destination) {
+        is {FeatureName}Destination.Back -> navController.popBackStack()
+        // Add handlers for other destinations:
+        // is {FeatureName}Destination.SomeScreen -> {
+        //     navController.navigateToSomeScreen(destination.param)
+        // }
+    }
+}
+
+// Optional: Result key constant (if passing results back)
+// private const val RESULT_KEY = "{feature_name}_result"
+
+// =============================================================================
+// GUIDELINES:
+// =============================================================================
+// 1. navigateTo{FeatureName}() - Extension on NavController for external use
+// 2. {featureName}Screen() - Extension on NavGraphBuilder for route registration
+// 3. Use composable<Route.{FeatureName}> with type-safe routes
+// 4. Extract route params with backStackEntry.toRoute<Route.{FeatureName}>()
+// 5. Internal navigate() handles all destination cases
+// 6. Pass navigate lambda to ScreenRoot
+//
+// ROUTE DEFINITION (add to Route.kt):
+//
+// Without parameters:
+//   @Serializable
+//   @SerialName("{feature_path}")
+//   data object {FeatureName}: Route()
+//
+// With parameters:
+//   @Serializable
+//   @SerialName("{feature_path}")
+//   data class {FeatureName}(val someParam: String): Route()
+//
+// APP NAV HOST (add to AppNavHost.kt):
+//   {featureName}Screen(navController)
+// =============================================================================

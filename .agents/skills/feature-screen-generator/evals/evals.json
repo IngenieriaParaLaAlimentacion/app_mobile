@@ -1,0 +1,23 @@
+{
+  "skill_name": "feature-screen-generator",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a new screen for viewing FAQ/help articles. It should be in the `profile` group, show a list of FAQ items that expand when tapped, and have a back button. No API calls needed — the FAQ items are hardcoded.",
+      "expected_output": "6 files (Action, Destination, State, ViewModel, Navigation, Screen) in presentation/feature/profile/faq/ plus updates to Route.kt, ViewModelsModule.kt, and AppNavHost.kt",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I need a screen to view order details. It receives an `orderId: String` parameter. It should show order status, items purchased, total price, and a button to contact the seller. Put it in the `activity` group.",
+      "expected_output": "6 files in presentation/feature/activity/order_details/ with proper route parameter handling, plus integration file updates. Route should be a data class with orderId param.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Create a screen where users can submit a support ticket. It needs fields for subject and message, a dropdown for category (bug, feature request, other), and a submit button. The submit button should be disabled until both fields have text. Put it in the `profile` group under `support_ticket`.",
+      "expected_output": "6 files in presentation/feature/profile/support_ticket/ with form fields in state, validation logic in ViewModel, and proper UI with inputs and submit button.",
+      "files": []
+    }
+  ]
+}

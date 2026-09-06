@@ -22,6 +22,7 @@ import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_list.sur
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_detail.surveyResponseDetailScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_edit.surveyResponseEditScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_form.surveyResponseFormScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_number_fix.surveyResponseNumberFixScreen
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 
 @Composable
@@ -51,6 +52,7 @@ fun AppNavHost(
             surveyResponseFormScreen(navController)
             surveyResponseDetailScreen(navController)
             surveyResponseEditScreen(navController)
+            surveyResponseNumberFixScreen(navController)
             composable<Route.AuthedShell> {
                 AuthedShell(
                     onSignOut = {

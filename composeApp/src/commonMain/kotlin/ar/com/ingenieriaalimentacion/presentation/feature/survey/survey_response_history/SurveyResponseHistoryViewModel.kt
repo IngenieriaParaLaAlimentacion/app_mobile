@@ -50,6 +50,9 @@ class SurveyResponseHistoryViewModel(
                 retrySurveyResponseUpload(action.responseId)
                 syncCoordinator.requestSync()
             }
+            is SurveyResponseHistoryAction.FixResponseNumberClick -> _state.update {
+                it.copy(navigateToNumberFix = SurveyResponseNumberFixRoute(action.localId, action.surveyName, action.currentNumber))
+            }
             is SurveyResponseHistoryAction.DiscardClick -> viewModelScope.launch {
                 // The reactive queue collector drops the row from `items` on its own.
                 discardSurveyResponseUpload(action.responseId)
@@ -60,7 +63,7 @@ class SurveyResponseHistoryViewModel(
     }
 
     fun clearNavigation() {
-        _state.update { it.copy(navigateToResponse = null) }
+        _state.update { it.copy(navigateToResponse = null, navigateToNumberFix = null) }
     }
 
     private suspend fun refreshPage1() {

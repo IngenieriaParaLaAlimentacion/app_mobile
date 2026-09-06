@@ -6,6 +6,7 @@ sealed interface SurveyFeatureError {
     data object Forbidden : SurveyFeatureError
     data object NotFound : SurveyFeatureError
     data object Network : SurveyFeatureError
+    data class Conflict(val existingResponseNumber: Int?, val submittedByName: String?) : SurveyFeatureError
     data class Unknown(val cause: Throwable?) : SurveyFeatureError
 }
 

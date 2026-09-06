@@ -3,9 +3,9 @@ package ar.com.ingenieriaalimentacion.data.survey.local
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import ar.com.ingenieriaalimentacion.data.db.PendingSurveyResponseQueries
-import ar.com.ingenieriaalimentacion.data.survey.mapper.toDbString
 import ar.com.ingenieriaalimentacion.data.survey.mapper.toDomain
 import ar.com.ingenieriaalimentacion.data.survey.mapper.toSurveyDbString
+import ar.com.ingenieriaalimentacion.data.survey.mapper.toDbString
 import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseConflict
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseUpload
 import ar.com.ingenieriaalimentacion.domain.model.survey.id
@@ -56,6 +56,9 @@ class DefaultSurveyResponseLocalStore(
             attemptCount = upload.attemptCount.toLong(),
             createdAt = upload.createdAt,
             updatedAt = upload.updatedAt,
+            responseNumber = upload.responseNumber?.toLong(),
+            conflictKind = upload.conflict?.kind?.toDbString(),
+            conflictNumber = upload.conflict?.existingResponseNumber?.toLong(),
         )
     }
 
@@ -80,10 +83,26 @@ class DefaultSurveyResponseLocalStore(
             queries.markConflict(
                 conflictBy = conflict.submittedByName,
                 conflictAt = conflict.eventAt,
+                conflictKind = conflict.kind.toDbString(),
+                conflictNumber = conflict.existingResponseNumber?.toLong(),
                 updatedAt = now(),
                 localId = localId,
             )
         }
+
+    override suspend fun updateResponseNumber(localId: String, responseNumber: Int): Unit =
+        withContext(dispatcher) {
+            queries.updateResponseNumber(responseNumber.toLong(), now(), localId)
+        }
+
+    override suspend fun findBySurveyAndNumber(
+        surveyId: String,
+        responseNumber: Int,
+        excludeLocalId: String,
+    ): SurveyResponseUpload? = withContext(dispatcher) {
+        queries.selectBySurveyAndNumber(surveyId, responseNumber.toLong(), excludeLocalId)
+            .executeAsOneOrNull()?.toDomain()
+    }
 
     override suspend fun delete(localId: String): Unit = withContext(dispatcher) {
         queries.deleteById(localId)

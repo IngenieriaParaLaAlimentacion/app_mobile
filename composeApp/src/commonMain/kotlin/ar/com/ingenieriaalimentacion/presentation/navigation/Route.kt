@@ -126,4 +126,8 @@ sealed class Route {
     @Serializable
     @SerialName("survey_response_edit")
     data class SurveyResponseEdit(val surveyId: String, val responseId: String) : Route()
+
+    @Serializable
+    @SerialName("survey_response_number_fix")
+    data class SurveyResponseNumberFix(val localId: String, val surveyName: String, val currentNumber: Int? = null) : Route()
 }

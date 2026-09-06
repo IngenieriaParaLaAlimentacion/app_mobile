@@ -35,6 +35,14 @@ interface SurveyResponseLocalStore {
      *  (see `SurveyResponseUpload.isEligibleAt`). Only [delete] clears it. */
     suspend fun markConflict(localId: String, conflict: ResponseConflict)
 
+    suspend fun updateResponseNumber(localId: String, responseNumber: Int)
+
+    suspend fun findBySurveyAndNumber(
+        surveyId: String,
+        responseNumber: Int,
+        excludeLocalId: String,
+    ): SurveyResponseUpload?
+
     /** Discard a row for good — the user's *Descartar* action on a conflicted or dead-lettered row. */
     suspend fun delete(localId: String)
 

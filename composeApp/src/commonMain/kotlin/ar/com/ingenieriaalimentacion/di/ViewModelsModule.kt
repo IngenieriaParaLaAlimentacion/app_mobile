@@ -23,6 +23,7 @@ import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_edit.SurveyResponseEditViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_form.SurveyResponseFormViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_history.SurveyResponseHistoryViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_number_fix.SurveyResponseNumberFixViewModel
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 import kotlin.time.Clock
 import org.koin.core.module.dsl.viewModel
@@ -100,5 +101,8 @@ val viewModelsModule = module {
             editSurveyResponse = get(),
             syncCoordinator = get(),
         )
+    }
+    viewModel { (route: Route.SurveyResponseNumberFix) ->
+        SurveyResponseNumberFixViewModel(route, get(), get())
     }
 }

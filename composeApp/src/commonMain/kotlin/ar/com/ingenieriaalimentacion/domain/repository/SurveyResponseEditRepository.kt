@@ -13,6 +13,7 @@ interface SurveyResponseEditRepository : SyncEngine {
         surveyId: String,
         surveyName: String,
         establishmentName: String,
+        responseNumber: Int,
         answers: Map<String, SurveyAnswerValue>,
         eventAtMs: Long,
     ): Result<Unit>

@@ -2,6 +2,11 @@ package ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_respons
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import ar.com.ingenieriaalimentacion.core.validation.Rules
+import ar.com.ingenieriaalimentacion.core.validation.Validator
+import ar.com.ingenieriaalimentacion.core.validation.onChange
+import ar.com.ingenieriaalimentacion.core.validation.onFocus
+import ar.com.ingenieriaalimentacion.core.validation.showError
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.survey.NewSurveyResponse
@@ -12,6 +17,7 @@ import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishm
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.GetSurveyDetailUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.SubmitSurveyResponseUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.survey.RESPONSE_NUMBER_RANGE
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.common.buildAnswers
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.common.forceShowAllErrors
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.common.initialFieldState
@@ -54,6 +60,12 @@ class SurveyResponseFormViewModel(
                 _state.update {
                     it.copy(answers = it.answers + (action.questionId to action.state), successMessage = null)
                 }
+            is SurveyResponseFormAction.ResponseNumberChanged -> _state.update {
+                it.copy(responseNumber = it.responseNumber.onChange(action.value.filter(Char::isDigit), responseNumberValidator))
+            }
+            is SurveyResponseFormAction.ResponseNumberFocusChanged -> _state.update {
+                it.copy(responseNumber = it.responseNumber.onFocus(action.focused, responseNumberValidator))
+            }
 
             SurveyResponseFormAction.Submit -> submit()
             SurveyResponseFormAction.DismissSuccess -> _state.update { it.copy(successMessage = null) }
@@ -121,6 +133,7 @@ class SurveyResponseFormViewModel(
         val current = _state.value
         val validated = current.copy(
             answers = forceShowAllErrors(current.questions, current.answers),
+            responseNumber = current.responseNumber.showError(responseNumberValidator),
             targetError = if (current.target == null) "Elegí para quién es esta respuesta." else null,
         )
 
@@ -141,6 +154,9 @@ class SurveyResponseFormViewModel(
                             // interviews flow still holds: clear the answers and stay put.
                             it.copy(
                                 answers = it.questions.associate { q -> q.id to q.initialFieldState() },
+                                responseNumber = it.responseNumber.onChange(
+                                    ((it.responseNumber.value.toIntOrNull() ?: 0) + 1).toString(), responseNumberValidator,
+                                ),
                                 isSubmitting = false,
                                 submitError = null,
                                 successMessage = "Respuesta guardada",
@@ -170,14 +186,21 @@ class SurveyResponseFormViewModel(
      *  resolved; otherwise `null`. */
     private fun buildNewResponse(state: SurveyResponseFormState): NewSurveyResponse? {
         val target = state.target ?: return null
+        val responseNumber = state.responseNumber.value.toIntOrNull()?.takeIf { it in RESPONSE_NUMBER_RANGE } ?: return null
         val allValid = state.questions.all { q -> q.isFieldValid(state.answers[q.id] ?: return null) }
         if (!allValid) return null
         return NewSurveyResponse(
             surveyId = state.surveyId,
             surveyName = state.surveyName,
             target = target,
+            responseNumber = responseNumber,
             answers = buildAnswers(state.questions, state.answers),
             eventAtMs = Clock.System.now().toEpochMilliseconds(),
         )
     }
+
+    private val responseNumberValidator: Validator = Rules.of(
+        Rules.required("Ingresá el número de respuesta."),
+        Rules.digitsInRange(RESPONSE_NUMBER_RANGE, "Ingresá un número entre 1 y 999999."),
+    )
 }

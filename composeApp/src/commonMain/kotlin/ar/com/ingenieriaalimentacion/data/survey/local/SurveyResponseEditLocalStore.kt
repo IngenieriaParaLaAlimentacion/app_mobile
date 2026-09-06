@@ -24,6 +24,7 @@ interface SurveyResponseEditLocalStore {
         establishmentName: String,
         answersJson: String,
         eventAt: String,
+        responseNumber: Int?,
         now: Long,
     )
 

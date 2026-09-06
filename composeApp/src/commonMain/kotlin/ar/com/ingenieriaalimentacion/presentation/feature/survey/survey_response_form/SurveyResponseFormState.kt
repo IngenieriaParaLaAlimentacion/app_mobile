@@ -1,6 +1,7 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_form
 
 import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseTargetRef
+import ar.com.ingenieriaalimentacion.core.validation.TextFieldState
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyQuestion
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.common.SurveyAnswerFieldState
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.common.isFieldValid
@@ -11,6 +12,7 @@ data class SurveyResponseFormState(
     val surveyName: String = "",
     val questions: List<SurveyQuestion> = emptyList(),
     val answers: Map<String, SurveyAnswerFieldState> = emptyMap(),
+    val responseNumber: TextFieldState = TextFieldState(),
     /** Resolved once the survey detail loads: the route's ids interpreted against the survey's
      *  `response_target`. Null while loading, or when a required target id never arrived. */
     val target: ResponseTargetRef? = null,
@@ -41,5 +43,6 @@ data class SurveyResponseFormState(
             !loadError &&
             !isSubmitting &&
             target != null &&
+            responseNumber.value.isNotBlank() && responseNumber.isValid &&
             questions.all { question -> question.isFieldValid(answers[question.id] ?: return@all false) }
 }

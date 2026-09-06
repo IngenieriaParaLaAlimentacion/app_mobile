@@ -2,8 +2,15 @@ package ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_respons
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import ar.com.ingenieriaalimentacion.core.validation.Rules
+import ar.com.ingenieriaalimentacion.core.validation.Validator
+import ar.com.ingenieriaalimentacion.core.validation.TextFieldState
+import ar.com.ingenieriaalimentacion.core.validation.onChange
+import ar.com.ingenieriaalimentacion.core.validation.onFocus
+import ar.com.ingenieriaalimentacion.core.validation.showError
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseTarget
+import ar.com.ingenieriaalimentacion.domain.usecase.survey.RESPONSE_NUMBER_RANGE
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.EditSurveyResponseUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.GetSurveyDetailUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.GetSurveyResponseDetailUseCase
@@ -49,6 +56,12 @@ class SurveyResponseEditViewModel(
             SurveyResponseEditAction.RetryLoad -> load()
             SurveyResponseEditAction.BackClick ->
                 _state.update { it.copy(destination = SurveyResponseEditDestination.Back) }
+            is SurveyResponseEditAction.ResponseNumberChanged -> _state.update {
+                it.copy(responseNumber = it.responseNumber.onChange(action.value.filter(Char::isDigit), responseNumberValidator))
+            }
+            is SurveyResponseEditAction.ResponseNumberFocusChanged -> _state.update {
+                it.copy(responseNumber = it.responseNumber.onFocus(action.focused, responseNumberValidator))
+            }
         }
     }
 
@@ -84,6 +97,8 @@ class SurveyResponseEditViewModel(
                     questions = surveyDetail.questions,
                     answers = fieldStates,
                     originalAnswers = fieldStates,
+                    responseNumber = TextFieldState(detail.responseNumber?.toString().orEmpty()),
+                    originalResponseNumber = detail.responseNumber?.toString().orEmpty(),
                 )
             }
         }
@@ -91,10 +106,13 @@ class SurveyResponseEditViewModel(
 
     private fun submit() {
         val current = _state.value
-        val validated = current.copy(answers = forceShowAllErrors(current.questions, current.answers))
+        val validated = current.copy(
+            answers = forceShowAllErrors(current.questions, current.answers),
+            responseNumber = current.responseNumber.showError(responseNumberValidator),
+        )
 
         val allValid = validated.questions.all { q -> q.isFieldValid(validated.answers[q.id] ?: return@all false) }
-        if (!allValid) {
+        if (!allValid || !validated.responseNumber.isValid || validated.responseNumber.value.isBlank()) {
             _state.update { validated }
             return
         }
@@ -108,6 +126,7 @@ class SurveyResponseEditViewModel(
                 surveyId = validated.surveyId,
                 surveyName = validated.surveyName,
                 establishmentName = validated.targetLabel,
+                responseNumber = validated.responseNumber.value.toInt(),
                 answers = answers,
                 // A new, client-clock event_at for this edit attempt — distinct from the
                 // original response's event_at.
@@ -125,4 +144,9 @@ class SurveyResponseEditViewModel(
             )
         }
     }
+
+    private val responseNumberValidator: Validator = Rules.of(
+        Rules.required("Ingresá el número de respuesta."),
+        Rules.digitsInRange(RESPONSE_NUMBER_RANGE, "Ingresá un número entre 1 y 999999."),
+    )
 }

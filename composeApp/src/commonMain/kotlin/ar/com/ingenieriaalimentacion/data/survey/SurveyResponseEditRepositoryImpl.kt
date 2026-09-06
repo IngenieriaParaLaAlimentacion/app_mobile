@@ -42,6 +42,7 @@ class SurveyResponseEditRepositoryImpl(
         surveyId: String,
         surveyName: String,
         establishmentName: String,
+        responseNumber: Int,
         answers: Map<String, SurveyAnswerValue>,
         eventAtMs: Long,
     ): Result<Unit> = runCatching {
@@ -55,7 +56,7 @@ class SurveyResponseEditRepositoryImpl(
         if (existing != null) {
             // Not-yet-transmitted edit for this response: overwrite in place. Safe — this id was
             // never sent, so there's no already-applied server-side attempt to collide with.
-            local.updatePending(existing.editId, surveyName, establishmentName, answersJson, eventAt, nowMs)
+            local.updatePending(existing.editId, surveyName, establishmentName, answersJson, eventAt, responseNumber, nowMs)
         } else {
             local.insert(
                 SurveyResponseEditUpload(
@@ -71,6 +72,7 @@ class SurveyResponseEditRepositoryImpl(
                     attemptCount = 0,
                     createdAt = nowMs,
                     updatedAt = nowMs,
+                    responseNumber = responseNumber,
                 ),
             )
         }
@@ -97,11 +99,23 @@ class SurveyResponseEditRepositoryImpl(
                     return@forEach
                 }
             }
+            val responseNumber = edit.responseNumber
+            if (responseNumber == null) {
+                local.markFailed(edit.editId, MISSING_RESPONSE_NUMBER_MESSAGE)
+                failed++
+                return@forEach
+            }
             local.markSyncing(edit.editId)
-            when (val outcome = api.edit(edit.surveyId, edit.responseId, edit.toRequest(json))) {
+            when (val outcome = api.edit(edit.surveyId, edit.responseId, edit.toRequest(json, responseNumber))) {
                 is SurveyResponseEditOutcome.Applied -> {
                     local.markSynced(edit.editId)
                     synced++
+                }
+                is SurveyResponseEditOutcome.NumberTaken -> {
+                    val n = outcome.existingResponseNumber ?: responseNumber
+                    val who = outcome.submittedByName ?: "otra respuesta"
+                    local.markFailed(edit.editId, "El número $n ya lo usa $who. Editá el número y guardá de nuevo.")
+                    failed++
                 }
                 SurveyResponseEditOutcome.InvalidData -> {
                     local.markFailed(edit.editId, "Las respuestas no son válidas.")

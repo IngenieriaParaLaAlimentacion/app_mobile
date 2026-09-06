@@ -9,6 +9,9 @@ import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncSummary
 import ar.com.ingenieriaalimentacion.domain.model.survey.NewSurveyResponse
 import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseConflict
+import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseConflictKind
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyFeatureError
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyFeatureFailure
 import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseTargetRef
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseUpload
 import ar.com.ingenieriaalimentacion.domain.model.survey.isEligibleAt
@@ -62,6 +65,7 @@ class SurveyResponseRepositoryImpl(
                 attemptCount = 0,
                 createdAt = nowMs,
                 updatedAt = nowMs,
+                responseNumber = newResponse.responseNumber,
             ),
         )
     }
@@ -102,8 +106,14 @@ class SurveyResponseRepositoryImpl(
                 null
             }
 
+            val responseNumber = upload.responseNumber
+            if (responseNumber == null) {
+                local.markFailed(upload.localId, MISSING_RESPONSE_NUMBER_MESSAGE)
+                failed++
+                return@forEach
+            }
             local.markSyncing(upload.localId)
-            when (val outcome = api.create(upload.surveyId, upload.toRequest(json, resolvedSubjectId))) {
+            when (val outcome = api.create(upload.surveyId, upload.toRequest(json, responseNumber, resolvedSubjectId))) {
                 is SurveyResponseUploadOutcome.Created -> {
                     local.markSynced(upload.localId, outcome.response.id)
                     synced++
@@ -114,6 +124,19 @@ class SurveyResponseRepositoryImpl(
                         ResponseConflict(
                             submittedByName = outcome.submittedByName ?: "otro relevador",
                             eventAt = outcome.eventAt.orEmpty(),
+                            kind = ResponseConflictKind.Target,
+                        ),
+                    )
+                    failed++
+                }
+                is SurveyResponseUploadOutcome.NumberTaken -> {
+                    local.markConflict(
+                        upload.localId,
+                        ResponseConflict(
+                            outcome.submittedByName ?: "otro relevador",
+                            outcome.eventAt.orEmpty(),
+                            ResponseConflictKind.ResponseNumber,
+                            outcome.existingResponseNumber,
                         ),
                     )
                     failed++
@@ -150,6 +173,16 @@ class SurveyResponseRepositoryImpl(
 
     override suspend fun retry(localId: String): Result<Unit> = runCatching { local.resetForRetry(localId) }
 
+    override suspend fun updateResponseNumber(localId: String, responseNumber: Int): Result<Unit> = runCatching {
+        val row = local.find(localId) ?: error("No queued response $localId")
+        if (local.findBySurveyAndNumber(row.surveyId, responseNumber, localId) != null) {
+            throw SurveyFeatureFailure(SurveyFeatureError.Conflict(responseNumber, null), null)
+        }
+        local.updateResponseNumber(localId, responseNumber)
+    }
+
+    override suspend fun findQueued(localId: String): SurveyResponseUpload? = local.find(localId)
+
     override suspend fun delete(localId: String): Result<Unit> = runCatching { local.delete(localId) }
 
     override suspend fun resetStuckSyncing() {
@@ -160,3 +193,5 @@ class SurveyResponseRepositoryImpl(
         local.pruneTerminalOlderThan(now() - olderThan.inWholeMilliseconds)
     }
 }
+
+internal const val MISSING_RESPONSE_NUMBER_MESSAGE = "Falta el número de respuesta."

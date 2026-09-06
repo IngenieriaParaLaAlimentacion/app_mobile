@@ -24,7 +24,17 @@ data class SurveyResponseSummary(
     val conflict: ResponseConflict? = null,
     /** The sync engine's user-facing reason on a FAILED row — rendered rather than dropped. */
     val errorMessage: String? = null,
+    val responseNumber: Int? = null,
 )
+
+val SurveyResponseSummary.needsResponseNumber: Boolean
+    get() = isLocal && responseNumber == null
+
+val SurveyResponseSummary.hasRecoverableNumberConflict: Boolean
+    get() = conflict?.kind == ResponseConflictKind.ResponseNumber
+
+val SurveyResponseSummary.canFixResponseNumber: Boolean
+    get() = isLocal && (needsResponseNumber || hasRecoverableNumberConflict)
 
 /**
  * Full answers, from `GET /surveys/{surveyId}/responses/{id}` or (offline fallback) the local queue.
@@ -42,6 +52,7 @@ data class SurveyResponseDetail(
     val targetId: String?,
     val targetLabel: String?,
     val submittedById: String?,
+    val responseNumber: Int?,
     val answers: Map<String, SurveyAnswerValue>,
     val eventAtMs: Long,
 )

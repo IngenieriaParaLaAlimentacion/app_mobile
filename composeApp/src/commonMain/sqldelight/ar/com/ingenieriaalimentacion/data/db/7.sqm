@@ -1,0 +1,4 @@
+ALTER TABLE PendingSurveyResponse ADD COLUMN responseNumber INTEGER;
+ALTER TABLE PendingSurveyResponse ADD COLUMN conflictKind TEXT;
+ALTER TABLE PendingSurveyResponse ADD COLUMN conflictNumber INTEGER;
+ALTER TABLE PendingSurveyResponseEdit ADD COLUMN responseNumber INTEGER;

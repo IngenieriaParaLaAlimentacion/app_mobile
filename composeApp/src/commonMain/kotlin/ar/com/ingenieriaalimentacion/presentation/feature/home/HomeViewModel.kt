@@ -110,6 +110,9 @@ class HomeViewModel(
             }
             HomeAction.RespondSurveyClick ->
                 _state.update { it.copy(destination = HomeDestination.NavigateToSurveyList) }
+
+            HomeAction.NewFoodIntakeClick ->
+                _state.update { it.copy(destination = HomeDestination.NavigateToCreateFoodIntake) }
         }
     }
 

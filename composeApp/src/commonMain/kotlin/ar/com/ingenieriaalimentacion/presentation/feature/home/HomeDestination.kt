@@ -6,4 +6,5 @@ sealed class HomeDestination {
     data object NavigateToCreateMeasurement : HomeDestination()
     data object NavigateToHistory : HomeDestination()   // switch to the History tab
     data object NavigateToSurveyList : HomeDestination()
+    data object NavigateToCreateFoodIntake : HomeDestination()
 }

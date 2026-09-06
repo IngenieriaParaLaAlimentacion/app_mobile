@@ -34,6 +34,10 @@ sealed class Route {
     ) : Route()
 
     @Serializable
+    @SerialName("create_food_intake")
+    data object CreateFoodIntake : Route()
+
+    @Serializable
     @SerialName("history")
     data object History : Route()
 

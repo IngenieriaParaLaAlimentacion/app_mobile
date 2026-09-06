@@ -39,6 +39,7 @@ class SurveyResponseEditRepositoryImpl(
 
     override suspend fun enqueueEdit(
         responseId: String,
+        surveyId: String,
         surveyName: String,
         establishmentName: String,
         answers: Map<String, SurveyAnswerValue>,
@@ -60,6 +61,7 @@ class SurveyResponseEditRepositoryImpl(
                 SurveyResponseEditUpload(
                     editId = idGenerator.newId(),
                     responseId = responseId,
+                    surveyId = surveyId,
                     surveyName = surveyName,
                     establishmentName = establishmentName,
                     answersJson = answersJson,
@@ -96,7 +98,7 @@ class SurveyResponseEditRepositoryImpl(
                 }
             }
             local.markSyncing(edit.editId)
-            when (val outcome = api.edit(edit.responseId, edit.toRequest(json))) {
+            when (val outcome = api.edit(edit.surveyId, edit.responseId, edit.toRequest(json))) {
                 is SurveyResponseEditOutcome.Applied -> {
                     local.markSynced(edit.editId)
                     synced++

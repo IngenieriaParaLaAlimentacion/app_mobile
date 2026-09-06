@@ -43,6 +43,35 @@ Models, use cases, repository interfaces, utils, and constants. No dependencies 
 ### On data
 DTOs for HTTP request/response bodies, mappers, repository implementations, and clients.
 
+### Theme (colors and type)
+
+The palette is the shared "Raíz" brand palette, mirrored from the web app: warm paper
+surfaces, ink text, a dark-earth brand anchor, sage greens, mustard for the primary
+action and brick for alerts. Three layers, in order:
+
+- `theme/Palette.kt` — the only literal hex values in the codebase (`AlPalette`).
+  Colors marked "derived" are mobile-only tints of the paper/line pair.
+- `theme/Color.kt` + `theme/Theme.kt` — `AlColors`, the semantic roles screens consume
+  through `AlTheme.colors.*`. Never reach for `AlPalette` outside the theme package.
+- `theme/KomoStyles.kt` — the same palette expressed as KomoUI's `KomoStyles` contract
+  plus a Material 3 fallback scheme, so the KomoUI primitives under the `Al*` wrappers
+  (Button, Input, Card, Checkbox, Dialog…) inherit the brand instead of shadcn neutrals.
+
+`AlTheme` configures KomoTheme itself, so **wrap the app in `AlTheme` only — never in
+`KomoTheme` directly**. Dark mode is pinned off: the palette is light-only.
+
+Three type families, all in `theme/Type.kt`:
+
+| Role | Family | `AlTheme.typography.*` |
+|---|---|---|
+| Display / brand, screen titles | Fraunces | `display`, `title` |
+| Body and UI | Work Sans | `subtitle`, `body`, `bodyStrong`, `label`, `caption` |
+| Data — indicator numbers, readings, stamped dates | IBM Plex Mono | `dataLarge`, `data`, `dataSmall` |
+
+The same split is mapped onto Material's scale (display/headline → Fraunces, everything
+else → Work Sans) so untokenized Material and KomoUI text still lands on the right face.
+Use the mono roles for numbers that are read as data, not for numbers inside a sentence.
+
 ### Icons
 This project uses **MingCute** icons, NOT Material Design icons. There is no
 `compose.materialIconsExtended` dependency and `androidx.compose.material.icons.*`
@@ -234,6 +263,18 @@ suffixed reset-password link first — otherwise password reset breaks silently.
 iOS has no environment split yet — there is no Xcode project checked in (`iosApp/` holds only
 Swift sources). When one exists, mirror `../extra`: per-env build configurations backed by
 xcconfig, with a build phase mapping `$CONFIGURATION` to `-PtargetEnvironment`.
+
+## Git workflow
+
+Gitflow-lite with two long-lived branches:
+
+- `develop` — integration branch. All feature/fix branches start from `develop` and merge back
+  into `develop` via PR. Base new branches on `develop`, never on `main`.
+- `main` — release branch. It only receives **release PRs from `develop`** (`develop` → `main`);
+  never merge feature branches or commit directly to `main`.
+
+When creating a PR, target `develop` unless the user explicitly asks for a release, in which case
+open a `develop` → `main` PR.
 
 ## Commands
 

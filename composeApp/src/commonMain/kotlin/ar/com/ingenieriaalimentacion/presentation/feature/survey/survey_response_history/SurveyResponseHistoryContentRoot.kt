@@ -17,9 +17,9 @@ fun SurveyResponseHistoryContentRoot(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val outerNav = LocalOuterNavController.current
 
-    LaunchedEffect(state.navigateToResponseId) {
-        state.navigateToResponseId?.let { id ->
-            outerNav.navigate(Route.SurveyResponseDetail(id))
+    LaunchedEffect(state.navigateToResponse) {
+        state.navigateToResponse?.let { target ->
+            outerNav.navigate(Route.SurveyResponseDetail(target.surveyId, target.responseId))
             viewModel.clearNavigation()
         }
     }

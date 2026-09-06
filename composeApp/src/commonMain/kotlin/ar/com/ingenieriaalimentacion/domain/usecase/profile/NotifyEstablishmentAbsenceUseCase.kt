@@ -5,8 +5,10 @@ import ar.com.ingenieriaalimentacion.domain.repository.ProfileRepository
 
 /**
  * Sends a notice that an establishment is missing from the catalog. Normalizes
- * the fields before submitting: values are trimmed and blank ones become `null`
- * so the backend never receives empty strings (its validation rejects them).
+ * the fields before submitting: values are trimmed and blank optional ones
+ * become `null` so the backend never receives empty strings (its validation
+ * rejects them). Name and address are required by the backend; the form
+ * validates their presence before this use case runs.
  */
 class NotifyEstablishmentAbsenceUseCase(private val repository: ProfileRepository) {
 
@@ -14,8 +16,8 @@ class NotifyEstablishmentAbsenceUseCase(private val repository: ProfileRepositor
         repository.notifyEstablishmentAbsence(notice.normalized())
 
     private fun EstablishmentAbsenceNotice.normalized() = EstablishmentAbsenceNotice(
-        name = name.normalized(),
-        formattedAddress = formattedAddress.normalized(),
+        name = name.trim(),
+        formattedAddress = formattedAddress.trim(),
         city = city.normalized(),
         province = province.normalized(),
     )

@@ -18,3 +18,4 @@ keystore.properties
 # Firebase App Distribution config (contains project identifiers)
 google-services.json
 composeApp/google-services.json
+firebase.properties

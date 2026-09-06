@@ -42,24 +42,43 @@ class NotifyEstablishmentViewModelTest {
         NotifyEstablishmentViewModel(notifyAbsence = NotifyEstablishmentAbsenceUseCase(repo))
 
     @Test
-    fun `submit with every field empty sends an all-null notice and navigates back`() = runTest(dispatcher) {
+    fun `submit with empty name and address blocks and force-shows both required errors`() = runTest(dispatcher) {
         val repo = FakeProfileRepository()
         val vm = viewModel(repo)
 
         vm.onAction(NotifyEstablishmentAction.SubmitClick)
         advanceUntilIdle()
 
-        assertEquals(1, repo.notifyAbsenceCount)
-        assertEquals(EstablishmentAbsenceNotice(), repo.lastAbsenceNotice)
-        assertEquals(NotifyEstablishmentDestination.Submitted, vm.state.value.destination)
+        assertEquals(0, repo.notifyAbsenceCount)
+        assertNull(vm.state.value.destination)
+        assertEquals("Ingresá el nombre del comedor.", vm.state.value.name.displayError)
+        assertEquals("Ingresá la dirección.", vm.state.value.address.displayError)
+        // Optional fields stay quiet.
+        assertNull(vm.state.value.city.displayError)
+        assertNull(vm.state.value.province.displayError)
     }
 
     @Test
-    fun `submit trims values and turns blank fields into null`() = runTest(dispatcher) {
+    fun `submit with name but no address blocks with only the address error`() = runTest(dispatcher) {
+        val repo = FakeProfileRepository()
+        val vm = viewModel(repo)
+
+        vm.onAction(NotifyEstablishmentAction.NameChanged("Comedor Norte"))
+        vm.onAction(NotifyEstablishmentAction.SubmitClick)
+        advanceUntilIdle()
+
+        assertEquals(0, repo.notifyAbsenceCount)
+        assertNull(vm.state.value.name.displayError)
+        assertEquals("Ingresá la dirección.", vm.state.value.address.displayError)
+    }
+
+    @Test
+    fun `submit trims values and turns blank optional fields into null`() = runTest(dispatcher) {
         val repo = FakeProfileRepository()
         val vm = viewModel(repo)
 
         vm.onAction(NotifyEstablishmentAction.NameChanged("  Comedor Norte  "))
+        vm.onAction(NotifyEstablishmentAction.AddressChanged(" Calle 123 "))
         vm.onAction(NotifyEstablishmentAction.CityChanged("   "))
         vm.onAction(NotifyEstablishmentAction.ProvinceChanged("Buenos Aires"))
         vm.onAction(NotifyEstablishmentAction.SubmitClick)
@@ -68,7 +87,7 @@ class NotifyEstablishmentViewModelTest {
         assertEquals(
             EstablishmentAbsenceNotice(
                 name = "Comedor Norte",
-                formattedAddress = null,
+                formattedAddress = "Calle 123",
                 city = null,
                 province = "Buenos Aires",
             ),
@@ -82,9 +101,11 @@ class NotifyEstablishmentViewModelTest {
         val gate = CompletableDeferred<Result<Unit>>()
         repo.notifyAbsenceResponder = { gate.await() }
         val vm = viewModel(repo)
+        vm.onAction(NotifyEstablishmentAction.NameChanged("Comedor Norte"))
+        vm.onAction(NotifyEstablishmentAction.AddressChanged("Calle 123"))
 
         vm.state.test {
-            assertFalse(awaitItem().isSubmitting) // initial
+            assertFalse(awaitItem().isSubmitting) // initial (form already filled)
 
             vm.onAction(NotifyEstablishmentAction.SubmitClick)
             // Skip the re-validated (forceShow) emission that precedes the loading flip.
@@ -125,6 +146,7 @@ class NotifyEstablishmentViewModelTest {
         val vm = viewModel(repo)
 
         vm.onAction(NotifyEstablishmentAction.NameChanged("Comedor Sur"))
+        vm.onAction(NotifyEstablishmentAction.AddressChanged("Calle 123"))
         vm.onAction(NotifyEstablishmentAction.SubmitClick)
         advanceUntilIdle()
 
@@ -143,6 +165,8 @@ class NotifyEstablishmentViewModelTest {
         }
         val vm = viewModel(repo)
 
+        vm.onAction(NotifyEstablishmentAction.NameChanged("Comedor Norte"))
+        vm.onAction(NotifyEstablishmentAction.AddressChanged("Calle 123"))
         vm.onAction(NotifyEstablishmentAction.SubmitClick)
         advanceUntilIdle()
 
@@ -158,6 +182,8 @@ class NotifyEstablishmentViewModelTest {
         }
         val vm = viewModel(repo)
 
+        vm.onAction(NotifyEstablishmentAction.NameChanged("Comedor Norte"))
+        vm.onAction(NotifyEstablishmentAction.AddressChanged("Calle 123"))
         vm.onAction(NotifyEstablishmentAction.SubmitClick)
         advanceUntilIdle()
         assertNotNull(vm.state.value.submitError)

@@ -3,7 +3,7 @@ package ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_respons
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
-import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseTarget
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.EditSurveyResponseUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.GetSurveyDetailUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.GetSurveyResponseDetailUseCase
@@ -23,12 +23,13 @@ class SurveyResponseEditViewModel(
     route: Route.SurveyResponseEdit,
     private val getSurveyResponseDetail: GetSurveyResponseDetailUseCase,
     private val getSurveyDetail: GetSurveyDetailUseCase,
-    private val getMyEstablishments: GetMyEstablishmentsUseCase,
     private val editSurveyResponse: EditSurveyResponseUseCase,
     private val syncCoordinator: SyncCoordinator,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(SurveyResponseEditState(responseId = route.responseId))
+    private val _state = MutableStateFlow(
+        SurveyResponseEditState(surveyId = route.surveyId, responseId = route.responseId),
+    )
     val state = _state.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5_000L),
@@ -58,16 +59,20 @@ class SurveyResponseEditViewModel(
     private fun load() {
         _state.update { it.copy(isLoading = true, loadError = false) }
         viewModelScope.launch {
-            val detail = getSurveyResponseDetail(_state.value.responseId).getOrNull()
+            val detail = getSurveyResponseDetail(_state.value.surveyId, _state.value.responseId).getOrNull()
             val surveyDetail = detail?.let { getSurveyDetail(it.surveyId).getOrNull() }
             if (detail == null || surveyDetail == null) {
                 _state.update { it.copy(isLoading = false, loadError = true) }
                 return@launch
             }
 
-            val establishmentName = getMyEstablishments().getOrNull().orEmpty()
-                .firstOrNull { it.id == detail.establishmentId }?.name
-                ?: detail.establishmentId
+            // Any establishment is answerable now (CA4), so a getMyEstablishments lookup would
+            // miss by construction. Use the target label the queue row carried, falling back to
+            // the raw id and to "Anónima" for a target-less response.
+            val targetLabel = when (detail.responseTarget) {
+                SurveyResponseTarget.Anonymous -> "Anónima"
+                else -> detail.targetLabel ?: detail.targetId.orEmpty()
+            }
 
             val fieldStates = surveyDetail.questions.toFieldStates(detail.answers)
             _state.update {
@@ -75,7 +80,7 @@ class SurveyResponseEditViewModel(
                     isLoading = false,
                     loadError = false,
                     surveyName = surveyDetail.name,
-                    establishmentName = establishmentName,
+                    targetLabel = targetLabel,
                     questions = surveyDetail.questions,
                     answers = fieldStates,
                     originalAnswers = fieldStates,
@@ -100,8 +105,9 @@ class SurveyResponseEditViewModel(
         viewModelScope.launch {
             editSurveyResponse(
                 responseId = validated.responseId,
+                surveyId = validated.surveyId,
                 surveyName = validated.surveyName,
-                establishmentName = validated.establishmentName,
+                establishmentName = validated.targetLabel,
                 answers = answers,
                 // A new, client-clock event_at for this edit attempt — distinct from the
                 // original response's event_at.

@@ -15,5 +15,5 @@ interface SurveyResponseHistoryRepository {
 
     /** Always prefers a live fetch; falls back to a local copy only when offline AND it's
      *  this device's own not-yet-pruned submission. */
-    suspend fun getDetail(responseId: String): Result<SurveyResponseDetail>
+    suspend fun getDetail(surveyId: String, responseId: String): Result<SurveyResponseDetail>
 }

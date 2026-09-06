@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.survey.local
 
+import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseConflict
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseUpload
 import kotlinx.coroutines.flow.Flow
 
@@ -28,6 +29,14 @@ interface SurveyResponseLocalStore {
 
     /** Terminal failure: bumps attemptCount and sets a user-facing reason. */
     suspend fun markFailed(localId: String, reason: String)
+
+    /** Terminal 409: this survey is already answered for this target. Clears [errorMessage] and
+     *  records who answered and when, which makes the row ineligible for every future sweep
+     *  (see `SurveyResponseUpload.isEligibleAt`). Only [delete] clears it. */
+    suspend fun markConflict(localId: String, conflict: ResponseConflict)
+
+    /** Discard a row for good — the user's *Descartar* action on a conflicted or dead-lettered row. */
+    suspend fun delete(localId: String)
 
     /** Transient failure: stay PENDING, count the attempt, restart the backoff window. */
     suspend fun bumpRetry(localId: String, reason: String)

@@ -4,21 +4,17 @@ import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.di.AppScope
-import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
-import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyAnswerValue
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyDetail
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyOption
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyQuestion
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseDetail
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseType
-import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyScope
-import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseTarget
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.EditSurveyResponseUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.GetSurveyDetailUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.GetSurveyResponseDetailUseCase
 import ar.com.ingenieriaalimentacion.fake.FakeConnectivityObserver
-import ar.com.ingenieriaalimentacion.fake.FakeProfileRepository
 import ar.com.ingenieriaalimentacion.fake.FakeSurveyRepository
 import ar.com.ingenieriaalimentacion.fake.FakeSurveyResponseEditRepository
 import ar.com.ingenieriaalimentacion.fake.FakeSurveyResponseHistoryRepository
@@ -61,7 +57,7 @@ class SurveyResponseEditViewModelTest {
     private val surveyDetail = SurveyDetail(
         id = "sv-1",
         name = "Encuesta FIES",
-        scope = SurveyScope.Generic,
+        responseTarget = SurveyResponseTarget.Establishment,
         isActive = true,
         questions = listOf(question),
     )
@@ -69,22 +65,12 @@ class SurveyResponseEditViewModelTest {
     private val responseDetail = SurveyResponseDetail(
         id = "r1",
         surveyId = "sv-1",
-        establishmentId = "est-1",
+        responseTarget = SurveyResponseTarget.Establishment,
+        targetId = "est-1",
+        targetLabel = "Escuela est-1",
         submittedById = "user-1",
         answers = mapOf("q1" to SurveyAnswerValue.SingleChoice("opt-a")),
         eventAtMs = 1_000L,
-    )
-
-    private fun establishment(id: String) = EstablishmentWithStatus(
-        id = id,
-        name = "Escuela $id",
-        formattedAddress = "Calle 1",
-        latitude = 0.0,
-        longitude = 0.0,
-        placeId = "p$id",
-        city = "Ciudad",
-        province = "Provincia",
-        status = EstablishmentStatus.Approved,
     )
 
     private fun viewModel(
@@ -95,16 +81,12 @@ class SurveyResponseEditViewModelTest {
             detailResult = Result.success(surveyDetail)
         },
         editRepo: FakeSurveyResponseEditRepository = FakeSurveyResponseEditRepository(),
-        profileRepo: FakeProfileRepository = FakeProfileRepository().apply {
-            myEstablishmentsResult = Result.success(listOf(establishment("est-1")))
-        },
     ): SurveyResponseEditViewModel {
         val coordinator = SyncCoordinator(listOf(editRepo), FakeConnectivityObserver(), AppScope())
         return SurveyResponseEditViewModel(
-            route = Route.SurveyResponseEdit(responseId = "r1"),
+            route = Route.SurveyResponseEdit(surveyId = "s1", responseId = "r1"),
             getSurveyResponseDetail = GetSurveyResponseDetailUseCase(historyRepo),
             getSurveyDetail = GetSurveyDetailUseCase(surveyRepo),
-            getMyEstablishments = GetMyEstablishmentsUseCase(profileRepo),
             editSurveyResponse = EditSurveyResponseUseCase(editRepo),
             syncCoordinator = coordinator,
         )

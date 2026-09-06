@@ -4,7 +4,7 @@
 CREATE TABLE CachedSurvey (
     id            TEXT NOT NULL PRIMARY KEY,
     name          TEXT NOT NULL,
-    scope         TEXT NOT NULL,   -- 'GENERIC' | 'TARGETED'
+    responseTarget TEXT NOT NULL,  -- 'SUBJECT' | 'ESTABLISHMENT' | 'ANONYMOUS'
     isActive      INTEGER NOT NULL,
     questionCount INTEGER NOT NULL,
     detailJson    TEXT,            -- full SurveyDetail JSON; NULL until GET /surveys/{id}
@@ -26,7 +26,7 @@ SELECT id FROM CachedSurvey WHERE detailJson IS NULL;
 -- (SurveyLocalStore, Phase 3) reads any existing detailJson first and re-passes it so a
 -- summary-list refresh doesn't blow away a previously cached detail.
 insertOrReplace:
-INSERT OR REPLACE INTO CachedSurvey(id, name, scope, isActive, questionCount, detailJson, updatedAt)
+INSERT OR REPLACE INTO CachedSurvey(id, name, responseTarget, isActive, questionCount, detailJson, updatedAt)
 VALUES (?, ?, ?, ?, ?, ?, ?);
 
 deleteAll:

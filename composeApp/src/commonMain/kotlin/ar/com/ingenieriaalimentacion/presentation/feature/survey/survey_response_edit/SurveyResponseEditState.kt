@@ -8,8 +8,9 @@ import ar.com.ingenieriaalimentacion.presentation.feature.survey.common.isFieldV
 data class SurveyResponseEditState(
     val destination: SurveyResponseEditDestination? = null,
     val responseId: String = "",
+    val surveyId: String = "",
     val surveyName: String = "",
-    val establishmentName: String = "",
+    val targetLabel: String = "",
     val questions: List<SurveyQuestion> = emptyList(),
     val answers: Map<String, SurveyAnswerFieldState> = emptyMap(),
     /** Snapshot of [answers] as originally loaded — lets [canSubmit] require a real edit

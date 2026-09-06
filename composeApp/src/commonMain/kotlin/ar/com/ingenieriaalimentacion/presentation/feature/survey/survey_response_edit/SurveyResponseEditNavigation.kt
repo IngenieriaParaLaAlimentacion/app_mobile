@@ -7,8 +7,8 @@ import androidx.navigation.toRoute
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 import ar.com.ingenieriaalimentacion.presentation.navigation.SURVEY_RESPONSE_EDITED_RESULT
 
-fun NavController.navigateToSurveyResponseEdit(responseId: String) =
-    navigate(Route.SurveyResponseEdit(responseId))
+fun NavController.navigateToSurveyResponseEdit(surveyId: String, responseId: String) =
+    navigate(Route.SurveyResponseEdit(surveyId, responseId))
 
 fun NavGraphBuilder.surveyResponseEditScreen(navController: NavController) {
     composable<Route.SurveyResponseEdit> { entry ->

@@ -5,6 +5,9 @@ import androidx.lifecycle.viewModelScope
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.survey.NewSurveyResponse
+import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseTargetRef
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyDetail
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseTarget
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.GetSurveyDetailUseCase
@@ -21,8 +24,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
 
+/**
+ * The target is chosen *before* this screen (survey list → picker → here) and arrives as route
+ * arguments; this ViewModel only interprets them against the survey's own `response_target`.
+ */
 class SurveyResponseFormViewModel(
-    route: Route.SurveyResponseForm,
+    private val route: Route.SurveyResponseForm,
     private val getSurveyDetail: GetSurveyDetailUseCase,
     private val getMyEstablishments: GetMyEstablishmentsUseCase,
     private val getCurrentEstablishment: GetCurrentEstablishmentUseCase,
@@ -48,22 +55,6 @@ class SurveyResponseFormViewModel(
                     it.copy(answers = it.answers + (action.questionId to action.state), successMessage = null)
                 }
 
-            SurveyResponseFormAction.EstablishmentPickerOpen ->
-                _state.update { it.copy(showEstablishmentPicker = true) }
-
-            SurveyResponseFormAction.EstablishmentPickerDismiss ->
-                _state.update { it.copy(showEstablishmentPicker = false) }
-
-            is SurveyResponseFormAction.EstablishmentSelected ->
-                _state.update {
-                    it.copy(
-                        selectedEstablishment = action.establishment,
-                        establishmentError = null,
-                        showEstablishmentPicker = false,
-                        successMessage = null,
-                    )
-                }
-
             SurveyResponseFormAction.Submit -> submit()
             SurveyResponseFormAction.DismissSuccess -> _state.update { it.copy(successMessage = null) }
             SurveyResponseFormAction.RetryLoad -> load()
@@ -85,11 +76,7 @@ class SurveyResponseFormViewModel(
                 return@launch
             }
 
-            val approved = getMyEstablishments().getOrNull()
-                ?.filter { it.status == EstablishmentStatus.Approved }
-                ?: emptyList()
-            val current = getCurrentEstablishment(approved)
-
+            val target = resolveTarget(detail)
             _state.update {
                 it.copy(
                     isLoading = false,
@@ -97,18 +84,44 @@ class SurveyResponseFormViewModel(
                     surveyName = detail.name,
                     questions = detail.questions,
                     answers = detail.questions.associate { q -> q.id to q.initialFieldState() },
-                    establishmentOptions = approved,
-                    selectedEstablishment = current ?: approved.singleOrNull() ?: it.selectedEstablishment,
+                    target = target,
+                    targetError = null,
                 )
             }
         }
+    }
+
+    /**
+     * Route arguments win. For an establishment survey entered without one, the Home default
+     * pre-fills it — a convenience, not a gate: the picker on the list still offers every
+     * establishment, including ones this user has no approved access to.
+     */
+    private suspend fun resolveTarget(detail: SurveyDetail): ResponseTargetRef? =
+        when (detail.responseTarget) {
+            SurveyResponseTarget.Anonymous -> ResponseTargetRef.Anonymous
+
+            SurveyResponseTarget.Subject -> route.targetId?.let {
+                ResponseTargetRef.Subject(it, route.targetLabel.orEmpty())
+            }
+
+            SurveyResponseTarget.Establishment -> route.targetId
+                ?.let { ResponseTargetRef.Establishment(it, route.targetLabel.orEmpty()) }
+                ?: defaultEstablishmentTarget()
+        }
+
+    private suspend fun defaultEstablishmentTarget(): ResponseTargetRef.Establishment? {
+        val approved = getMyEstablishments().getOrNull()
+            ?.filter { it.status == EstablishmentStatus.Approved }
+            ?: return null
+        val current = getCurrentEstablishment(approved) ?: approved.singleOrNull() ?: return null
+        return ResponseTargetRef.Establishment(current.id, current.name)
     }
 
     private fun submit() {
         val current = _state.value
         val validated = current.copy(
             answers = forceShowAllErrors(current.questions, current.answers),
-            establishmentError = if (current.selectedEstablishment == null) "Elegí el establecimiento." else null,
+            targetError = if (current.target == null) "Elegí para quién es esta respuesta." else null,
         )
 
         val newResponse = buildNewResponse(validated)
@@ -121,16 +134,28 @@ class SurveyResponseFormViewModel(
         viewModelScope.launch {
             submitSurveyResponse(newResponse).fold(
                 onSuccess = {
-                    _state.update {
-                        // Clear answers for the next interview; keep the establishment selected.
-                        it.copy(
-                            answers = it.questions.associate { q -> q.id to q.initialFieldState() },
-                            isSubmitting = false,
-                            submitError = null,
-                            successMessage = "Respuesta guardada",
-                        )
-                    }
                     syncCoordinator.requestSync() // fire-and-forget; UI does not wait on the result
+                    _state.update {
+                        if (it.target is ResponseTargetRef.Anonymous) {
+                            // Anonymous surveys have no uniqueness rule, so the loop-through-
+                            // interviews flow still holds: clear the answers and stay put.
+                            it.copy(
+                                answers = it.questions.associate { q -> q.id to q.initialFieldState() },
+                                isSubmitting = false,
+                                submitError = null,
+                                successMessage = "Respuesta guardada",
+                            )
+                        } else {
+                            // This subject/establishment can't answer this survey again, so
+                            // staying here would only offer an action that is now guaranteed to
+                            // conflict. Back to the list.
+                            it.copy(
+                                isSubmitting = false,
+                                submitError = null,
+                                destination = SurveyResponseFormDestination.Done,
+                            )
+                        }
+                    }
                 },
                 onFailure = {
                     _state.update {
@@ -141,17 +166,16 @@ class SurveyResponseFormViewModel(
         }
     }
 
-    /** Returns the [NewSurveyResponse] only when every required question and the establishment
-     *  picker are valid; otherwise `null`. */
+    /** Returns the [NewSurveyResponse] only when every required question is valid and a target was
+     *  resolved; otherwise `null`. */
     private fun buildNewResponse(state: SurveyResponseFormState): NewSurveyResponse? {
-        val establishment = state.selectedEstablishment ?: return null
+        val target = state.target ?: return null
         val allValid = state.questions.all { q -> q.isFieldValid(state.answers[q.id] ?: return null) }
         if (!allValid) return null
         return NewSurveyResponse(
             surveyId = state.surveyId,
             surveyName = state.surveyName,
-            establishmentId = establishment.id,
-            establishmentName = establishment.name,
+            target = target,
             answers = buildAnswers(state.questions, state.answers),
             eventAtMs = Clock.System.now().toEpochMilliseconds(),
         )

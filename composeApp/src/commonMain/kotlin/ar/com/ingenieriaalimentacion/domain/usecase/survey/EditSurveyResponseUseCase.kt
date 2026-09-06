@@ -7,9 +7,11 @@ import ar.com.ingenieriaalimentacion.domain.repository.SurveyResponseEditReposit
 class EditSurveyResponseUseCase(private val repository: SurveyResponseEditRepository) {
     suspend operator fun invoke(
         responseId: String,
+        surveyId: String,
         surveyName: String,
         establishmentName: String,
         answers: Map<String, SurveyAnswerValue>,
         eventAtMs: Long,
-    ): Result<Unit> = repository.enqueueEdit(responseId, surveyName, establishmentName, answers, eventAtMs)
+    ): Result<Unit> =
+        repository.enqueueEdit(responseId, surveyId, surveyName, establishmentName, answers, eventAtMs)
 }

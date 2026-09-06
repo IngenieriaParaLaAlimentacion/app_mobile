@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ar.com.ingenieriaalimentacion.app.LocalOuterNavController
+import ar.com.ingenieriaalimentacion.core.design_system.components.avatar.AlAvatar
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.dialog.AlConfirmDialog
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
@@ -27,7 +28,6 @@ import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.profile.Profile
 import ar.com.ingenieriaalimentacion.presentation.navigation.PROFILE_UPDATED_RESULT
 import ar.com.ingenieriaalimentacion.presentation.navigation.RefreshOnNavResult
-import com.komoui.components.Avatar
 import com.komoui.components.Spinner
 import ingenieria_alimentacion.composeapp.generated.resources.Res
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_bank_line
@@ -166,11 +166,10 @@ private fun ProfileHeader(profile: Profile) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.md),
     ) {
-        Avatar(
-            model = null,
-            size = 96.dp,
-            fallbackText = initials(profile.name, profile.lastName),
+        AlAvatar(
+            initials = initials(profile.name, profile.lastName),
             contentDescription = "${profile.name} ${profile.lastName}",
+            size = 96.dp,
         )
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,

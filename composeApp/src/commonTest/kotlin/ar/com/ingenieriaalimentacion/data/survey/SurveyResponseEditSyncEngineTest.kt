@@ -3,6 +3,7 @@ package ar.com.ingenieriaalimentacion.data.survey
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyAnswerValue
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseEditUpload
+import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseTargetRef
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseUpload
 import ar.com.ingenieriaalimentacion.domain.util.IdGenerator
 import ar.com.ingenieriaalimentacion.fake.FakeSurveyResponseEditLocalStore
@@ -69,13 +70,13 @@ class SurveyResponseEditSyncEngineTest {
         localId = localId,
         surveyId = "sv-1",
         surveyName = "Encuesta",
-        establishmentId = "est-1",
-        establishmentName = "Norte",
+        target = ResponseTargetRef.Establishment("est-1", "Norte"),
         answersJson = """{"q1":"opt-1"}""",
         eventAt = "2026-01-01T00:00:00Z",
         syncState = syncState,
         canonicalId = if (syncState == SyncState.Synced) localId else null,
         errorMessage = null,
+        conflict = null,
         attemptCount = 0,
         createdAt = 0L,
         updatedAt = 0L,
@@ -85,6 +86,7 @@ class SurveyResponseEditSyncEngineTest {
         SurveyResponseEditUpload(
             editId = editId,
             responseId = responseId,
+            surveyId = "s1",
             surveyName = "Encuesta",
             establishmentName = "Norte",
             answersJson = """{"q1":"opt-2"}""",
@@ -202,6 +204,7 @@ class SurveyResponseEditSyncEngineTest {
     fun `enqueueEdit coalesces into the still-Pending edit for the same response`() = runTest {
         repo.enqueueEdit(
             responseId = "r1",
+            surveyId = "s1",
             surveyName = "Encuesta",
             establishmentName = "Norte",
             answers = mapOf("q1" to SurveyAnswerValue.SingleChoice("opt-2")),
@@ -211,6 +214,7 @@ class SurveyResponseEditSyncEngineTest {
 
         repo.enqueueEdit(
             responseId = "r1",
+            surveyId = "s1",
             surveyName = "Encuesta",
             establishmentName = "Norte",
             answers = mapOf("q1" to SurveyAnswerValue.SingleChoice("opt-3")),
@@ -226,6 +230,7 @@ class SurveyResponseEditSyncEngineTest {
     fun `enqueueEdit mints a fresh id once the previous edit is no longer Pending`() = runTest {
         repo.enqueueEdit(
             responseId = "r1",
+            surveyId = "s1",
             surveyName = "Encuesta",
             establishmentName = "Norte",
             answers = mapOf("q1" to SurveyAnswerValue.SingleChoice("opt-2")),
@@ -236,6 +241,7 @@ class SurveyResponseEditSyncEngineTest {
 
         repo.enqueueEdit(
             responseId = "r1",
+            surveyId = "s1",
             surveyName = "Encuesta",
             establishmentName = "Norte",
             answers = mapOf("q1" to SurveyAnswerValue.SingleChoice("opt-4")),

@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 data class SurveyListItemResponse(
     val id: String,
     val name: String,
-    val scope: String,               // "generic" | "targeted"
+    @SerialName("response_target") val responseTarget: String,  // "subject"|"establishment"|"anonymous"
     @SerialName("is_active") val isActive: Boolean,
     @SerialName("created_by_id") val createdById: String,
     @SerialName("question_count") val questionCount: Int,
@@ -39,7 +39,7 @@ data class SurveyQuestionResponse(
 data class SurveyDetailResponse(
     val id: String,
     val name: String,
-    val scope: String,
+    @SerialName("response_target") val responseTarget: String,
     @SerialName("is_active") val isActive: Boolean,
     val questions: List<SurveyQuestionResponse>,
 )

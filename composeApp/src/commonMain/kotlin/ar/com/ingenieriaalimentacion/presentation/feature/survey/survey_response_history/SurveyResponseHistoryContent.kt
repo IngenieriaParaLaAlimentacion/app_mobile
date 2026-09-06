@@ -1,9 +1,11 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_history
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,6 +13,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -19,14 +24,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Text
 import ar.com.ingenieriaalimentacion.core.design_system.components.EmptyState
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
+import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButtonVariant
+import ar.com.ingenieriaalimentacion.core.design_system.components.dialog.AlConfirmDialog
+import ar.com.ingenieriaalimentacion.core.design_system.components.dialog.AlConfirmTone
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.components.pill.AlPill
 import ar.com.ingenieriaalimentacion.core.design_system.components.pill.AlPillTone
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
+import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseConflict
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseSummary
 import com.komoui.components.Spinner
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Instant
 
 @Composable
 fun SurveyResponseHistoryContent(
@@ -36,6 +48,8 @@ fun SurveyResponseHistoryContent(
 ) {
     val listState = rememberLazyListState()
     val currentState by rememberUpdatedState(state)
+    // Discard destroys answers that were never sent, so it is always confirmed first.
+    var pendingDiscard by remember { mutableStateOf<SurveyResponseSummary?>(null) }
 
     LaunchedEffect(listState) {
         snapshotFlow {
@@ -62,7 +76,11 @@ fun SurveyResponseHistoryContent(
             modifier = modifier.fillMaxSize(),
         ) {
             items(items = state.items, key = { it.id }) { item ->
-                SurveyResponseHistoryRow(item = item, onAction = onAction)
+                SurveyResponseHistoryRow(
+                    item = item,
+                    onAction = onAction,
+                    onRequestDiscard = { pendingDiscard = it },
+                )
             }
             if (state.isLoadingMore) {
                 item {
@@ -76,37 +94,105 @@ fun SurveyResponseHistoryContent(
             }
         }
     }
+
+    AlConfirmDialog(
+        open = pendingDiscard != null,
+        title = "Descartar respuesta",
+        description = pendingDiscard
+            ?.let { "Se perderán las respuestas de \"${it.surveyName}\" que no llegaron al servidor." }
+            .orEmpty(),
+        confirmText = "Descartar",
+        confirmTone = AlConfirmTone.Destructive,
+        onConfirm = {
+            pendingDiscard?.let { onAction(SurveyResponseHistoryAction.DiscardClick(it.id)) }
+            pendingDiscard = null
+        },
+        onDismiss = { pendingDiscard = null },
+    )
 }
 
 @Composable
 private fun SurveyResponseHistoryRow(
     item: SurveyResponseSummary,
     onAction: (SurveyResponseHistoryAction) -> Unit,
+    onRequestDiscard: (SurveyResponseSummary) -> Unit,
 ) {
-    val (label, tone) = when (item.syncState) {
-        SyncState.Pending -> "Pendiente" to AlPillTone.Warning
-        SyncState.Syncing -> "Sincronizando" to AlPillTone.Neutral
-        SyncState.Synced -> "Sincronizado" to AlPillTone.Success
-        SyncState.Failed -> "Error" to AlPillTone.Danger
-        SyncState.Merged -> "Sincronizado" to AlPillTone.Success // unreachable for survey responses
+    // A conflict outranks the raw sync state: the row is FAILED underneath, but "Error" would
+    // read as something a retry could fix, and nothing here can be retried.
+    val (label, tone) = when {
+        item.conflict != null -> "Conflicto" to AlPillTone.Danger
+        else -> when (item.syncState) {
+            SyncState.Pending -> "Pendiente" to AlPillTone.Warning
+            SyncState.Syncing -> "Sincronizando" to AlPillTone.Neutral
+            SyncState.Synced -> "Sincronizado" to AlPillTone.Success
+            SyncState.Failed -> "Error" to AlPillTone.Danger
+            SyncState.Merged -> "Sincronizado" to AlPillTone.Success // unreachable for responses
+        }
     }
     Column {
         AlListRow(
             horizontalPadding = AlTheme.spacing.md,
             title = item.surveyName,
-            subtitle = item.establishmentName,
-            onClick = { onAction(SurveyResponseHistoryAction.ResponseClick(item.id)) },
+            subtitle = item.targetLabel ?: "Anónima",
+            onClick = { onAction(SurveyResponseHistoryAction.ResponseClick(item.surveyId, item.id)) },
             trailing = { AlPill(text = label, tone = tone) },
         )
-        if (item.syncState == SyncState.Failed) {
-            AlButton(
-                onClick = { onAction(SurveyResponseHistoryAction.RetryUploadClick(item.id)) },
+        when {
+            item.conflict != null -> Column(
                 modifier = Modifier.padding(horizontal = AlTheme.spacing.md, vertical = AlTheme.spacing.xs),
+                verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs),
             ) {
-                Text("Reintentar")
+                Text(
+                    text = conflictMessage(item.conflict),
+                    style = AlTheme.typography.caption,
+                    color = AlTheme.colors.textMuted,
+                )
+                // No Reintentar: another response already owns this survey+target, so a retry
+                // could only conflict again.
+                AlButton(onClick = { onRequestDiscard(item) }) { Text("Descartar") }
+            }
+
+            item.syncState == SyncState.Failed -> Column(
+                modifier = Modifier.padding(horizontal = AlTheme.spacing.md, vertical = AlTheme.spacing.xs),
+                verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs),
+            ) {
+                // CA9: the engine's reason is rendered, never silently dropped.
+                item.errorMessage?.let { message ->
+                    Text(
+                        text = message,
+                        style = AlTheme.typography.caption,
+                        color = AlTheme.colors.textMuted,
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
+                    AlButton(onClick = { onAction(SurveyResponseHistoryAction.RetryUploadClick(item.id)) }) {
+                        Text("Reintentar")
+                    }
+                    AlButton(
+                        onClick = { onRequestDiscard(item) },
+                        variant = AlButtonVariant.Outline,
+                    ) {
+                        Text("Descartar")
+                    }
+                }
             }
         }
     }
 }
+
+/** Falls back to a bare "ya fue respondida" when the server omitted `event_at` — a half-formed
+ *  date reads worse than none. */
+private fun conflictMessage(conflict: ResponseConflict): String {
+    val who = conflict.submittedByName
+    val on = formatConflictDate(conflict.eventAt)
+    return if (on == null) "Ya la respondió $who." else "Ya la respondió $who el $on."
+}
+
+private fun formatConflictDate(isoInstant: String): String? = runCatching {
+    val ldt = Instant.parse(isoInstant).toLocalDateTime(TimeZone.currentSystemDefault())
+    val dd = ldt.dayOfMonth.toString().padStart(2, '0')
+    val mm = ldt.monthNumber.toString().padStart(2, '0')
+    "$dd/$mm/${ldt.year}"
+}.getOrNull()
 
 private const val LOAD_MORE_THRESHOLD = 3

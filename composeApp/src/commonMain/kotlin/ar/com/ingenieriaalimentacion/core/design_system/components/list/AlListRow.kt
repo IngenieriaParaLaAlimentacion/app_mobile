@@ -20,7 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -51,7 +50,7 @@ fun AlListRow(
     leadingIcon: DrawableResource? = null,
     leadingIconTint: Color = AlTheme.colors.textMuted,
     titleColor: Color = AlTheme.colors.textBase,
-    titleStyle: TextStyle = AlTheme.typography.body.copy(fontWeight = FontWeight.Medium),
+    titleStyle: TextStyle = AlTheme.typography.bodyStrong,
     onClick: (() -> Unit)? = null,
     showChevron: Boolean = onClick != null,
     showDivider: Boolean = true,

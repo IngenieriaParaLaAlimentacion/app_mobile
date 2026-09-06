@@ -2,7 +2,7 @@ package ar.com.ingenieriaalimentacion.data.survey
 
 import ar.com.ingenieriaalimentacion.domain.model.survey.Survey
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyDetail
-import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyScope
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseTarget
 import ar.com.ingenieriaalimentacion.fake.FakeSurveyLocalStore
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -39,7 +39,7 @@ class SurveyRepositoryImplTest {
     }
 
     private fun remoteSurvey(id: String, name: String, isActive: Boolean = true): String = """
-        {"id":"$id","name":"$name","scope":"generic","is_active":$isActive,
+        {"id":"$id","name":"$name","response_target":"establishment","is_active":$isActive,
          "created_by_id":"user-1","question_count":3,"created_at":"2026-01-01T00:00:00Z"}
     """.trimIndent()
 
@@ -53,7 +53,7 @@ class SurveyRepositoryImplTest {
         scope.respond(content = body, status = HttpStatusCode.OK, headers = jsonHeaders())
 
     private fun surveyDetail(id: String): String = """
-        {"id":"$id","name":"Detail $id","scope":"generic","is_active":true,"questions":[]}
+        {"id":"$id","name":"Detail $id","response_target":"establishment","is_active":true,"questions":[]}
     """.trimIndent()
 
     @Test
@@ -74,8 +74,8 @@ class SurveyRepositoryImplTest {
         val store = FakeSurveyLocalStore().apply {
             upsertSummaries(
                 listOf(
-                    Survey(id = "cached-active", name = "Cached Active", scope = SurveyScope.Generic, isActive = true, questionCount = 2),
-                    Survey(id = "cached-inactive", name = "Cached Inactive", scope = SurveyScope.Generic, isActive = false, questionCount = 2),
+                    Survey(id = "cached-active", name = "Cached Active", responseTarget = SurveyResponseTarget.Establishment, isActive = true, questionCount = 2),
+                    Survey(id = "cached-inactive", name = "Cached Inactive", responseTarget = SurveyResponseTarget.Establishment, isActive = false, questionCount = 2),
                 ),
             )
         }
@@ -103,7 +103,7 @@ class SurveyRepositoryImplTest {
     @Test
     fun `page-2 network failure propagates without falling back to cache`() = runTest {
         val store = FakeSurveyLocalStore().apply {
-            upsertSummaries(listOf(Survey(id = "cached", name = "Cached", scope = SurveyScope.Generic, isActive = true, questionCount = 2)))
+            upsertSummaries(listOf(Survey(id = "cached", name = "Cached", responseTarget = SurveyResponseTarget.Establishment, isActive = true, questionCount = 2)))
         }
         val api = api { respondError(HttpStatusCode.InternalServerError) }
 
@@ -162,8 +162,8 @@ class SurveyRepositoryImplTest {
             }
         }
         // s1 already has a cached detail; s2 doesn't — only s2 should be prefetched.
-        store.upsertSummaries(listOf(Survey(id = "s1", name = "Survey One", scope = SurveyScope.Generic, isActive = true, questionCount = 3)))
-        store.upsertDetail(SurveyDetail(id = "s1", name = "Survey One", scope = SurveyScope.Generic, isActive = true, questions = emptyList()))
+        store.upsertSummaries(listOf(Survey(id = "s1", name = "Survey One", responseTarget = SurveyResponseTarget.Establishment, isActive = true, questionCount = 3)))
+        store.upsertDetail(SurveyDetail(id = "s1", name = "Survey One", responseTarget = SurveyResponseTarget.Establishment, isActive = true, questions = emptyList()))
 
         SurveyRepositoryImpl(api, store).warmAvailableSurveys()
 

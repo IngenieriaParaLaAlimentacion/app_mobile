@@ -114,7 +114,7 @@ private fun SurveyResponseSummary.toRecentUi(): RecentActivityUi {
         id = id,
         kind = RecentActivityUi.Kind.SurveyResponse,
         title = surveyName,
-        subtitle = establishmentName,
+        subtitle = targetLabel ?: "Anónima",
         value = null,
         badgeText = label,
         badgeTone = tone,

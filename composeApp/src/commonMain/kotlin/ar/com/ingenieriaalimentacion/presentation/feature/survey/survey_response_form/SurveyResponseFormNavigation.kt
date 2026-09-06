@@ -6,8 +6,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 
-fun NavController.navigateToSurveyResponseForm(surveyId: String) =
-    navigate(Route.SurveyResponseForm(surveyId))
+fun NavController.navigateToSurveyResponseForm(
+    surveyId: String,
+    targetId: String? = null,
+    targetLabel: String? = null,
+) = navigate(Route.SurveyResponseForm(surveyId, targetId, targetLabel))
 
 fun NavGraphBuilder.surveyResponseFormScreen(navController: NavController) {
     composable<Route.SurveyResponseForm> { entry ->
@@ -24,6 +27,8 @@ internal fun navigate(
     navController: NavController,
 ) {
     when (destination) {
-        SurveyResponseFormDestination.Back -> navController.popBackStack()
+        SurveyResponseFormDestination.Back,
+        SurveyResponseFormDestination.Done,
+        -> navController.popBackStack()
     }
 }

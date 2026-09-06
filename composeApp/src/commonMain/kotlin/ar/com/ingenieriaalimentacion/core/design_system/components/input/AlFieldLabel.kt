@@ -5,7 +5,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 
@@ -27,7 +26,7 @@ fun AlFieldLabel(text: String, modifier: Modifier = Modifier, required: Boolean 
     }
     Text(
         text = content,
-        style = AlTheme.typography.body.copy(fontWeight = FontWeight.Medium),
+        style = AlTheme.typography.bodyStrong,
         color = AlTheme.colors.textBase,
         modifier = modifier,
     )

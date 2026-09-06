@@ -16,15 +16,37 @@ data class SurveyResponseActivitySurveyResponse(val id: String, val name: String
 data class SurveyResponseActivityEstablishmentResponse(
     val id: String,
     val name: String,
-    val city: String,
+    val city: String? = null,
+    val province: String? = null,
 )
 
+@Serializable
+data class SurveyResponseActivitySubjectResponse(
+    val id: String,
+    val dni: Int? = null,
+    val sex: String? = null,
+    val name: String? = null,
+    @SerialName("last_name") val lastName: String? = null,
+    @SerialName("birth_date") val birthDate: String? = null,
+)
+
+/**
+ * Both refs are nullable now: exactly one is populated per the survey's target, and **neither**
+ * for an anonymous response.
+ *
+ * [responseTarget] is confirmed *absent* from this payload today — the item is exactly
+ * `{id, event_at, survey, establishment|null, subject|null}`. It is parsed anyway, defaulted to
+ * null, so mobile and backend can ship in either order if the field is ever added; until then the
+ * target is derived from which ref is populated (see `SurveyResponseHistoryMapper`).
+ */
 @Serializable
 data class SurveyResponseActivitySummaryResponse(
     val id: String,
     @SerialName("event_at") val eventAt: String,
     val survey: SurveyResponseActivitySurveyResponse,
-    val establishment: SurveyResponseActivityEstablishmentResponse,
+    @SerialName("response_target") val responseTarget: String? = null,
+    val establishment: SurveyResponseActivityEstablishmentResponse? = null,
+    val subject: SurveyResponseActivitySubjectResponse? = null,
 )
 
 @Serializable

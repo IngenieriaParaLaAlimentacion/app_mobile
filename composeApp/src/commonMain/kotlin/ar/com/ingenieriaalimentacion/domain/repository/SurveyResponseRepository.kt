@@ -15,5 +15,9 @@ interface SurveyResponseRepository : SyncEngine {
     /** Re-queue a single FAILED row for the next sync pass. */
     suspend fun retry(localId: String): Result<Unit>
 
+    /** Throw a queued row away for good — the *Descartar* action. The only escape for a
+     *  conflicted row (which can never sync) or one dead-lettered on a terminal error. */
+    suspend fun delete(localId: String): Result<Unit>
+
     // syncPending / resetStuckSyncing / pruneTerminal inherited from SyncEngine
 }

@@ -2,5 +2,8 @@ package ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_respons
 
 sealed class SurveyResponseDetailDestination {
     data object Back : SurveyResponseDetailDestination()
-    data class SurveyResponseEdit(val responseId: String) : SurveyResponseDetailDestination()
+    data class SurveyResponseEdit(
+        val surveyId: String,
+        val responseId: String,
+    ) : SurveyResponseDetailDestination()
 }

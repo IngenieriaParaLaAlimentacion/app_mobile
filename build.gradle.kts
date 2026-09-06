@@ -8,4 +8,5 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.serialization) apply false
     alias(libs.plugins.sqldelight) apply false
     alias(libs.plugins.buildkonfig) apply false
+    alias(libs.plugins.firebase.appdistribution) apply false
 }

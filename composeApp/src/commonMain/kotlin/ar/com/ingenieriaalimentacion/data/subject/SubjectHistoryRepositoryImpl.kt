@@ -63,10 +63,17 @@ class SubjectHistoryRepositoryImpl(
         )
     }
 
-    /** Local wins on id collision (ADR-009): queue rows first, remote/cache fills the rest. */
+    /**
+     * Local wins on id collision (ADR-009): queue rows first, remote/cache fills the rest.
+     *
+     * Ordered by [SubjectHistoryEntry.createdAt] — registration time, which for a remote row is the
+     * feed's `occurred_at` (the SUBJECT_CREATED event). Not `updatedAt`: that is a local
+     * queue-bookkeeping stamp, so a days-old row retried today would jump to the top of the list
+     * while the History screen's day header still dated it to when it was registered.
+     */
     private fun merge(local: List<SubjectHistoryEntry>, remote: List<SubjectHistoryEntry>): List<SubjectHistoryEntry> {
         val localIds = local.mapTo(mutableSetOf()) { it.id }
-        return (local + remote.filterNot { it.id in localIds }).sortedByDescending { it.updatedAt }
+        return (local + remote.filterNot { it.id in localIds }).sortedByDescending { it.createdAt }
     }
 
     private suspend fun cachedPage(page: Int, pageSize: Int): List<SubjectHistoryEntry> =
@@ -74,7 +81,7 @@ class SubjectHistoryRepositoryImpl(
             .map { it.toEntry() }
 
     private fun SubjectHistoryEntry.toCachedRow(): CachedActivityRow =
-        CachedActivityRow(id = id, occurredAtMillis = updatedAt, payloadJson = json.encodeToString(this))
+        CachedActivityRow(id = id, occurredAtMillis = createdAt, payloadJson = json.encodeToString(this))
 
     private fun CachedActivityRow.toEntry(): SubjectHistoryEntry = json.decodeFromString(payloadJson)
 }

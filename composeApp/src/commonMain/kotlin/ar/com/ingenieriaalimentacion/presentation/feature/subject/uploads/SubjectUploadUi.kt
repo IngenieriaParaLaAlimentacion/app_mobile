@@ -11,6 +11,10 @@ data class SubjectUploadUi(
     val subtitle: String,
     val badgeLabel: String,
     val badgeTone: AlBadgeTone,
+    /** Registration time as epoch millis — what the list is both sorted and day-grouped by. For a
+     *  server-sourced row this is the activity feed's `occurred_at`, i.e. the SUBJECT_CREATED
+     *  event; for a queued row, when this device created it. */
+    val createdAtMillis: Long,
     val showSpinner: Boolean,
     val canRetry: Boolean,
     val canDelete: Boolean,
@@ -44,6 +48,7 @@ internal fun SubjectHistoryEntry.toUi(): SubjectUploadUi {
         subtitle = detail,
         badgeLabel = label,
         badgeTone = tone,
+        createdAtMillis = createdAt,
         showSpinner = syncState == SyncState.Syncing,
         canRetry = isLocal && syncState == SyncState.Failed,
         canDelete = isLocal && (

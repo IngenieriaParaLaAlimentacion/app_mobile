@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlin.time.Instant
 
 /**
  * Union-reads the local measurement queue with `/me/activity` history. Mirrors
@@ -62,14 +63,25 @@ class MeasurementHistoryRepositoryImpl(
         )
     }
 
-    /** Local wins on id collision (ADR-009): queue rows first, remote/cache fills the rest. */
+    /**
+     * Local wins on id collision (ADR-009): queue rows first, remote/cache fills the rest.
+     *
+     * Ordered by `measured_at` — the clinical event time, and the very field the backend feeds into
+     * the activity feed's `occurred_at`. Not `updatedAt`: that is a local queue-bookkeeping stamp,
+     * so a days-old measurement retried today would jump to the top of the list while the History
+     * screen's day header still dated it to when it was taken.
+     */
     private fun merge(
         local: List<MeasurementHistoryEntry>,
         remote: List<MeasurementHistoryEntry>,
     ): List<MeasurementHistoryEntry> {
         val localIds = local.mapTo(mutableSetOf()) { it.id }
-        return (local + remote.filterNot { it.id in localIds }).sortedByDescending { it.updatedAt }
+        return (local + remote.filterNot { it.id in localIds }).sortedByDescending { it.measuredAtMillis() }
     }
+
+    /** 0 for an unparseable timestamp, which sorts the row last — where "Sin fecha" renders. */
+    private fun MeasurementHistoryEntry.measuredAtMillis(): Long =
+        runCatching { Instant.parse(measuredAt).toEpochMilliseconds() }.getOrDefault(0L)
 
     private suspend fun queuedEntries(): List<MeasurementHistoryEntry> = queue.all().map { it.toHistoryEntry() }
 
@@ -78,7 +90,7 @@ class MeasurementHistoryRepositoryImpl(
             .map { it.toEntry() }
 
     private fun MeasurementHistoryEntry.toCachedRow(): CachedActivityRow =
-        CachedActivityRow(id = id, occurredAtMillis = updatedAt, payloadJson = json.encodeToString(this))
+        CachedActivityRow(id = id, occurredAtMillis = measuredAtMillis(), payloadJson = json.encodeToString(this))
 
     private fun CachedActivityRow.toEntry(): MeasurementHistoryEntry = json.decodeFromString(payloadJson)
 }

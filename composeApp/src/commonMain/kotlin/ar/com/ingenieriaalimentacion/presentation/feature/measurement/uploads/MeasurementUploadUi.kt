@@ -15,7 +15,10 @@ data class MeasurementUploadUi(
     val title: String,            // "Nombre Apellido"
     val identity: String,         // "DNI 42"
     val measurements: String,     // "70 kg · 172 cm"
-    val measuredAtLabel: String,  // "21/06 18:30"
+    val measuredAtLabel: String,  // "18:30" — the day is carried by the list's date separator
+    /** `measured_at` as epoch millis — what the list is both sorted and day-grouped by. Null only
+     *  when the timestamp could not be parsed, which groups the row under "Sin fecha". */
+    val measuredAtMillis: Long?,
     val errorMessage: String?,    // shown only on Failed
     val badgeLabel: String,
     val badgeTone: AlPillTone,
@@ -44,7 +47,8 @@ internal fun MeasurementHistoryEntry.toUi(): MeasurementUploadUi {
         title = "$subjectName $subjectLastName",
         identity = "DNI $subjectDni",
         measurements = "${formatKg(weightKg)} kg · ${formatCm(heightCm)} cm",
-        measuredAtLabel = formatMeasuredAt(measuredAt),
+        measuredAtLabel = formatMeasuredAtTime(measuredAt),
+        measuredAtMillis = measuredAtMillis(measuredAt),
         errorMessage = errorMessage.takeIf { syncState == SyncState.Failed && !it.isNullOrBlank() },
         badgeLabel = label,
         badgeTone = tone,
@@ -116,11 +120,16 @@ private fun formatDecimal(v: Double, decimals: Int): String {
     }
 }
 
-private fun formatMeasuredAt(iso: String): String = runCatching {
+/** Time only: the date lives on the day separator above the row, so repeating it in every card
+ *  is noise. Falls back to the raw value when the server sent something unparseable. */
+private fun formatMeasuredAtTime(iso: String): String = runCatching {
     val ldt = Instant.parse(iso).toLocalDateTime(TimeZone.currentSystemDefault())
-    val dd = ldt.dayOfMonth.toString().padStart(2, '0')
-    val mm = ldt.monthNumber.toString().padStart(2, '0')
     val hh = ldt.hour.toString().padStart(2, '0')
     val min = ldt.minute.toString().padStart(2, '0')
-    "$dd/$mm $hh:$min"
+    "$hh:$min"
 }.getOrDefault(iso)
+
+/** Null for an unparseable timestamp — the row then groups under "Sin fecha", which is honest,
+ *  rather than being silently stamped with today. */
+private fun measuredAtMillis(iso: String): Long? =
+    runCatching { Instant.parse(iso).toEpochMilliseconds() }.getOrNull()

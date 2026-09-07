@@ -164,7 +164,13 @@ private fun SurveyResponseHistoryRow(
             subtitle = item.targetLabel ?: "Anónima",
             onClick = { onAction(SurveyResponseHistoryAction.ResponseClick(item.surveyId, item.id)) },
             trailing = {
-                item.responseNumber?.let { Text("#$it", style = AlTheme.typography.dataSmall, color = AlTheme.colors.textMuted) }
+                item.responseNumber?.let {
+                    Text(
+                        text = "N $it",
+                        style = AlTheme.typography.dataSmall,
+                        color = AlTheme.colors.textMuted,
+                    )
+                }
                 AlPill(text = label, tone = tone)
             },
             showDivider = showDivider,

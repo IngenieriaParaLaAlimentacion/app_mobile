@@ -22,6 +22,7 @@ internal fun SurveyListItemResponse.toDomainOrNull(): Survey? = Survey(
     responseTarget = responseTarget.toDomainResponseTargetOrNull() ?: return null,
     isActive = isActive,
     questionCount = questionCount,
+    requiresResponseNumber = requiresResponseNumber,
 )
 
 internal fun PaginatedSurveysResponse.toDomain(): PagedSurveys = PagedSurveys(
@@ -49,6 +50,7 @@ internal fun SurveyDetailResponse.toDomain(): SurveyDetail = SurveyDetail(
         ?: error("Unknown survey response_target: $responseTarget"),
     isActive = isActive,
     questions = questions.map { it.toDomain() },
+    requiresResponseNumber = requiresResponseNumber,
 )
 
 internal fun SurveyResponseResponse.toDomain(): SurveyResponseResponseDomain = SurveyResponseResponseDomain(
@@ -57,6 +59,7 @@ internal fun SurveyResponseResponse.toDomain(): SurveyResponseResponseDomain = S
     subjectId = subjectId,
     establishmentId = establishmentId,
     submittedById = submittedById,
+    responseNumber = responseNumber,
     eventAt = eventAt,
 )
 
@@ -69,6 +72,7 @@ data class SurveyResponseResponseDomain(
     val subjectId: String?,
     val establishmentId: String?,
     val submittedById: String,
+    val responseNumber: Int?,
     val eventAt: String,
 )
 

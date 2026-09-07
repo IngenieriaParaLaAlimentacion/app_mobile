@@ -24,6 +24,7 @@ interface SurveyResponseEditLocalStore {
         establishmentName: String,
         answersJson: String,
         eventAt: String,
+        responseNumber: Int?,
         now: Long,
     )
 
@@ -31,6 +32,7 @@ interface SurveyResponseEditLocalStore {
 
     /** All PENDING rows; backoff gating is applied in Kotlin by the caller. */
     suspend fun syncable(): List<SurveyResponseEditUpload>
+    suspend fun awaitingNumberPolicy(): List<SurveyResponseEditUpload>
 
     suspend fun markSyncing(editId: String)
     suspend fun markSynced(editId: String)

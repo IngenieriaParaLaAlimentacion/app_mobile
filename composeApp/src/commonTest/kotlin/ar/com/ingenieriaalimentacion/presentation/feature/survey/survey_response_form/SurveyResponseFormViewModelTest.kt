@@ -189,6 +189,40 @@ class SurveyResponseFormViewModelTest {
         assertEquals(SurveyAnswerValue.SingleChoice("opt-a"), enqueued.answers["q1"])
         assertEquals(SurveyAnswerValue.Text("hola"), enqueued.answers["q2"])
         assertEquals(SurveyAnswerValue.Numeric(3.5), enqueued.answers["q3"])
+        assertNull(enqueued.responseNumber)
+    }
+
+    @Test
+    fun `required survey blocks a blank response number`() = runTest(dispatcher) {
+        val responseRepo = FakeSurveyResponseRepository()
+        val vm = viewModel(
+            surveyRepo = FakeSurveyRepository().apply {
+                detailResult = Result.success(detail.copy(requiresResponseNumber = true))
+            },
+            responseRepo = responseRepo,
+        )
+
+        vm.state.test {
+            awaitState { !it.isLoading && it.target != null }
+            vm.onAction(
+                SurveyResponseFormAction.AnswerChanged(
+                    "q1",
+                    SurveyAnswerFieldState.SingleChoice(selectedId = "opt-a"),
+                ),
+            )
+            vm.onAction(
+                SurveyResponseFormAction.AnswerChanged(
+                    "q2",
+                    SurveyAnswerFieldState.Text(field = TextFieldState(value = "hola")),
+                ),
+            )
+            vm.onAction(SurveyResponseFormAction.Submit)
+
+            val blocked = awaitState { it.responseNumber.displayError != null }
+            assertEquals("Ingresá el número de respuesta.", blocked.responseNumber.displayError)
+            cancelAndIgnoreRemainingEvents()
+        }
+        assertTrue(responseRepo.enqueued.isEmpty())
     }
 
     @Test
@@ -270,9 +304,42 @@ class SurveyResponseFormViewModelTest {
                 val done = awaitState { it.successMessage != null }
                 assertEquals("Respuesta guardada", done.successMessage)
                 assertNull(done.destination)
+                assertEquals("", done.responseNumber.value)
                 cancelAndIgnoreRemainingEvents()
             }
 
             assertEquals(ResponseTargetRef.Anonymous, responseRepo.enqueued.single().target)
         }
+
+    @Test
+    fun `anonymous submission increments a supplied response number`() = runTest(dispatcher) {
+        val vm = viewModel(
+            surveyRepo = FakeSurveyRepository().apply {
+                detailResult = Result.success(
+                    detail.copy(responseTarget = SurveyResponseTarget.Anonymous),
+                )
+            },
+        )
+
+        vm.state.test {
+            awaitState { !it.isLoading }
+            vm.onAction(SurveyResponseFormAction.ResponseNumberChanged("41"))
+            vm.onAction(
+                SurveyResponseFormAction.AnswerChanged(
+                    "q1",
+                    SurveyAnswerFieldState.SingleChoice(selectedId = "opt-a"),
+                ),
+            )
+            vm.onAction(
+                SurveyResponseFormAction.AnswerChanged(
+                    "q2",
+                    SurveyAnswerFieldState.Text(field = TextFieldState(value = "hola")),
+                ),
+            )
+            vm.onAction(SurveyResponseFormAction.Submit)
+
+            assertEquals("42", awaitState { it.successMessage != null }.responseNumber.value)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
 }

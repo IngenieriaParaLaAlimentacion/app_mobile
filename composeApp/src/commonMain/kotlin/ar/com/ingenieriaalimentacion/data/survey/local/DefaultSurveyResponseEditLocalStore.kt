@@ -36,6 +36,7 @@ class DefaultSurveyResponseEditLocalStore(
         establishmentName: String,
         answersJson: String,
         eventAt: String,
+        responseNumber: Int?,
         now: Long,
     ): Unit = withContext(dispatcher) {
         queries.updatePending(
@@ -43,6 +44,7 @@ class DefaultSurveyResponseEditLocalStore(
             establishmentName = establishmentName,
             answersJson = answersJson,
             eventAt = eventAt,
+            responseNumber = responseNumber?.toLong(),
             updatedAt = now,
             editId = editId,
         )
@@ -62,11 +64,16 @@ class DefaultSurveyResponseEditLocalStore(
             attemptCount = edit.attemptCount.toLong(),
             createdAt = edit.createdAt,
             updatedAt = edit.updatedAt,
+            responseNumber = edit.responseNumber?.toLong(),
         )
     }
 
     override suspend fun syncable(): List<SurveyResponseEditUpload> = withContext(dispatcher) {
         queries.selectSyncable().executeAsList().map { it.toDomain() }
+    }
+
+    override suspend fun awaitingNumberPolicy(): List<SurveyResponseEditUpload> = withContext(dispatcher) {
+        queries.selectAwaitingNumberPolicy().executeAsList().map { it.toDomain() }
     }
 
     override suspend fun markSyncing(editId: String): Unit = withContext(dispatcher) {

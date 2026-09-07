@@ -23,6 +23,7 @@ interface SurveyResponseLocalStore {
 
     /** All PENDING rows; backoff gating is applied in Kotlin by the caller. */
     suspend fun syncable(): List<SurveyResponseUpload>
+    suspend fun awaitingNumberPolicy(): List<SurveyResponseUpload>
 
     suspend fun markSyncing(localId: String)
     suspend fun markSynced(localId: String, canonicalId: String)
@@ -34,6 +35,8 @@ interface SurveyResponseLocalStore {
      *  records who answered and when, which makes the row ineligible for every future sweep
      *  (see `SurveyResponseUpload.isEligibleAt`). Only [delete] clears it. */
     suspend fun markConflict(localId: String, conflict: ResponseConflict)
+
+    suspend fun updateResponseNumber(localId: String, responseNumber: Int)
 
     /** Discard a row for good — the user's *Descartar* action on a conflicted or dead-lettered row. */
     suspend fun delete(localId: String)

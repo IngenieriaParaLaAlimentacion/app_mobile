@@ -13,6 +13,7 @@ data class EnqueuedEdit(
     val surveyId: String,
     val surveyName: String,
     val establishmentName: String,
+    val responseNumber: Int?,
     val answers: Map<String, SurveyAnswerValue>,
     val eventAtMs: Long,
 )
@@ -28,10 +29,19 @@ class FakeSurveyResponseEditRepository : SurveyResponseEditRepository {
         surveyId: String,
         surveyName: String,
         establishmentName: String,
+        responseNumber: Int?,
         answers: Map<String, SurveyAnswerValue>,
         eventAtMs: Long,
     ): Result<Unit> {
-        enqueued += EnqueuedEdit(responseId, surveyId, surveyName, establishmentName, answers, eventAtMs)
+        enqueued += EnqueuedEdit(
+            responseId,
+            surveyId,
+            surveyName,
+            establishmentName,
+            responseNumber,
+            answers,
+            eventAtMs,
+        )
         return enqueueResult
     }
 

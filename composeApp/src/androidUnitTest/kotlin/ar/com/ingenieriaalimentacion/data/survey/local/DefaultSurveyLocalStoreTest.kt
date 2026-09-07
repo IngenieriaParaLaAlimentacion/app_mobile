@@ -27,12 +27,19 @@ class DefaultSurveyLocalStoreTest {
         store = DefaultSurveyLocalStore(queries, json = Json, now = { time }, dispatcher = Dispatchers.Unconfined)
     }
 
-    private fun survey(id: String, name: String, isActive: Boolean = true, questionCount: Int = 3) = Survey(
+    private fun survey(
+        id: String,
+        name: String,
+        isActive: Boolean = true,
+        questionCount: Int = 3,
+        requiresResponseNumber: Boolean? = null,
+    ) = Survey(
         id = id,
         name = name,
         responseTarget = SurveyResponseTarget.Establishment,
         isActive = isActive,
         questionCount = questionCount,
+        requiresResponseNumber = requiresResponseNumber,
     )
 
     private fun detail(id: String) = SurveyDetail(
@@ -66,6 +73,22 @@ class DefaultSurveyLocalStoreTest {
     }
 
     @Test
+    fun `nullable response number policy round-trips through cache`() = runTest {
+        store.upsertSummaries(
+            listOf(
+                survey("true", "True", requiresResponseNumber = true),
+                survey("false", "False", requiresResponseNumber = false),
+                survey("null", "Null", requiresResponseNumber = null),
+            ),
+        )
+
+        val byId = store.getSummaries().associateBy { it.id }
+        assertEquals(true, byId["true"]?.requiresResponseNumber)
+        assertEquals(false, byId["false"]?.requiresResponseNumber)
+        assertNull(byId["null"]?.requiresResponseNumber)
+    }
+
+    @Test
     fun `replaceAllSummaries preserves detailJson for surviving rows`() = runTest {
         store.upsertSummaries(listOf(survey("a", "Alpha")))
         store.upsertDetail(detail("a"))
@@ -73,6 +96,17 @@ class DefaultSurveyLocalStoreTest {
         store.replaceAllSummaries(listOf(survey("a", "Alpha")))
 
         assertEquals(detail("a"), store.findDetail("a"))
+    }
+
+    @Test
+    fun `summary refresh updates policy inside preserved detail JSON`() = runTest {
+        store.upsertDetail(detail("a").copy(requiresResponseNumber = false))
+
+        store.upsertSummaries(
+            listOf(survey("a", "Alpha", requiresResponseNumber = true)),
+        )
+
+        assertEquals(true, store.findDetail("a")?.requiresResponseNumber)
     }
 
     @Test

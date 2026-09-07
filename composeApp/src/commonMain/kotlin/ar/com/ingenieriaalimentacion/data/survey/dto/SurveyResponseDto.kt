@@ -23,6 +23,8 @@ data class SurveyResponseRequest(
     @SerialName("subject_id") val subjectId: String? = null,
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     @SerialName("establishment_id") val establishmentId: String? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    @SerialName("response_number") val responseNumber: Int? = null,
     val answers: Map<String, JsonElement>,
     @SerialName("event_at") val eventAt: String,
 )
@@ -30,6 +32,8 @@ data class SurveyResponseRequest(
 @Serializable
 data class SurveyResponseEditRequest(
     val id: String,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    @SerialName("response_number") val responseNumber: Int? = null,
     val answers: Map<String, JsonElement>,
     @SerialName("event_at") val eventAt: String,
 )
@@ -43,6 +47,7 @@ data class SurveyResponseResponse(
     @SerialName("subject_id") val subjectId: String? = null,
     @SerialName("establishment_id") val establishmentId: String? = null,
     @SerialName("submitted_by_id") val submittedById: String,
+    @SerialName("response_number") val responseNumber: Int? = null,
     val answers: Map<String, JsonElement>,
     @SerialName("event_at") val eventAt: String,
     @SerialName("created_at") val createdAt: String,

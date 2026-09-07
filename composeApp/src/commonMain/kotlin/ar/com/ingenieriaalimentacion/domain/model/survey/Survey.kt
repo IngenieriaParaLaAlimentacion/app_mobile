@@ -14,6 +14,7 @@ data class Survey(
     val responseTarget: SurveyResponseTarget,
     val isActive: Boolean,
     val questionCount: Int,
+    val requiresResponseNumber: Boolean? = null,
 )
 
 @Serializable
@@ -42,4 +43,5 @@ data class SurveyDetail(
     val responseTarget: SurveyResponseTarget,
     val isActive: Boolean,
     val questions: List<SurveyQuestion>,
+    val requiresResponseNumber: Boolean? = null,
 )

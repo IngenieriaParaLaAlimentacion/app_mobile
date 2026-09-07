@@ -41,6 +41,7 @@ internal fun SurveyResponseActivitySummaryResponse.toSummary(): SurveyResponseSu
         eventAt = eventAt,
         syncState = SyncState.Synced,
         isLocal = false,
+        responseNumber = responseNumber,
     )
 }
 
@@ -55,4 +56,5 @@ internal fun SurveyResponseUpload.toSummary(): SurveyResponseSummary = SurveyRes
     isLocal = true,
     conflict = conflict,
     errorMessage = errorMessage,
+    responseNumber = responseNumber,
 )

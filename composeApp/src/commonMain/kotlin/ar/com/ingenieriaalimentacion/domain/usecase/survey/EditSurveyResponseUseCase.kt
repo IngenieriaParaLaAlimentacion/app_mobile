@@ -10,8 +10,9 @@ class EditSurveyResponseUseCase(private val repository: SurveyResponseEditReposi
         surveyId: String,
         surveyName: String,
         establishmentName: String,
+        responseNumber: Int? = null,
         answers: Map<String, SurveyAnswerValue>,
         eventAtMs: Long,
     ): Result<Unit> =
-        repository.enqueueEdit(responseId, surveyId, surveyName, establishmentName, answers, eventAtMs)
+        repository.enqueueEdit(responseId, surveyId, surveyName, establishmentName, responseNumber, answers, eventAtMs)
 }

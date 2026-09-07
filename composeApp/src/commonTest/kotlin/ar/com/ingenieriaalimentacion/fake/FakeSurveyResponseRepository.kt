@@ -12,6 +12,7 @@ class FakeSurveyResponseRepository : SurveyResponseRepository {
     val enqueued = mutableListOf<NewSurveyResponse>()
     val retried = mutableListOf<String>()
     val deleted = mutableListOf<String>()
+    val updatedNumbers = mutableListOf<Pair<String, Int>>()
     var enqueueResult: Result<Unit> = Result.success(Unit)
     var syncSummary: SyncSummary = SyncSummary()
     val uploads = MutableStateFlow<List<SurveyResponseUpload>>(emptyList())
@@ -29,6 +30,17 @@ class FakeSurveyResponseRepository : SurveyResponseRepository {
         retried += localId
         return Result.success(Unit)
     }
+
+    override suspend fun updateResponseNumber(localId: String, responseNumber: Int): Result<Unit> {
+        updatedNumbers += localId to responseNumber
+        uploads.value = uploads.value.map {
+            if (it.localId == localId) it.copy(responseNumber = responseNumber) else it
+        }
+        return Result.success(Unit)
+    }
+
+    override suspend fun findQueued(localId: String): SurveyResponseUpload? =
+        uploads.value.firstOrNull { it.localId == localId }
 
     override suspend fun delete(localId: String): Result<Unit> {
         deleted += localId

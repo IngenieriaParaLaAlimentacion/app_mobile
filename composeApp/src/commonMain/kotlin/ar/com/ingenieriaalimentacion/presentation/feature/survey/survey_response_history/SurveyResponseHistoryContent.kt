@@ -34,6 +34,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.pill.AlPillTo
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseConflict
+import ar.com.ingenieriaalimentacion.domain.model.survey.needsRequiredResponseNumber
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseSummary
 import ar.com.ingenieriaalimentacion.presentation.common.today
 import com.komoui.components.Spinner
@@ -147,7 +148,7 @@ private fun SurveyResponseHistoryRow(
     // A conflict outranks the raw sync state: the row is FAILED underneath, but "Error" would
     // read as something a retry could fix, and nothing here can be retried.
     val (label, tone) = when {
-        item.conflict != null -> "Conflicto" to AlPillTone.Danger
+        item.conflict != null && item.syncState == SyncState.Failed -> "Conflicto" to AlPillTone.Danger
         else -> when (item.syncState) {
             SyncState.Pending -> "Pendiente" to AlPillTone.Warning
             SyncState.Syncing -> "Sincronizando" to AlPillTone.Neutral
@@ -162,11 +163,14 @@ private fun SurveyResponseHistoryRow(
             title = item.surveyName,
             subtitle = item.targetLabel ?: "Anónima",
             onClick = { onAction(SurveyResponseHistoryAction.ResponseClick(item.surveyId, item.id)) },
-            trailing = { AlPill(text = label, tone = tone) },
+            trailing = {
+                item.responseNumber?.let { Text("#$it", style = AlTheme.typography.dataSmall, color = AlTheme.colors.textMuted) }
+                AlPill(text = label, tone = tone)
+            },
             showDivider = showDivider,
         )
         when {
-            item.conflict != null -> Column(
+            item.conflict != null && item.syncState == SyncState.Failed -> Column(
                 modifier = Modifier.padding(horizontal = AlTheme.spacing.md, vertical = AlTheme.spacing.xs),
                 verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs),
             ) {
@@ -175,9 +179,18 @@ private fun SurveyResponseHistoryRow(
                     style = AlTheme.typography.caption,
                     color = AlTheme.colors.textMuted,
                 )
-                // No Reintentar: another response already owns this survey+target, so a retry
-                // could only conflict again.
                 AlButton(onClick = { onRequestDiscard(item) }) { Text("Descartar") }
+            }
+
+            item.needsRequiredResponseNumber -> Column(
+                modifier = Modifier.padding(horizontal = AlTheme.spacing.md, vertical = AlTheme.spacing.xs),
+                verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs),
+            ) {
+                item.errorMessage?.let { Text(it, style = AlTheme.typography.caption, color = AlTheme.colors.textMuted) }
+                Row(horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
+                    AlButton(onClick = { onAction(SurveyResponseHistoryAction.FixResponseNumberClick(item.id, item.surveyName)) }) { Text("Agregar número") }
+                    AlButton(onClick = { onRequestDiscard(item) }, variant = AlButtonVariant.Outline) { Text("Descartar") }
+                }
             }
 
             item.syncState == SyncState.Failed -> Column(

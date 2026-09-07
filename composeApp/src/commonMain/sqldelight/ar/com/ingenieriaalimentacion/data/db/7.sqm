@@ -1,0 +1,3 @@
+ALTER TABLE PendingSurveyResponse ADD COLUMN responseNumber INTEGER;
+ALTER TABLE PendingSurveyResponseEdit ADD COLUMN responseNumber INTEGER;
+ALTER TABLE CachedSurvey ADD COLUMN requiresResponseNumber INTEGER;

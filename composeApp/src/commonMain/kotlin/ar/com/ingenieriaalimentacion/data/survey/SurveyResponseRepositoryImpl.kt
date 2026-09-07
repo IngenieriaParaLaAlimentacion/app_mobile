@@ -7,12 +7,14 @@ import ar.com.ingenieriaalimentacion.data.survey.mapper.toRequest
 import ar.com.ingenieriaalimentacion.domain.model.subject.MAX_SYNC_ATTEMPTS
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncSummary
+import ar.com.ingenieriaalimentacion.domain.model.survey.MISSING_REQUIRED_RESPONSE_NUMBER_MESSAGE
 import ar.com.ingenieriaalimentacion.domain.model.survey.NewSurveyResponse
 import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseConflict
 import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseTargetRef
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseUpload
 import ar.com.ingenieriaalimentacion.domain.model.survey.isEligibleAt
 import ar.com.ingenieriaalimentacion.domain.repository.SurveyResponseRepository
+import ar.com.ingenieriaalimentacion.domain.repository.SurveyRepository
 import ar.com.ingenieriaalimentacion.domain.util.IdGenerator
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.builtins.MapSerializer
@@ -35,6 +37,7 @@ class SurveyResponseRepositoryImpl(
     private val api: SurveyResponseApi,
     private val local: SurveyResponseLocalStore,
     private val subjects: SubjectLocalStore,
+    private val surveys: SurveyRepository,
     private val idGenerator: IdGenerator,
     private val json: Json,
     private val now: () -> Long,
@@ -62,6 +65,7 @@ class SurveyResponseRepositoryImpl(
                 attemptCount = 0,
                 createdAt = nowMs,
                 updatedAt = nowMs,
+                responseNumber = newResponse.responseNumber,
             ),
         )
     }
@@ -72,7 +76,10 @@ class SurveyResponseRepositoryImpl(
         var synced = 0
         var failed = 0
         var pending = 0
-        local.syncable().filter { it.isEligibleAt(now()) }.forEach { upload ->
+        val candidates = (
+            local.syncable().filter { it.isEligibleAt(now()) } + local.awaitingNumberPolicy()
+        ).distinctBy { it.localId }
+        candidates.forEach { upload ->
             // A subject target may point at a subject this device queued offline. Resolve it to
             // the server's canonical id (set when that subject 409'd on DNI) and hold the response
             // back while the parent is still in flight — same gate as MeasurementRepositoryImpl.
@@ -102,6 +109,18 @@ class SurveyResponseRepositoryImpl(
                 null
             }
 
+            val responseNumber = upload.responseNumber
+            if (responseNumber == null) {
+                val survey = surveys.getDetail(upload.surveyId).getOrNull() ?: run {
+                    pending++
+                    return@forEach
+                }
+                if (survey.requiresResponseNumber == true) {
+                    local.markFailed(upload.localId, MISSING_REQUIRED_RESPONSE_NUMBER_MESSAGE)
+                    failed++
+                    return@forEach
+                }
+            }
             local.markSyncing(upload.localId)
             when (val outcome = api.create(upload.surveyId, upload.toRequest(json, resolvedSubjectId))) {
                 is SurveyResponseUploadOutcome.Created -> {
@@ -149,6 +168,13 @@ class SurveyResponseRepositoryImpl(
         }
 
     override suspend fun retry(localId: String): Result<Unit> = runCatching { local.resetForRetry(localId) }
+
+    override suspend fun updateResponseNumber(localId: String, responseNumber: Int): Result<Unit> = runCatching {
+        local.find(localId) ?: error("No queued response $localId")
+        local.updateResponseNumber(localId, responseNumber)
+    }
+
+    override suspend fun findQueued(localId: String): SurveyResponseUpload? = local.find(localId)
 
     override suspend fun delete(localId: String): Result<Unit> = runCatching { local.delete(localId) }
 

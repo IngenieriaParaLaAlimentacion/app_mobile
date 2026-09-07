@@ -133,6 +133,7 @@ fun SurveyResponseDetailScreen(
                             ResponseMetaHeader(
                                 targetLabel = state.targetLabel,
                                 eventAtLabel = state.eventAtLabel,
+                                responseNumber = state.responseNumber,
                             )
 
                             AnsweredQuestionsCard(answeredQuestions = state.answeredQuestions)
@@ -177,8 +178,15 @@ fun SurveyResponseDetailScreen(
 }
 
 @Composable
-private fun ResponseMetaHeader(targetLabel: String, eventAtLabel: String) {
+private fun ResponseMetaHeader(targetLabel: String, eventAtLabel: String, responseNumber: Int?) {
     Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
+        responseNumber?.let {
+            Text(
+                text = "N.º $it",
+                style = AlTheme.typography.dataSmall,
+                color = AlTheme.colors.textMuted,
+            )
+        }
         Row(
             horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
             verticalAlignment = Alignment.CenterVertically,

@@ -27,13 +27,8 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = "Richard9394/MingCute";
-// Pinned: v3.0.0 restructured the repo to assets/svg/core/{regular,filled}/<category>/<name>.svg,
-// dropping the flat svg/<category>/<name>_{line,fill}.svg layout every icon in this project was
-// imported from. v2.97 is the last release with that layout, so pinning it keeps `ic_mingcute_*`
-// names meaningful and every existing drawable byte-identically regenerable.
-const REF = "v2.97";
-const RAW = `https://raw.githubusercontent.com/${REPO}/${REF}/svg`;
-const API_TREE = `https://api.github.com/repos/${REPO}/git/trees/${REF}?recursive=1`;
+const RAW = `https://raw.githubusercontent.com/${REPO}/main/svg`;
+const API_TREE = `https://api.github.com/repos/${REPO}/git/trees/main?recursive=1`;
 
 // Resolve composeResources/drawable relative to this script (skill lives at
 // <unit>/.claude/skills/add-mingcute-icon/, drawables at <unit>/composeApp/...).
@@ -65,7 +60,7 @@ async function resolveCategory(name) {
   if (!hit) {
     die(
       `icon "${name}" not found in any category. Browse names at ` +
-        `https://github.com/${REPO}/tree/${REF}/svg`,
+        `https://github.com/${REPO}/tree/main/svg`,
     );
   }
   return hit.path.split("/")[1]; // svg/<category>/<name>.svg

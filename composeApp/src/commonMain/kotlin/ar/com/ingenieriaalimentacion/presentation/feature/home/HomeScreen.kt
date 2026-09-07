@@ -43,6 +43,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import ingenieria_alimentacion.composeapp.generated.resources.Res
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_alert_line
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_bowl_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_check_circle
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_doc_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_document_2_line
@@ -240,31 +241,40 @@ private fun SyncStatusCard(sync: SyncStatusUi, onAction: (HomeAction) -> Unit) {
     }
 }
 
+private class QuickAction(
+    val icon: DrawableResource,
+    val label: String,
+    val action: HomeAction,
+)
+
+private val QUICK_ACTIONS = listOf(
+    QuickAction(Res.drawable.ic_mingcute_ruler_line, "Medición", HomeAction.NewMeasurementClick),
+    QuickAction(Res.drawable.ic_mingcute_user_3_line, "Sujeto", HomeAction.NewSubjectClick),
+    QuickAction(Res.drawable.ic_mingcute_doc_line, "Encuesta", HomeAction.RespondSurveyClick),
+    QuickAction(Res.drawable.ic_mingcute_bowl_line, "Alimentos", HomeAction.NewFoodIntakeClick),
+)
+
 @Composable
 private fun QuickActions(state: HomeState, onAction: (HomeAction) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
-        ) {
-            AlCardIconButton(
-                modifier = Modifier.weight(1f),
-                icon = Res.drawable.ic_mingcute_ruler_line,
-                label = "Medición",
-                onClick = { onAction(HomeAction.NewMeasurementClick) },
-            )
-            AlCardIconButton(
-                modifier = Modifier.weight(1f),
-                icon = Res.drawable.ic_mingcute_user_3_line,
-                label = "Sujeto",
-                onClick = { onAction(HomeAction.NewSubjectClick) },
-            )
-            AlCardIconButton(
-                modifier = Modifier.weight(1f),
-                icon = Res.drawable.ic_mingcute_doc_line,
-                label = "Encuesta",
-                onClick = { onAction(HomeAction.RespondSurveyClick) },
-            )
+        // 2x2 rather than a 4-wide row: a fourth quick action would squeeze every
+        // label past truncation on a small phone.
+        Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+            QUICK_ACTIONS.chunked(2).forEach { row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
+                ) {
+                    row.forEach { quickAction ->
+                        AlCardIconButton(
+                            modifier = Modifier.weight(1f),
+                            icon = quickAction.icon,
+                            label = quickAction.label,
+                            onClick = { onAction(quickAction.action) },
+                        )
+                    }
+                }
+            }
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {

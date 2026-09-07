@@ -5,6 +5,7 @@ import ar.com.ingenieriaalimentacion.presentation.feature.establishment.select_e
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.forgot_password.ForgotPasswordViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.login.LoginViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.reset_password.ResetPasswordViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_intake.CreateFoodIntakeViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.get_started.GetStartedViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.home.HomeViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.measurement.create_measurement.MeasurementViewModel
@@ -52,6 +53,7 @@ val viewModelsModule = module {
         CreateSubjectViewModel(route = route, createSubject = get(), syncCoordinator = get())
     }
     viewModelOf(::MeasurementViewModel)
+    viewModelOf(::CreateFoodIntakeViewModel)
     viewModelOf(::MeasurementUploadsViewModel)
     viewModelOf(::SelectSubjectViewModel)
     viewModelOf(::SubjectUploadsViewModel)

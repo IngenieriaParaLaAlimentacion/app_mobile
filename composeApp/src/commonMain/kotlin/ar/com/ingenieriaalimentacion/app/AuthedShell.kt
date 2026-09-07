@@ -27,6 +27,7 @@ import androidx.navigation.compose.rememberNavController
 import ar.com.ingenieriaalimentacion.core.design_system.components.navbar.AlBottomNavBar
 import ar.com.ingenieriaalimentacion.core.design_system.components.navbar.AlBottomNavTab
 import ar.com.ingenieriaalimentacion.presentation.feature.home.HomeDestination
+import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_intake.navigateToCreateFoodIntake
 import ar.com.ingenieriaalimentacion.presentation.feature.history.HistoryHubScreenRoot
 import ar.com.ingenieriaalimentacion.presentation.feature.home.HomeScreenRoot
 import ar.com.ingenieriaalimentacion.presentation.feature.measurement.create_measurement.navigateToCreateMeasurement
@@ -102,6 +103,8 @@ fun AuthedShell(onSignOut: () -> Unit) {
                                     restoreState = true
                                 }
                             HomeDestination.NavigateToSurveyList -> outerNav.navigateToSurveyList()
+                            HomeDestination.NavigateToCreateFoodIntake ->
+                                outerNav.navigateToCreateFoodIntake()
                         }
                     },
                 )

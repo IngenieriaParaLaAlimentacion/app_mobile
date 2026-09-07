@@ -3,6 +3,8 @@ package ar.com.ingenieriaalimentacion.domain.model.survey
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import kotlinx.serialization.Serializable
 
+const val MISSING_REQUIRED_RESPONSE_NUMBER_MESSAGE = "Falta el número de respuesta."
+
 /**
  * The chosen answer target for one response. Exactly one shape is valid per the survey's
  * [SurveyResponseTarget], and the sealed hierarchy is what makes "both a subject and an
@@ -45,7 +47,7 @@ data class NewSurveyResponse(
     val surveyId: String,
     val surveyName: String,
     val target: ResponseTargetRef,
-    val responseNumber: Int,
+    val responseNumber: Int? = null,
     val answers: Map<String, SurveyAnswerValue>,
     /** Epoch millis when the relevador actually finished the interview (client clock). */
     val eventAtMs: Long,
@@ -55,14 +57,9 @@ data class NewSurveyResponse(
  *  `@Serializable` because it rides along on [SurveyResponseSummary], which round-trips through
  *  `CachedActivityItem.payloadJson`. */
 @Serializable
-enum class ResponseConflictKind { Target, ResponseNumber }
-
-@Serializable
 data class ResponseConflict(
     val submittedByName: String,
     val eventAt: String,
-    val kind: ResponseConflictKind = ResponseConflictKind.Target,
-    val existingResponseNumber: Int? = null,
 )
 
 /** A locally-queued response plus its sync metadata. [localId] doubles as the SQLDelight PK
@@ -84,13 +81,13 @@ data class SurveyResponseUpload(
     val attemptCount: Int,
     val createdAt: Long,
     val updatedAt: Long,
-    val responseNumber: Int?,
+    val responseNumber: Int? = null,
 )
 
 fun SurveyResponseUpload.isEligibleAt(nowMs: Long): Boolean {
     // A conflicted row can never succeed — another response already owns this survey+target — so
     // it stays out of every backoff sweep until the user discards it.
-    if (conflict?.kind == ResponseConflictKind.Target) return false
+    if (conflict != null) return false
     if (attemptCount == 0) return true
     val backoff = minOf(30_000L, 1_000L shl attemptCount) + (createdAt % 1_000L)
     return nowMs >= updatedAt + backoff

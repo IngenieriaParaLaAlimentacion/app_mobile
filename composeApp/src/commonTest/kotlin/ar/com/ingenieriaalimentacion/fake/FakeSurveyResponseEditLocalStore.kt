@@ -3,6 +3,7 @@ package ar.com.ingenieriaalimentacion.fake
 import ar.com.ingenieriaalimentacion.data.survey.local.SurveyResponseEditLocalStore
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseEditUpload
+import ar.com.ingenieriaalimentacion.domain.model.survey.MISSING_REQUIRED_RESPONSE_NUMBER_MESSAGE
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
@@ -37,6 +38,7 @@ class FakeSurveyResponseEditLocalStore(private val now: () -> Long = { 0L }) : S
         establishmentName: String,
         answersJson: String,
         eventAt: String,
+        responseNumber: Int?,
         now: Long,
     ) = mutate(editId) {
         it.copy(
@@ -44,6 +46,7 @@ class FakeSurveyResponseEditLocalStore(private val now: () -> Long = { 0L }) : S
             establishmentName = establishmentName,
             answersJson = answersJson,
             eventAt = eventAt,
+            responseNumber = responseNumber,
             updatedAt = now,
         )
     }
@@ -54,6 +57,12 @@ class FakeSurveyResponseEditLocalStore(private val now: () -> Long = { 0L }) : S
 
     override suspend fun syncable(): List<SurveyResponseEditUpload> =
         rows.value.filter { it.syncState == SyncState.Pending }.sortedBy { it.createdAt }
+
+    override suspend fun awaitingNumberPolicy(): List<SurveyResponseEditUpload> =
+        rows.value.filter {
+            it.syncState == SyncState.Failed && it.responseNumber == null &&
+                it.errorMessage == MISSING_REQUIRED_RESPONSE_NUMBER_MESSAGE
+        }
 
     override suspend fun markSyncing(editId: String) =
         mutate(editId) { it.copy(syncState = SyncState.Syncing, updatedAt = now()) }

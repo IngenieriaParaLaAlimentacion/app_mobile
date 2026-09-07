@@ -12,6 +12,7 @@ data class SurveyListItemResponse(
     @SerialName("created_by_id") val createdById: String,
     @SerialName("question_count") val questionCount: Int,
     @SerialName("created_at") val createdAt: String,
+    @SerialName("requires_response_number") val requiresResponseNumber: Boolean? = null,
 )
 
 @Serializable
@@ -42,4 +43,5 @@ data class SurveyDetailResponse(
     @SerialName("response_target") val responseTarget: String,
     @SerialName("is_active") val isActive: Boolean,
     val questions: List<SurveyQuestionResponse>,
+    @SerialName("requires_response_number") val requiresResponseNumber: Boolean? = null,
 )

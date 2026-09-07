@@ -13,6 +13,7 @@ data class SurveyResponseFormState(
     val questions: List<SurveyQuestion> = emptyList(),
     val answers: Map<String, SurveyAnswerFieldState> = emptyMap(),
     val responseNumber: TextFieldState = TextFieldState(),
+    val requiresResponseNumber: Boolean? = null,
     /** Resolved once the survey detail loads: the route's ids interpreted against the survey's
      *  `response_target`. Null while loading, or when a required target id never arrived. */
     val target: ResponseTargetRef? = null,
@@ -43,6 +44,7 @@ data class SurveyResponseFormState(
             !loadError &&
             !isSubmitting &&
             target != null &&
-            responseNumber.value.isNotBlank() && responseNumber.isValid &&
+            responseNumber.isValid &&
+            (requiresResponseNumber != true || responseNumber.value.isNotBlank()) &&
             questions.all { question -> question.isFieldValid(answers[question.id] ?: return@all false) }
 }

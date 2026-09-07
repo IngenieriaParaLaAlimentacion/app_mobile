@@ -17,7 +17,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class SurveyResponseConflictProblem(
     val type: String? = null,
-    @SerialName("conflict_on") val conflictOn: String? = null,
     @SerialName("existing_response") val existingResponse: ExistingResponseDto? = null,
 )
 
@@ -26,12 +25,9 @@ data class ExistingResponseDto(
     val id: String,
     @SerialName("submitted_by") val submittedBy: SubmittedByDto? = null,
     @SerialName("event_at") val eventAt: String? = null,
-    @SerialName("response_number") val responseNumber: Int? = null,
 )
 
 @Serializable
 data class SubmittedByDto(val id: String, val name: String? = null)
 
 const val SURVEY_RESPONSE_CONFLICT_TYPE = "/errors/survey-response-already-exists"
-const val CONFLICT_ON_TARGET = "target"
-const val CONFLICT_ON_RESPONSE_NUMBER = "response_number"

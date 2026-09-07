@@ -19,6 +19,7 @@ data class SurveyResponseEditState(
     val originalAnswers: Map<String, SurveyAnswerFieldState> = emptyMap(),
     val responseNumber: TextFieldState = TextFieldState(),
     val originalResponseNumber: String = "",
+    val requiresResponseNumber: Boolean? = null,
     val isLoading: Boolean = true,
     val loadError: Boolean = false,
     val isSubmitting: Boolean = false,
@@ -34,6 +35,7 @@ data class SurveyResponseEditState(
             !loadError &&
             !isSubmitting &&
             hasChanges &&
-            responseNumber.value.isNotBlank() && responseNumber.isValid &&
+            responseNumber.isValid &&
+            (requiresResponseNumber != true || responseNumber.value.isNotBlank()) &&
             questions.all { question -> question.isFieldValid(answers[question.id] ?: return@all false) }
 }

@@ -72,6 +72,10 @@ class DefaultSurveyResponseEditLocalStore(
         queries.selectSyncable().executeAsList().map { it.toDomain() }
     }
 
+    override suspend fun awaitingNumberPolicy(): List<SurveyResponseEditUpload> = withContext(dispatcher) {
+        queries.selectAwaitingNumberPolicy().executeAsList().map { it.toDomain() }
+    }
+
     override suspend fun markSyncing(editId: String): Unit = withContext(dispatcher) {
         queries.markSyncing(updatedAt = now(), editId = editId)
     }

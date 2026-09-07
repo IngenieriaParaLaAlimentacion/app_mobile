@@ -23,4 +23,5 @@ internal fun CachedSurvey.toDomainSurvey(): Survey = Survey(
     responseTarget = responseTarget.toDomainSurveyResponseTarget(),
     isActive = isActive == 1L,
     questionCount = questionCount.toInt(),
+    requiresResponseNumber = requiresResponseNumber?.let { it == 1L },
 )

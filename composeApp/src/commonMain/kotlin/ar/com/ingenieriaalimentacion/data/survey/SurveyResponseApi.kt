@@ -1,7 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.survey
 
 import ar.com.ingenieriaalimentacion.data.survey.dto.SURVEY_RESPONSE_CONFLICT_TYPE
-import ar.com.ingenieriaalimentacion.data.survey.dto.CONFLICT_ON_RESPONSE_NUMBER
 import ar.com.ingenieriaalimentacion.data.survey.dto.SurveyResponseConflictProblem
 import ar.com.ingenieriaalimentacion.data.survey.dto.SurveyResponseEditRequest
 import ar.com.ingenieriaalimentacion.data.survey.dto.SurveyResponseRequest
@@ -39,15 +38,7 @@ class SurveyResponseApi(private val client: HttpClient) {
                 404 -> SurveyResponseUploadOutcome.NotFound
                 409 -> {
                     val problem = runCatching { response.body<SurveyResponseConflictProblem>() }.getOrNull()
-                    if (problem?.type == SURVEY_RESPONSE_CONFLICT_TYPE &&
-                        problem.conflictOn == CONFLICT_ON_RESPONSE_NUMBER
-                    ) {
-                        SurveyResponseUploadOutcome.NumberTaken(
-                            problem.existingResponse?.submittedBy?.name,
-                            problem.existingResponse?.eventAt,
-                            problem.existingResponse?.responseNumber,
-                        )
-                    } else if (problem?.type == SURVEY_RESPONSE_CONFLICT_TYPE) {
+                    if (problem?.type == SURVEY_RESPONSE_CONFLICT_TYPE) {
                         SurveyResponseUploadOutcome.AlreadyAnswered(
                             submittedByName = problem.existingResponse?.submittedBy?.name,
                             eventAt = problem.existingResponse?.eventAt,
@@ -81,17 +72,7 @@ class SurveyResponseApi(private val client: HttpClient) {
                 401 -> SurveyResponseEditOutcome.Unauthorized
                 403 -> SurveyResponseEditOutcome.Forbidden
                 404 -> SurveyResponseEditOutcome.NotFound
-                409 -> {
-                    val problem = runCatching { response.body<SurveyResponseConflictProblem>() }.getOrNull()
-                    if (problem?.type == SURVEY_RESPONSE_CONFLICT_TYPE &&
-                        problem.conflictOn == CONFLICT_ON_RESPONSE_NUMBER
-                    ) {
-                        SurveyResponseEditOutcome.NumberTaken(
-                            problem.existingResponse?.submittedBy?.name,
-                            problem.existingResponse?.responseNumber,
-                        )
-                    } else SurveyResponseEditOutcome.InvalidData
-                }
+                409 -> SurveyResponseEditOutcome.InvalidData
                 else -> SurveyResponseEditOutcome.Retryable(null)
             }
         }.getOrElse { t ->
@@ -123,12 +104,6 @@ sealed interface SurveyResponseUploadOutcome {
         val submittedByName: String?,
         val eventAt: String?,
     ) : SurveyResponseUploadOutcome
-    data class NumberTaken(
-        val submittedByName: String?,
-        val eventAt: String?,
-        val existingResponseNumber: Int?,
-    ) : SurveyResponseUploadOutcome
-
     data object InvalidData : SurveyResponseUploadOutcome
     data object Forbidden : SurveyResponseUploadOutcome
     data object NotFound : SurveyResponseUploadOutcome
@@ -138,7 +113,6 @@ sealed interface SurveyResponseUploadOutcome {
 
 sealed interface SurveyResponseEditOutcome {
     data class Applied(val response: SurveyResponseResponse) : SurveyResponseEditOutcome
-    data class NumberTaken(val submittedByName: String?, val existingResponseNumber: Int?) : SurveyResponseEditOutcome
     data object InvalidData : SurveyResponseEditOutcome
     data object Forbidden : SurveyResponseEditOutcome
     data object NotFound : SurveyResponseEditOutcome

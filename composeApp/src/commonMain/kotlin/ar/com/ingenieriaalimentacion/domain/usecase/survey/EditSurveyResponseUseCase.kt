@@ -10,7 +10,7 @@ class EditSurveyResponseUseCase(private val repository: SurveyResponseEditReposi
         surveyId: String,
         surveyName: String,
         establishmentName: String,
-        responseNumber: Int,
+        responseNumber: Int? = null,
         answers: Map<String, SurveyAnswerValue>,
         eventAtMs: Long,
     ): Result<Unit> =

@@ -157,7 +157,7 @@ private fun SurveyResponseFormBody(
                         value = state.responseNumber.value,
                         onValueChange = { onAction(SurveyResponseFormAction.ResponseNumberChanged(it)) },
                         onFocusChange = { onAction(SurveyResponseFormAction.ResponseNumberFocusChanged(it)) },
-                        label = "Número de respuesta", required = true,
+                        label = "Número de respuesta", required = state.requiresResponseNumber == true,
                         error = state.responseNumber.displayError, enabled = !state.isSubmitting,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         scrollState = scrollState, isImeVisible = isImeVisible,

@@ -51,7 +51,7 @@ class SurveyResponseHistoryViewModel(
                 syncCoordinator.requestSync()
             }
             is SurveyResponseHistoryAction.FixResponseNumberClick -> _state.update {
-                it.copy(navigateToNumberFix = SurveyResponseNumberFixRoute(action.localId, action.surveyName, action.currentNumber))
+                it.copy(navigateToNumberFix = SurveyResponseNumberFixRoute(action.localId, action.surveyName))
             }
             is SurveyResponseHistoryAction.DiscardClick -> viewModelScope.launch {
                 // The reactive queue collector drops the row from `items` on its own.

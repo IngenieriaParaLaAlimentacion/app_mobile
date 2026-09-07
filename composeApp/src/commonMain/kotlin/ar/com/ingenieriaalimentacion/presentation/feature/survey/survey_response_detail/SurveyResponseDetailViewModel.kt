@@ -127,6 +127,7 @@ class SurveyResponseDetailViewModel(
                         else -> detail.targetLabel ?: detail.targetId.orEmpty()
                     },
                     eventAtLabel = formatEventAt(detail.eventAtMs),
+                    responseNumber = detail.responseNumber,
                     answeredQuestions = answered,
                     canEdit = canEdit,
                 )

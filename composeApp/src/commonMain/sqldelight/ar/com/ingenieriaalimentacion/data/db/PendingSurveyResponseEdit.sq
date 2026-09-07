@@ -40,6 +40,12 @@ SELECT * FROM PendingSurveyResponseEdit ORDER BY createdAt DESC;
 selectSyncable:
 SELECT * FROM PendingSurveyResponseEdit WHERE syncState = 'PENDING' ORDER BY createdAt ASC;
 
+selectAwaitingNumberPolicy:
+SELECT * FROM PendingSurveyResponseEdit
+WHERE syncState = 'FAILED'
+  AND responseNumber IS NULL
+  AND errorMessage = 'Falta el número de respuesta.';
+
 selectPendingForResponse:          -- the "coalesce into the still-unsent edit" lookup (Phase 3)
 SELECT * FROM PendingSurveyResponseEdit WHERE responseId = ? AND syncState = 'PENDING' LIMIT 1;
 

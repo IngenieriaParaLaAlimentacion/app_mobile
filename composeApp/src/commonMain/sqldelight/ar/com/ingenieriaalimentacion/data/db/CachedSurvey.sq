@@ -8,7 +8,8 @@ CREATE TABLE CachedSurvey (
     isActive      INTEGER NOT NULL,
     questionCount INTEGER NOT NULL,
     detailJson    TEXT,            -- full SurveyDetail JSON; NULL until GET /surveys/{id}
-    updatedAt     INTEGER NOT NULL
+    updatedAt     INTEGER NOT NULL,
+    requiresResponseNumber INTEGER
 );
 
 selectAll:
@@ -26,8 +27,8 @@ SELECT id FROM CachedSurvey WHERE detailJson IS NULL;
 -- (SurveyLocalStore, Phase 3) reads any existing detailJson first and re-passes it so a
 -- summary-list refresh doesn't blow away a previously cached detail.
 insertOrReplace:
-INSERT OR REPLACE INTO CachedSurvey(id, name, responseTarget, isActive, questionCount, detailJson, updatedAt)
-VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO CachedSurvey(id, name, responseTarget, isActive, questionCount, detailJson, updatedAt, requiresResponseNumber)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
 deleteAll:
 DELETE FROM CachedSurvey;

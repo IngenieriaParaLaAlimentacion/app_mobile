@@ -57,13 +57,15 @@ class DefaultSurveyResponseLocalStore(
             createdAt = upload.createdAt,
             updatedAt = upload.updatedAt,
             responseNumber = upload.responseNumber?.toLong(),
-            conflictKind = upload.conflict?.kind?.toDbString(),
-            conflictNumber = upload.conflict?.existingResponseNumber?.toLong(),
         )
     }
 
     override suspend fun syncable(): List<SurveyResponseUpload> = withContext(dispatcher) {
         queries.selectSyncable().executeAsList().map { it.toDomain() }
+    }
+
+    override suspend fun awaitingNumberPolicy(): List<SurveyResponseUpload> = withContext(dispatcher) {
+        queries.selectAwaitingNumberPolicy().executeAsList().map { it.toDomain() }
     }
 
     override suspend fun markSyncing(localId: String): Unit = withContext(dispatcher) {
@@ -83,8 +85,6 @@ class DefaultSurveyResponseLocalStore(
             queries.markConflict(
                 conflictBy = conflict.submittedByName,
                 conflictAt = conflict.eventAt,
-                conflictKind = conflict.kind.toDbString(),
-                conflictNumber = conflict.existingResponseNumber?.toLong(),
                 updatedAt = now(),
                 localId = localId,
             )
@@ -94,15 +94,6 @@ class DefaultSurveyResponseLocalStore(
         withContext(dispatcher) {
             queries.updateResponseNumber(responseNumber.toLong(), now(), localId)
         }
-
-    override suspend fun findBySurveyAndNumber(
-        surveyId: String,
-        responseNumber: Int,
-        excludeLocalId: String,
-    ): SurveyResponseUpload? = withContext(dispatcher) {
-        queries.selectBySurveyAndNumber(surveyId, responseNumber.toLong(), excludeLocalId)
-            .executeAsOneOrNull()?.toDomain()
-    }
 
     override suspend fun delete(localId: String): Unit = withContext(dispatcher) {
         queries.deleteById(localId)

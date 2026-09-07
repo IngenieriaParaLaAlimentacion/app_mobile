@@ -28,20 +28,27 @@ class DefaultSurveyResponseLocalStoreTest {
         store = DefaultSurveyResponseLocalStore(queries, now = { time }, dispatcher = Dispatchers.Unconfined)
     }
 
-    private fun row(localId: String, target: ResponseTargetRef) = SurveyResponseUpload(
+    private fun row(
+        localId: String,
+        target: ResponseTargetRef,
+        syncState: SyncState = SyncState.Pending,
+        responseNumber: Int? = null,
+        errorMessage: String? = null,
+    ) = SurveyResponseUpload(
         localId = localId,
         surveyId = "sv-1",
         surveyName = "Encuesta",
         target = target,
         answersJson = """{"q1":"opt-1"}""",
         eventAt = "2026-01-01T00:00:00Z",
-        syncState = SyncState.Pending,
+        syncState = syncState,
         canonicalId = null,
-        errorMessage = null,
+        errorMessage = errorMessage,
         conflict = null,
         attemptCount = 0,
         createdAt = 10L,
         updatedAt = 10L,
+        responseNumber = responseNumber,
     )
 
     @Test
@@ -56,6 +63,38 @@ class DefaultSurveyResponseLocalStoreTest {
         store.insert(row("r1", ResponseTargetRef.Establishment("est-1", "Comedor Norte")))
 
         assertEquals(ResponseTargetRef.Establishment("est-1", "Comedor Norte"), store.find("r1")?.target)
+    }
+
+    @Test
+    fun `awaiting number policy selects only the exact legacy failure`() = runTest {
+        val target = ResponseTargetRef.Anonymous
+        store.insert(
+            row(
+                "legacy",
+                target,
+                syncState = SyncState.Failed,
+                errorMessage = "Falta el número de respuesta.",
+            ),
+        )
+        store.insert(
+            row(
+                "other-error",
+                target,
+                syncState = SyncState.Failed,
+                errorMessage = "Las respuestas no son válidas.",
+            ),
+        )
+        store.insert(
+            row(
+                "has-number",
+                target,
+                syncState = SyncState.Failed,
+                responseNumber = 5,
+                errorMessage = "Falta el número de respuesta.",
+            ),
+        )
+
+        assertEquals(listOf("legacy"), store.awaitingNumberPolicy().map { it.localId })
     }
 
     @Test

@@ -25,7 +25,7 @@ fun SurveyResponseHistoryContentRoot(
     }
     LaunchedEffect(state.navigateToNumberFix) {
         state.navigateToNumberFix?.let { target ->
-            outerNav.navigate(Route.SurveyResponseNumberFix(target.localId, target.surveyName, target.currentNumber))
+            outerNav.navigate(Route.SurveyResponseNumberFix(target.localId, target.surveyName))
             viewModel.clearNavigation()
         }
     }

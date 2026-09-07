@@ -115,7 +115,7 @@ fun SurveyResponseEditScreen(
                             value = state.responseNumber.value,
                             onValueChange = { onAction(SurveyResponseEditAction.ResponseNumberChanged(it)) },
                             onFocusChange = { onAction(SurveyResponseEditAction.ResponseNumberFocusChanged(it)) },
-                            label = "Número de respuesta", required = true,
+                            label = "Número de respuesta", required = state.requiresResponseNumber == true,
                             error = state.responseNumber.displayError, enabled = !state.isSubmitting,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             scrollState = scrollState, isImeVisible = isImeVisible,

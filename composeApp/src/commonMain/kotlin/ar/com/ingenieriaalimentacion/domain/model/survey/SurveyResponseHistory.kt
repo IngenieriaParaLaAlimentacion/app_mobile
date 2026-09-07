@@ -27,14 +27,9 @@ data class SurveyResponseSummary(
     val responseNumber: Int? = null,
 )
 
-val SurveyResponseSummary.needsResponseNumber: Boolean
-    get() = isLocal && responseNumber == null
-
-val SurveyResponseSummary.hasRecoverableNumberConflict: Boolean
-    get() = conflict?.kind == ResponseConflictKind.ResponseNumber
-
-val SurveyResponseSummary.canFixResponseNumber: Boolean
-    get() = isLocal && (needsResponseNumber || hasRecoverableNumberConflict)
+val SurveyResponseSummary.needsRequiredResponseNumber: Boolean
+    get() = isLocal && syncState == SyncState.Failed && responseNumber == null &&
+        errorMessage == MISSING_REQUIRED_RESPONSE_NUMBER_MESSAGE
 
 /**
  * Full answers, from `GET /surveys/{surveyId}/responses/{id}` or (offline fallback) the local queue.
@@ -52,7 +47,7 @@ data class SurveyResponseDetail(
     val targetId: String?,
     val targetLabel: String?,
     val submittedById: String?,
-    val responseNumber: Int?,
+    val responseNumber: Int? = null,
     val answers: Map<String, SurveyAnswerValue>,
     val eventAtMs: Long,
 )

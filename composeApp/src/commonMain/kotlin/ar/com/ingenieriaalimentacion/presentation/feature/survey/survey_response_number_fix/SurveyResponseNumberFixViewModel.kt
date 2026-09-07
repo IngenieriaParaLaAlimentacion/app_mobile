@@ -8,7 +8,6 @@ import ar.com.ingenieriaalimentacion.core.validation.onChange
 import ar.com.ingenieriaalimentacion.core.validation.onFocus
 import ar.com.ingenieriaalimentacion.core.validation.showError
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
-import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyFeatureFailure
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.RESPONSE_NUMBER_RANGE
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.UpdateSurveyResponseNumberUseCase
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
@@ -37,7 +36,11 @@ class SurveyResponseNumberFixViewModel(
         _state.value = state.copy(isSubmitting = true, submitError = null)
         viewModelScope.launch { updateResponseNumber(route.localId, number).fold(
             onSuccess = { syncCoordinator.requestSync(); _state.update { it.copy(isSubmitting = false, destination = SurveyResponseNumberFixDestination.Back) } },
-            onFailure = { error -> _state.update { it.copy(isSubmitting = false, submitError = if (error is SurveyFeatureFailure) "Ya tenés otra respuesta con ese número en esta encuesta." else "No se pudo guardar el número.") } },
+            onFailure = { _ ->
+                _state.update {
+                    it.copy(isSubmitting = false, submitError = "No se pudo guardar el número.")
+                }
+            },
         ) }
     }
     private val validator: Validator = Rules.of(Rules.required("Ingresá el número de respuesta."), Rules.digitsInRange(RESPONSE_NUMBER_RANGE, "Ingresá un número entre 1 y 999999."))

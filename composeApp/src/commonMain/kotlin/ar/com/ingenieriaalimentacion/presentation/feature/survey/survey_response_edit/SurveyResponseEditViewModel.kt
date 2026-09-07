@@ -57,10 +57,20 @@ class SurveyResponseEditViewModel(
             SurveyResponseEditAction.BackClick ->
                 _state.update { it.copy(destination = SurveyResponseEditDestination.Back) }
             is SurveyResponseEditAction.ResponseNumberChanged -> _state.update {
-                it.copy(responseNumber = it.responseNumber.onChange(action.value.filter(Char::isDigit), responseNumberValidator))
+                it.copy(
+                    responseNumber = it.responseNumber.onChange(
+                        action.value.filter(Char::isDigit),
+                        responseNumberValidator(it.requiresResponseNumber == true),
+                    ),
+                )
             }
             is SurveyResponseEditAction.ResponseNumberFocusChanged -> _state.update {
-                it.copy(responseNumber = it.responseNumber.onFocus(action.focused, responseNumberValidator))
+                it.copy(
+                    responseNumber = it.responseNumber.onFocus(
+                        action.focused,
+                        responseNumberValidator(it.requiresResponseNumber == true),
+                    ),
+                )
             }
         }
     }
@@ -99,6 +109,7 @@ class SurveyResponseEditViewModel(
                     originalAnswers = fieldStates,
                     responseNumber = TextFieldState(detail.responseNumber?.toString().orEmpty()),
                     originalResponseNumber = detail.responseNumber?.toString().orEmpty(),
+                    requiresResponseNumber = surveyDetail.requiresResponseNumber,
                 )
             }
         }
@@ -108,11 +119,17 @@ class SurveyResponseEditViewModel(
         val current = _state.value
         val validated = current.copy(
             answers = forceShowAllErrors(current.questions, current.answers),
-            responseNumber = current.responseNumber.showError(responseNumberValidator),
+            responseNumber = current.responseNumber.showError(
+                responseNumberValidator(current.requiresResponseNumber == true),
+            ),
         )
 
         val allValid = validated.questions.all { q -> q.isFieldValid(validated.answers[q.id] ?: return@all false) }
-        if (!allValid || !validated.responseNumber.isValid || validated.responseNumber.value.isBlank()) {
+        val responseNumber = validated.responseNumber.value.takeIf(String::isNotBlank)?.toIntOrNull()
+        if (!allValid || !validated.responseNumber.isValid ||
+            (validated.requiresResponseNumber == true && responseNumber == null) ||
+            (responseNumber != null && responseNumber !in RESPONSE_NUMBER_RANGE)
+        ) {
             _state.update { validated }
             return
         }
@@ -126,7 +143,7 @@ class SurveyResponseEditViewModel(
                 surveyId = validated.surveyId,
                 surveyName = validated.surveyName,
                 establishmentName = validated.targetLabel,
-                responseNumber = validated.responseNumber.value.toInt(),
+                responseNumber = responseNumber,
                 answers = answers,
                 // A new, client-clock event_at for this edit attempt — distinct from the
                 // original response's event_at.
@@ -145,8 +162,8 @@ class SurveyResponseEditViewModel(
         }
     }
 
-    private val responseNumberValidator: Validator = Rules.of(
-        Rules.required("Ingresá el número de respuesta."),
+    private fun responseNumberValidator(required: Boolean): Validator = Rules.of(
+        *(if (required) arrayOf(Rules.required("Ingresá el número de respuesta.")) else emptyArray()),
         Rules.digitsInRange(RESPONSE_NUMBER_RANGE, "Ingresá un número entre 1 y 999999."),
     )
 }

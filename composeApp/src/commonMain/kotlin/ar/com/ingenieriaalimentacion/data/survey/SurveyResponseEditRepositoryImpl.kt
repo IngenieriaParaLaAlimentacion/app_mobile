@@ -7,11 +7,13 @@ import ar.com.ingenieriaalimentacion.data.survey.mapper.toRequest
 import ar.com.ingenieriaalimentacion.domain.model.subject.MAX_SYNC_ATTEMPTS
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncSummary
+import ar.com.ingenieriaalimentacion.domain.model.survey.MISSING_REQUIRED_RESPONSE_NUMBER_MESSAGE
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyAnswerValue
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseEditStatus
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseEditUpload
 import ar.com.ingenieriaalimentacion.domain.model.survey.isEligibleAt
 import ar.com.ingenieriaalimentacion.domain.repository.SurveyResponseEditRepository
+import ar.com.ingenieriaalimentacion.domain.repository.SurveyRepository
 import ar.com.ingenieriaalimentacion.domain.util.IdGenerator
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -32,6 +34,7 @@ class SurveyResponseEditRepositoryImpl(
     private val api: SurveyResponseApi,
     private val local: SurveyResponseEditLocalStore,
     private val responses: SurveyResponseLocalStore,
+    private val surveys: SurveyRepository,
     private val idGenerator: IdGenerator,
     private val json: Json,
     private val now: () -> Long,
@@ -42,7 +45,7 @@ class SurveyResponseEditRepositoryImpl(
         surveyId: String,
         surveyName: String,
         establishmentName: String,
-        responseNumber: Int,
+        responseNumber: Int?,
         answers: Map<String, SurveyAnswerValue>,
         eventAtMs: Long,
     ): Result<Unit> = runCatching {
@@ -82,7 +85,10 @@ class SurveyResponseEditRepositoryImpl(
         var synced = 0
         var failed = 0
         var pending = 0
-        local.syncable().filter { it.isEligibleAt(now()) }.forEach { edit ->
+        val candidates = (
+            local.syncable().filter { it.isEligibleAt(now()) } + local.awaitingNumberPolicy()
+        ).distinctBy { it.editId }
+        candidates.forEach { edit ->
             // Gate on the parent response's own queue state (no schema JOIN, same pattern as
             // MeasurementRepositoryImpl's subject gate). No local row → this device never created
             // it (fetched from the server, e.g. cross-device edit) → assume synced, attempt directly.
@@ -101,21 +107,21 @@ class SurveyResponseEditRepositoryImpl(
             }
             val responseNumber = edit.responseNumber
             if (responseNumber == null) {
-                local.markFailed(edit.editId, MISSING_RESPONSE_NUMBER_MESSAGE)
-                failed++
-                return@forEach
+                val survey = surveys.getDetail(edit.surveyId).getOrNull() ?: run {
+                    pending++
+                    return@forEach
+                }
+                if (survey.requiresResponseNumber == true) {
+                    local.markFailed(edit.editId, MISSING_REQUIRED_RESPONSE_NUMBER_MESSAGE)
+                    failed++
+                    return@forEach
+                }
             }
             local.markSyncing(edit.editId)
-            when (val outcome = api.edit(edit.surveyId, edit.responseId, edit.toRequest(json, responseNumber))) {
+            when (val outcome = api.edit(edit.surveyId, edit.responseId, edit.toRequest(json))) {
                 is SurveyResponseEditOutcome.Applied -> {
                     local.markSynced(edit.editId)
                     synced++
-                }
-                is SurveyResponseEditOutcome.NumberTaken -> {
-                    val n = outcome.existingResponseNumber ?: responseNumber
-                    val who = outcome.submittedByName ?: "otra respuesta"
-                    local.markFailed(edit.editId, "El número $n ya lo usa $who. Editá el número y guardá de nuevo.")
-                    failed++
                 }
                 SurveyResponseEditOutcome.InvalidData -> {
                     local.markFailed(edit.editId, "Las respuestas no son válidas.")

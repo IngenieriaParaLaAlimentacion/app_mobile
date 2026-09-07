@@ -61,10 +61,20 @@ class SurveyResponseFormViewModel(
                     it.copy(answers = it.answers + (action.questionId to action.state), successMessage = null)
                 }
             is SurveyResponseFormAction.ResponseNumberChanged -> _state.update {
-                it.copy(responseNumber = it.responseNumber.onChange(action.value.filter(Char::isDigit), responseNumberValidator))
+                it.copy(
+                    responseNumber = it.responseNumber.onChange(
+                        action.value.filter(Char::isDigit),
+                        responseNumberValidator(it.requiresResponseNumber == true),
+                    ),
+                )
             }
             is SurveyResponseFormAction.ResponseNumberFocusChanged -> _state.update {
-                it.copy(responseNumber = it.responseNumber.onFocus(action.focused, responseNumberValidator))
+                it.copy(
+                    responseNumber = it.responseNumber.onFocus(
+                        action.focused,
+                        responseNumberValidator(it.requiresResponseNumber == true),
+                    ),
+                )
             }
 
             SurveyResponseFormAction.Submit -> submit()
@@ -98,6 +108,7 @@ class SurveyResponseFormViewModel(
                     answers = detail.questions.associate { q -> q.id to q.initialFieldState() },
                     target = target,
                     targetError = null,
+                    requiresResponseNumber = detail.requiresResponseNumber,
                 )
             }
         }
@@ -133,7 +144,9 @@ class SurveyResponseFormViewModel(
         val current = _state.value
         val validated = current.copy(
             answers = forceShowAllErrors(current.questions, current.answers),
-            responseNumber = current.responseNumber.showError(responseNumberValidator),
+            responseNumber = current.responseNumber.showError(
+                responseNumberValidator(current.requiresResponseNumber == true),
+            ),
             targetError = if (current.target == null) "Elegí para quién es esta respuesta." else null,
         )
 
@@ -155,7 +168,8 @@ class SurveyResponseFormViewModel(
                             it.copy(
                                 answers = it.questions.associate { q -> q.id to q.initialFieldState() },
                                 responseNumber = it.responseNumber.onChange(
-                                    ((it.responseNumber.value.toIntOrNull() ?: 0) + 1).toString(), responseNumberValidator,
+                                    it.responseNumber.value.toIntOrNull()?.plus(1)?.toString().orEmpty(),
+                                    responseNumberValidator(it.requiresResponseNumber == true),
                                 ),
                                 isSubmitting = false,
                                 submitError = null,
@@ -186,7 +200,9 @@ class SurveyResponseFormViewModel(
      *  resolved; otherwise `null`. */
     private fun buildNewResponse(state: SurveyResponseFormState): NewSurveyResponse? {
         val target = state.target ?: return null
-        val responseNumber = state.responseNumber.value.toIntOrNull()?.takeIf { it in RESPONSE_NUMBER_RANGE } ?: return null
+        val responseNumber = state.responseNumber.value.takeIf(String::isNotBlank)?.toIntOrNull()
+        if (state.requiresResponseNumber == true && responseNumber == null) return null
+        if (responseNumber != null && responseNumber !in RESPONSE_NUMBER_RANGE) return null
         val allValid = state.questions.all { q -> q.isFieldValid(state.answers[q.id] ?: return null) }
         if (!allValid) return null
         return NewSurveyResponse(
@@ -199,8 +215,8 @@ class SurveyResponseFormViewModel(
         )
     }
 
-    private val responseNumberValidator: Validator = Rules.of(
-        Rules.required("Ingresá el número de respuesta."),
+    private fun responseNumberValidator(required: Boolean): Validator = Rules.of(
+        *(if (required) arrayOf(Rules.required("Ingresá el número de respuesta.")) else emptyArray()),
         Rules.digitsInRange(RESPONSE_NUMBER_RANGE, "Ingresá un número entre 1 y 999999."),
     )
 }

@@ -5,12 +5,16 @@ import ar.com.ingenieriaalimentacion.domain.model.subject.MAX_SYNC_ATTEMPTS
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectUpload
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
+import ar.com.ingenieriaalimentacion.domain.model.survey.MISSING_REQUIRED_RESPONSE_NUMBER_MESSAGE
 import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseConflict
 import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseTargetRef
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyDetail
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseTarget
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseUpload
 import ar.com.ingenieriaalimentacion.domain.util.IdGenerator
 import ar.com.ingenieriaalimentacion.fake.FakeSubjectLocalStore
 import ar.com.ingenieriaalimentacion.fake.FakeSurveyResponseLocalStore
+import ar.com.ingenieriaalimentacion.fake.FakeSurveyRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -71,11 +75,17 @@ class SurveyResponseSyncEngineTest {
     }
 
     private val subjects = FakeSubjectLocalStore(now)
+    private val surveys = FakeSurveyRepository().apply {
+        detailResult = Result.success(
+            SurveyDetail("sv-1", "Encuesta", SurveyResponseTarget.Establishment, true, emptyList()),
+        )
+    }
 
     private val repo = SurveyResponseRepositoryImpl(
         api = api,
         local = store,
         subjects = subjects,
+        surveys = surveys,
         idGenerator = object : IdGenerator { override fun newId() = "generated" },
         json = json,
         now = now,
@@ -96,6 +106,8 @@ class SurveyResponseSyncEngineTest {
         createdAt: Long = 0L,
         updatedAt: Long = 0L,
         target: ResponseTargetRef = ResponseTargetRef.Establishment("est-1", "Norte"),
+        responseNumber: Int? = 7,
+        errorMessage: String? = null,
     ) = SurveyResponseUpload(
         localId = localId,
         surveyId = "sv-1",
@@ -105,12 +117,97 @@ class SurveyResponseSyncEngineTest {
         eventAt = "2026-01-01T00:00:00Z",
         syncState = syncState,
         canonicalId = null,
-        errorMessage = null,
+        errorMessage = errorMessage,
         conflict = null,
         attemptCount = attemptCount,
         createdAt = createdAt,
         updatedAt = updatedAt,
+        responseNumber = responseNumber,
     )
+
+    private fun setNumberPolicy(required: Boolean?) {
+        surveys.detailResult = Result.success(
+            SurveyDetail(
+                "sv-1",
+                "Encuesta",
+                SurveyResponseTarget.Establishment,
+                true,
+                emptyList(),
+                required,
+            ),
+        )
+    }
+
+    @Test
+    fun `optional numberless response omits response number and syncs`() = runTest {
+        setNumberPolicy(false)
+        store.insert(row("r1", responseNumber = null))
+        responder = { respond(successBody("r1"), HttpStatusCode.Created, jsonHeaders()) }
+
+        repo.syncPending()
+
+        assertEquals(SyncState.Synced, store.current("r1")?.syncState)
+        assertFalse(sentBodies.single().contains("response_number"))
+    }
+
+    @Test
+    fun `required numberless response stays failed without posting`() = runTest {
+        setNumberPolicy(true)
+        store.insert(row("r1", responseNumber = null))
+
+        repo.syncPending()
+
+        assertEquals(SyncState.Failed, store.current("r1")?.syncState)
+        assertEquals(MISSING_REQUIRED_RESPONSE_NUMBER_MESSAGE, store.current("r1")?.errorMessage)
+        assertEquals(0, apiCalls)
+    }
+
+    @Test
+    fun `legacy missing-number failure is recovered only for optional policy`() = runTest {
+        setNumberPolicy(null)
+        store.insert(
+            row(
+                "r1",
+                syncState = SyncState.Failed,
+                responseNumber = null,
+                errorMessage = MISSING_REQUIRED_RESPONSE_NUMBER_MESSAGE,
+            ),
+        )
+        responder = { respond(successBody("r1"), HttpStatusCode.Created, jsonHeaders()) }
+
+        repo.syncPending()
+
+        assertEquals(SyncState.Synced, store.current("r1")?.syncState)
+    }
+
+    @Test
+    fun `policy fetch failure preserves numberless row for later retry`() = runTest {
+        surveys.detailResult = Result.failure(IllegalStateException("offline"))
+        store.insert(row("r1", responseNumber = null))
+
+        repo.syncPending()
+
+        assertEquals(SyncState.Pending, store.current("r1")?.syncState)
+        assertEquals(0, apiCalls)
+    }
+
+    @Test
+    fun `unrelated terminal failure is not selected for policy recovery`() = runTest {
+        setNumberPolicy(false)
+        store.insert(
+            row(
+                "r1",
+                syncState = SyncState.Failed,
+                responseNumber = null,
+                errorMessage = "Las respuestas no son válidas.",
+            ),
+        )
+
+        repo.syncPending()
+
+        assertEquals("Las respuestas no son válidas.", store.current("r1")?.errorMessage)
+        assertEquals(0, apiCalls)
+    }
 
     @Test
     fun `Created maps to Synced and counts`() = runTest {

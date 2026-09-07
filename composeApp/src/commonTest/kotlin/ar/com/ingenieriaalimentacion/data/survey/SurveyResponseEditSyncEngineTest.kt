@@ -1,13 +1,17 @@
 package ar.com.ingenieriaalimentacion.data.survey
 
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
+import ar.com.ingenieriaalimentacion.domain.model.survey.MISSING_REQUIRED_RESPONSE_NUMBER_MESSAGE
+import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseTargetRef
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyAnswerValue
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseEditUpload
-import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseTargetRef
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyDetail
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseTarget
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseUpload
 import ar.com.ingenieriaalimentacion.domain.util.IdGenerator
 import ar.com.ingenieriaalimentacion.fake.FakeSurveyResponseEditLocalStore
 import ar.com.ingenieriaalimentacion.fake.FakeSurveyResponseLocalStore
+import ar.com.ingenieriaalimentacion.fake.FakeSurveyRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -35,6 +39,11 @@ class SurveyResponseEditSyncEngineTest {
     private val now: () -> Long = { currentTime }
     private val editStore = FakeSurveyResponseEditLocalStore(now)
     private val responseStore = FakeSurveyResponseLocalStore(now)
+    private val surveys = FakeSurveyRepository().apply {
+        detailResult = Result.success(
+            SurveyDetail("s1", "Encuesta", SurveyResponseTarget.Establishment, true, emptyList()),
+        )
+    }
     private val json = Json { ignoreUnknownKeys = true }
 
     private var responder: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData =
@@ -53,6 +62,7 @@ class SurveyResponseEditSyncEngineTest {
         api = api,
         local = editStore,
         responses = responseStore,
+        surveys = surveys,
         idGenerator = object : IdGenerator { override fun newId() = "generated-edit-${idCounter++}" },
         json = json,
         now = now,
@@ -82,7 +92,13 @@ class SurveyResponseEditSyncEngineTest {
         updatedAt = 0L,
     )
 
-    private fun editRow(editId: String, responseId: String, syncState: SyncState = SyncState.Pending) =
+    private fun editRow(
+        editId: String,
+        responseId: String,
+        syncState: SyncState = SyncState.Pending,
+        responseNumber: Int? = 7,
+        errorMessage: String? = null,
+    ) =
         SurveyResponseEditUpload(
             editId = editId,
             responseId = responseId,
@@ -92,11 +108,49 @@ class SurveyResponseEditSyncEngineTest {
             answersJson = """{"q1":"opt-2"}""",
             eventAt = "2026-01-01T01:00:00Z",
             syncState = syncState,
-            errorMessage = null,
+            errorMessage = errorMessage,
             attemptCount = 0,
             createdAt = 0L,
             updatedAt = 0L,
+            responseNumber = responseNumber,
         )
+
+    @Test
+    fun `optional numberless edit omits response number and syncs`() = runTest {
+        surveys.detailResult = Result.success(
+            SurveyDetail("s1", "Encuesta", SurveyResponseTarget.Establishment, true, emptyList(), false),
+        )
+        editStore.insert(editRow("e1", "r-remote", responseNumber = null))
+        responder = { respond(successBody("r-remote"), HttpStatusCode.OK, jsonHeaders()) }
+
+        val summary = repo.syncPending()
+
+        assertEquals(SyncState.Synced, editStore.current("e1")?.syncState)
+        assertEquals(1, summary.synced)
+    }
+
+    @Test
+    fun `required numberless edit remains failed`() = runTest {
+        surveys.detailResult = Result.success(
+            SurveyDetail("s1", "Encuesta", SurveyResponseTarget.Establishment, true, emptyList(), true),
+        )
+        editStore.insert(editRow("e1", "r-remote", responseNumber = null))
+
+        repo.syncPending()
+
+        assertEquals(SyncState.Failed, editStore.current("e1")?.syncState)
+        assertEquals(MISSING_REQUIRED_RESPONSE_NUMBER_MESSAGE, editStore.current("e1")?.errorMessage)
+    }
+
+    @Test
+    fun `edit policy fetch failure preserves queue state`() = runTest {
+        surveys.detailResult = Result.failure(IllegalStateException("offline"))
+        editStore.insert(editRow("e1", "r-remote", responseNumber = null))
+
+        repo.syncPending()
+
+        assertEquals(SyncState.Pending, editStore.current("e1")?.syncState)
+    }
 
     @Test
     fun `edit held Pending while parent response is still Pending`() = runTest {

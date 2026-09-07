@@ -27,9 +27,7 @@ CREATE TABLE PendingSurveyResponse (
     attemptCount   INTEGER NOT NULL DEFAULT 0,
     createdAt      INTEGER NOT NULL,
     updatedAt      INTEGER NOT NULL,
-    responseNumber INTEGER,
-    conflictKind   TEXT,
-    conflictNumber INTEGER
+    responseNumber INTEGER
 );
 
 CREATE INDEX PendingSurveyResponse_state ON PendingSurveyResponse(syncState);
@@ -37,14 +35,20 @@ CREATE INDEX PendingSurveyResponse_state ON PendingSurveyResponse(syncState);
 insert:
 INSERT INTO PendingSurveyResponse(localId, surveyId, surveyName, responseTarget, targetId,
     targetLabel, answersJson, eventAt, syncState, canonicalId, errorMessage, conflictBy,
-    conflictAt, attemptCount, createdAt, updatedAt, responseNumber, conflictKind, conflictNumber)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    conflictAt, attemptCount, createdAt, updatedAt, responseNumber)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectAll:
 SELECT * FROM PendingSurveyResponse ORDER BY createdAt DESC;
 
 selectSyncable:
 SELECT * FROM PendingSurveyResponse WHERE syncState = 'PENDING' ORDER BY createdAt ASC;
+
+selectAwaitingNumberPolicy:
+SELECT * FROM PendingSurveyResponse
+WHERE syncState = 'FAILED'
+  AND responseNumber IS NULL
+  AND errorMessage = 'Falta el número de respuesta.';
 
 selectById:
 SELECT * FROM PendingSurveyResponse WHERE localId = ?;
@@ -65,7 +69,7 @@ WHERE syncState = 'FAILED' AND updatedAt < :cutoff;
 
 markSynced:
 UPDATE PendingSurveyResponse SET syncState = 'SYNCED', canonicalId = ?, errorMessage = NULL,
-    conflictBy = NULL, conflictAt = NULL, conflictKind = NULL, conflictNumber = NULL,
+    conflictBy = NULL, conflictAt = NULL,
     updatedAt = ? WHERE localId = ?;
 
 markFailed:
@@ -76,24 +80,18 @@ UPDATE PendingSurveyResponse SET syncState = 'FAILED', errorMessage = ?,
 -- so the backoff sweep never picks this row up again. Only an explicit Descartar clears it.
 markConflict:
 UPDATE PendingSurveyResponse SET syncState = 'FAILED', errorMessage = NULL, conflictBy = ?,
-    conflictAt = ?, conflictKind = ?, conflictNumber = ?, attemptCount = attemptCount + 1,
-    updatedAt = ? WHERE localId = ?;
+    conflictAt = ?, attemptCount = attemptCount + 1, updatedAt = ? WHERE localId = ?;
 
 -- Clears the conflict columns too. The UI never offers Reintentar on a conflicted row, but if it
 -- ever did, leaving them set would wedge the row in a PENDING state that isEligibleAt permanently
 -- skips: invisible to the sweep and no longer rendered as a conflict.
 resetForRetry:
 UPDATE PendingSurveyResponse SET syncState = 'PENDING', errorMessage = NULL, conflictBy = NULL,
-    conflictAt = NULL, conflictKind = NULL, conflictNumber = NULL, attemptCount = 0, updatedAt = ? WHERE localId = ?;
+    conflictAt = NULL, attemptCount = 0, updatedAt = ? WHERE localId = ?;
 
 updateResponseNumber:
 UPDATE PendingSurveyResponse SET responseNumber = ?, syncState = 'PENDING', errorMessage = NULL,
     attemptCount = 0, updatedAt = ? WHERE localId = ?;
-
-selectBySurveyAndNumber:
-SELECT * FROM PendingSurveyResponse
-WHERE surveyId = :surveyId AND responseNumber = :responseNumber AND localId != :excludeLocalId
-LIMIT 1;
 
 deleteById:
 DELETE FROM PendingSurveyResponse WHERE localId = ?;

@@ -83,6 +83,7 @@ class SqlDelightDatabaseCleanerTest {
             questionCount = 3L,
             detailJson = null,
             updatedAt = 10L,
+            requiresResponseNumber = null,
         )
         database.pendingSurveyResponseQueries.insert(
             localId = "sr-1",
@@ -101,6 +102,7 @@ class SqlDelightDatabaseCleanerTest {
             attemptCount = 0L,
             createdAt = 10L,
             updatedAt = 10L,
+            responseNumber = null,
         )
         database.pendingSurveyResponseEditQueries.insert(
             editId = "se-1",
@@ -115,6 +117,7 @@ class SqlDelightDatabaseCleanerTest {
             attemptCount = 0L,
             createdAt = 10L,
             updatedAt = 10L,
+            responseNumber = null,
         )
     }
 

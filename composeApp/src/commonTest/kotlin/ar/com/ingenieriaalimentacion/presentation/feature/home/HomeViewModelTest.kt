@@ -4,6 +4,8 @@ import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.di.AppScope
+import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovement
+import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementDirection
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.Profile
@@ -12,6 +14,7 @@ import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseSummary
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseTarget
+import ar.com.ingenieriaalimentacion.domain.usecase.food.ObserveFoodMovementsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.ObserveMeasurementsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
@@ -20,6 +23,7 @@ import ar.com.ingenieriaalimentacion.domain.usecase.profile.SetCurrentEstablishm
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.ObserveSubjectUploadsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.ObserveSurveyResponseUploadsUseCase
 import ar.com.ingenieriaalimentacion.fake.FakeConnectivityObserver
+import ar.com.ingenieriaalimentacion.fake.FakeFoodMovementHistoryRepository
 import ar.com.ingenieriaalimentacion.fake.FakeMeasurementHistoryRepository
 import ar.com.ingenieriaalimentacion.fake.FakeProfileRepository
 import ar.com.ingenieriaalimentacion.fake.FakeSubjectHistoryRepository
@@ -78,6 +82,7 @@ class HomeViewModelTest {
         subjectRepo: FakeSubjectHistoryRepository = FakeSubjectHistoryRepository(),
         measurementRepo: FakeMeasurementHistoryRepository = FakeMeasurementHistoryRepository(),
         surveyResponseRepo: FakeSurveyResponseHistoryRepository = FakeSurveyResponseHistoryRepository(),
+        foodMovementRepo: FakeFoodMovementHistoryRepository = FakeFoodMovementHistoryRepository(),
         profileRepo: FakeProfileRepository,
         connectivity: FakeConnectivityObserver = FakeConnectivityObserver(initial = true),
     ): HomeViewModel {
@@ -86,6 +91,7 @@ class HomeViewModelTest {
             observeSubjectUploads = ObserveSubjectUploadsUseCase(subjectRepo),
             observeMeasurements = ObserveMeasurementsUseCase(measurementRepo),
             observeSurveyResponseUploads = ObserveSurveyResponseUploadsUseCase(surveyResponseRepo),
+            observeFoodMovements = ObserveFoodMovementsUseCase(foodMovementRepo),
             getMyProfile = GetMyProfileUseCase(profileRepo),
             getMyEstablishments = GetMyEstablishmentsUseCase(profileRepo),
             getCurrentEstablishment = GetCurrentEstablishmentUseCase(profileRepo),
@@ -226,6 +232,38 @@ class HomeViewModelTest {
             assertEquals(RecentActivityUi.Kind.SurveyResponse, row.kind)
             assertEquals("Escuela 1", row.subtitle)
             assertEquals("Pendiente", row.badgeText)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `a food movement appears in recent activity`() = runTest(dispatcher) {
+        val foodMovementRepo = FakeFoodMovementHistoryRepository()
+        val profileRepo = FakeProfileRepository().apply {
+            meResult = Result.success(profile("field_worker"))
+            myEstablishmentsResult = Result.success(emptyList())
+        }
+        val vm = viewModel(foodMovementRepo = foodMovementRepo, profileRepo = profileRepo)
+
+        vm.state.test {
+            awaitState { it.roleLabel != null }
+
+            foodMovementRepo.localMerged.value = listOf(
+                FoodMovement(
+                    id = "fi1",
+                    direction = FoodMovementDirection.Intake,
+                    occurredAt = "2026-06-29T12:00:00Z",
+                    occurredAtMillis = 1_782_388_800_000L,
+                    establishmentName = "Escuela 1",
+                    lines = emptyList(),
+                ),
+            )
+            val afterEmission = awaitState { it.recent.any { row -> row.id == "Intake:fi1" } }
+            val row = afterEmission.recent.single { it.id == "Intake:fi1" }
+            assertEquals(RecentActivityUi.Kind.FoodIntake, row.kind)
+            assertEquals("Ingreso de alimentos", row.title)
+            assertEquals("Escuela 1", row.subtitle)
+            assertEquals("0 alimentos", row.badgeText)
             cancelAndIgnoreRemainingEvents()
         }
     }

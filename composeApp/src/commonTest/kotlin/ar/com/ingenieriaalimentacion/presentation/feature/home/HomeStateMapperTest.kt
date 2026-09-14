@@ -1,6 +1,8 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.home
 
 import ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlBadgeTone
+import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovement
+import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementDirection
 import ar.com.ingenieriaalimentacion.domain.model.measurement.ClinicalAlert
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
@@ -290,6 +292,87 @@ class HomeStateMapperTest {
             timeZone = tz,
         )
         assertEquals(listOf("old-remote"), state.recent.map { it.id })
+    }
+
+    private fun foodMovement(
+        id: String = "fi1",
+        direction: FoodMovementDirection = FoodMovementDirection.Intake,
+        occurredAtMillis: Long = now,
+        lineCount: Int = 2,
+    ) = FoodMovement(
+        id = id,
+        direction = direction,
+        occurredAt = "2026-06-29T12:00:00Z",
+        occurredAtMillis = occurredAtMillis,
+        establishmentName = "Comedor Los Aromos",
+        lines = List(lineCount) {
+            ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementLine(
+                foodId = "f$it",
+                foodName = "Alimento $it",
+                quantity = "1.000",
+                unit = ar.com.ingenieriaalimentacion.domain.model.food.FoodUnit.Kilogramos,
+            )
+        },
+    )
+
+    @Test
+    fun `recent merges all four sources, sorts desc, caps at 4`() {
+        val state = deriveState(
+            subjects = listOf(subject(localId = "s1", createdAt = now - 1_000L)),
+            measurements = listOf(measurement(localId = "m1", createdAt = now - 2_000L)),
+            surveyResponses = listOf(
+                surveyResponse(id = "sr1", eventAt = "2026-06-29T11:59:57Z"),
+                surveyResponse(id = "sr2", eventAt = "2026-06-29T11:59:55Z"),
+            ),
+            // The survey fixtures are dated after `now`, so the food rows are pinned above them
+            // to prove the cap is applied across sources rather than per source.
+            foodMovements = listOf(
+                foodMovement(id = "fi1", occurredAtMillis = 1_782_800_000_000L),
+                foodMovement(
+                    id = "fo1",
+                    direction = FoodMovementDirection.Outflow,
+                    occurredAtMillis = 1_782_799_000_000L,
+                ),
+            ),
+            online = true,
+            now = now,
+            timeZone = tz,
+        )
+
+        assertEquals(4, state.recent.size)
+        val timestamps = state.recent.map { it.createdAt }
+        assertEquals(timestamps.sortedDescending(), timestamps)
+        // RECENT_LIMIT is global across sources, so the two newest food rows crowd out the oldest.
+        assertEquals(listOf("Intake:fi1", "Outflow:fo1"), state.recent.take(2).map { it.id })
+    }
+
+    @Test
+    fun `a food movement maps to its direction kind with a line-count badge`() {
+        val rows = deriveState(
+            subjects = emptyList(),
+            measurements = emptyList(),
+            foodMovements = listOf(
+                foodMovement(id = "fi1", lineCount = 1),
+                foodMovement(id = "fo1", direction = FoodMovementDirection.Outflow, occurredAtMillis = now - 1L),
+            ),
+            online = true,
+            now = now,
+            timeZone = tz,
+        ).recent
+
+        val intake = rows.single { it.id == "Intake:fi1" }
+        assertEquals(RecentActivityUi.Kind.FoodIntake, intake.kind)
+        assertEquals("Ingreso de alimentos", intake.title)
+        assertEquals("Comedor Los Aromos", intake.subtitle)
+        assertNull(intake.value)
+        assertEquals("1 alimento", intake.badgeText)
+        assertEquals(AlBadgeTone.Neutral, intake.badgeTone)
+        assertEquals(now, intake.createdAt)
+
+        val outflow = rows.single { it.id == "Outflow:fo1" }
+        assertEquals(RecentActivityUi.Kind.FoodOutflow, outflow.kind)
+        assertEquals("Salida de alimentos", outflow.title)
+        assertEquals("2 alimentos", outflow.badgeText)
     }
 
     private fun alert(severity: String, type: String = "IMC") =

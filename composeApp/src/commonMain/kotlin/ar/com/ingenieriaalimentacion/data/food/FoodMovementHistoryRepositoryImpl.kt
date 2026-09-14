@@ -18,13 +18,10 @@ import kotlinx.serialization.json.Json
  * win an id collision (ADR-009 is vacuous here).
  *
  * **One request per page.** The backend accepts a repeated `type`, so ingresos and salidas are
- * asked for together and come back already merged, sorted and paginated as a single feed. There is
- * no client-side merge and therefore no cutoff to apply: every page is a complete global prefix, so
- * nothing has to be held back from the screen.
+ * asked for together and come back already merged, sorted and paginated as a single feed. Every
+ * page is therefore a complete global prefix, with nothing to hold back from the screen.
  *
- * Responses are still split by direction on the way into the cache — `CachedActivityItem` is keyed
- * by a single `type` column, and keeping two keys preserves the 200-row cap *per direction* as well
- * as [observeLocalMerged]'s two-flow `combine`.
+ * Responses are still split by direction on the way into the cache — see [persist].
  */
 class FoodMovementHistoryRepositoryImpl(
     private val api: FoodMovementActivityApi,
@@ -47,10 +44,10 @@ class FoodMovementHistoryRepositoryImpl(
                 persist(movements)
                 Result.success(
                     FoodMovementHistoryPage(
-                        // Re-sorted locally even though the server already ordered the page: a row
-                        // whose `occurred_at` failed to parse is dropped by the mapper, and the cache
-                        // flow sorts the same way, so both paths must agree byte for byte.
-                        items = movements.sortedNewestFirst(),
+                        // Server order is kept as-is: the page arrives ordered and `mapNotNull`
+                        // preserves the relative order of the rows it keeps. Only `cachedPage`
+                        // needs a sort, because it concatenates two separately-ordered cache keys.
+                        items = movements,
                         // `total_pages`, not `items.size >= pageSize`: the envelope is authoritative
                         // and the heuristic costs a wasted round-trip on an exactly-full last page.
                         hasMore = page < response.totalPages,
@@ -80,19 +77,19 @@ class FoodMovementHistoryRepositoryImpl(
      * page is regrouped by direction before it is written — that keeps the 200-row cap per direction
      * and keeps [observeLocalMerged]'s two-flow `combine` working unchanged.
      *
-     * Both keys are written on every page, including with an empty list, so a direction that
-     * contributed no rows to this page is a no-op rather than a stale write.
+     * A direction that contributed no rows to this page is skipped rather than written empty:
+     * `upsertPage` always opens a transaction and runs the cap eviction, so an empty write would
+     * cost a commit and a spurious flow emission for no change.
      */
     private suspend fun persist(movements: List<FoodMovement>) {
         val byDirection = movements.groupBy { it.direction }
-        cache.upsertPage(
-            ActivityItemType.FOOD_INTAKE,
-            byDirection[FoodMovementDirection.Intake].orEmpty().map { it.toCachedRow() },
-        )
-        cache.upsertPage(
-            ActivityItemType.FOOD_OUTFLOW,
-            byDirection[FoodMovementDirection.Outflow].orEmpty().map { it.toCachedRow() },
-        )
+        persist(ActivityItemType.FOOD_INTAKE, byDirection[FoodMovementDirection.Intake])
+        persist(ActivityItemType.FOOD_OUTFLOW, byDirection[FoodMovementDirection.Outflow])
+    }
+
+    private suspend fun persist(type: ActivityItemType, movements: List<FoodMovement>?) {
+        if (movements.isNullOrEmpty()) return
+        cache.upsertPage(type, movements.map { it.toCachedRow() })
     }
 
     private suspend fun cachedPage(page: Int, pageSize: Int): List<FoodMovement> {

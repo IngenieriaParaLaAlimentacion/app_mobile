@@ -131,7 +131,7 @@ class FoodMovementHistoryRepositoryImplTest {
     }
 
     @Test
-    fun `a page with rows in only one direction still writes both cache keys`() = runTest {
+    fun `a page with rows in only one direction leaves the other cache key intact`() = runTest {
         cache.seed(
             ActivityItemType.FOOD_OUTFLOW,
             listOf(CachedActivityRow(id = "out:seeded", occurredAtMillis = 1L, payloadJson = "{}")),
@@ -141,7 +141,7 @@ class FoodMovementHistoryRepositoryImplTest {
         repo.getPage(page = 1, pageSize = 20).getOrThrow()
 
         assertEquals(listOf("in:i1"), cache.getPage(ActivityItemType.FOOD_INTAKE, 20, 0).map { it.id })
-        // The empty-list upsert is a no-op: it must not clear the direction that contributed nothing.
+        // The direction that contributed nothing is not written at all, so it keeps its rows.
         assertEquals(listOf("out:seeded"), cache.getPage(ActivityItemType.FOOD_OUTFLOW, 20, 0).map { it.id })
     }
 

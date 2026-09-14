@@ -32,8 +32,8 @@ data class FoodMovementLine(
  *
  * There is no `SyncState` and no `isLocal`: food movements have no offline queue, so every row here
  * is by definition already on the server. There is no `source` either — the app renders no "origen
- * de la carga". [occurredAtMillis] is denormalized alongside the ISO [occurredAt] so sorting,
- * day-grouping and the pagination watermark all read the *same* parsed value.
+ * de la carga". [occurredAtMillis] is denormalized alongside the ISO [occurredAt] so sorting and
+ * day-grouping read the *same* parsed value.
  */
 @Serializable
 data class FoodMovement(

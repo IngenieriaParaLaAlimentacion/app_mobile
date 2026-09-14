@@ -12,7 +12,7 @@ import kotlinx.serialization.Serializable
  * One DTO tree serves BOTH directions: the two payloads are column-for-column identical on the
  * wire (the backend's `received_at` vs `occurred_at` asymmetry never surfaces — mobile reads only
  * the item-level `occurred_at`). The direction comes from which sibling key is populated, which is
- * in turn decided by the `type` this call filtered on.
+ * now decided per item, since one response interleaves both directions.
  */
 @Serializable
 data class FoodActivityFoodRefResponse(val id: String, val name: String)
@@ -55,7 +55,10 @@ data class FoodMovementActivityPayloadResponse(
     val items: List<FoodActivityLineResponse> = emptyList(),
 )
 
-/** Exactly one of [foodIntake]/[foodOutflow] is populated, decided by the `type` filter used. */
+/**
+ * Exactly one of [foodIntake]/[foodOutflow] is populated, **per item** — a single response
+ * interleaves ingresos and salidas.
+ */
 @Serializable
 data class FoodMovementActivityItemResponse(
     val type: String,

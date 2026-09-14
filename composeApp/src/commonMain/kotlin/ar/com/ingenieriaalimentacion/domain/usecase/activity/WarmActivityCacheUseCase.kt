@@ -20,7 +20,8 @@ class WarmActivityCacheUseCase(
         subjects.loadPage(page = 1, pageSize = PAGE_SIZE)
         measurements.loadPage(page = 1, pageSize = PAGE_SIZE)
         surveyResponses.getPage(page = 1, pageSize = PAGE_SIZE)
-        // One call, two requests: the repository fans out to food_intake + food_outflow itself.
+        // One request covering both directions: the repository asks for food_intake +
+        // food_outflow in a single call and the server returns them merged.
         foodMovements.getPage(page = 1, pageSize = PAGE_SIZE)
     }
     private companion object { const val PAGE_SIZE = 20 }

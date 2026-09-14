@@ -14,8 +14,9 @@ interface FoodMovementHistoryRepository {
      *  offline; this is what the screen actually renders. */
     fun observeLocalMerged(): Flow<List<FoodMovement>>
 
-    /** Fetches page [page] of **both** directions in parallel, writes both caches, and reports how
-     *  far down the merged list is provably complete. Fails only when both directions failed AND
-     *  nothing is cached — that failure is what the screen's retry surface acts on. */
+    /** Fetches page [page] of the server-merged feed in a single request, writes both direction
+     *  caches, and reports whether a further page exists. Falls back to the cached page when the
+     *  request fails; fails only when the request failed AND nothing is cached — that failure is
+     *  what the screen's retry surface acts on. */
     suspend fun getPage(page: Int, pageSize: Int): Result<FoodMovementHistoryPage>
 }

@@ -3,14 +3,11 @@ package ar.com.ingenieriaalimentacion.data.food
 import ar.com.ingenieriaalimentacion.data.activity.local.ActivityItemType
 import ar.com.ingenieriaalimentacion.data.activity.local.ActivityLocalStore
 import ar.com.ingenieriaalimentacion.data.activity.local.CachedActivityRow
-import ar.com.ingenieriaalimentacion.data.food.dto.PaginatedFoodMovementActivityResponse
 import ar.com.ingenieriaalimentacion.data.food.mapper.toDomain
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovement
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementDirection
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementHistoryPage
 import ar.com.ingenieriaalimentacion.domain.repository.FoodMovementHistoryRepository
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.serialization.json.Json
@@ -20,14 +17,14 @@ import kotlinx.serialization.json.Json
  * queue, and salidas cannot be created on mobile at all, so there is no local row to merge or to
  * win an id collision (ADR-009 is vacuous here).
  *
- * Two paginated sources feed one section. Rather than interleave them with a shared cursor (which
- * the backend cannot express — there is no combined `type=food_intake,food_outflow` filter and no
- * opaque cursor), page N of *both* types is fetched in parallel and the results are merged. The
- * merge is only guaranteed complete down to the **watermark**: the newest of the two sources'
- * oldest-fetched timestamps, considering only sources that still have more pages. Everything at or
- * above the watermark is provably the true global prefix of the merged feed; anything below it may
- * still have older-source rows missing, so the ViewModel hides it until the next page arrives.
- * That is what makes the visible list strictly append-only — CA "sin duplicar ni reordenar".
+ * **One request per page.** The backend accepts a repeated `type`, so ingresos and salidas are
+ * asked for together and come back already merged, sorted and paginated as a single feed. There is
+ * no client-side merge and therefore no cutoff to apply: every page is a complete global prefix, so
+ * nothing has to be held back from the screen.
+ *
+ * Responses are still split by direction on the way into the cache — `CachedActivityItem` is keyed
+ * by a single `type` column, and keeping two keys preserves the 200-row cap *per direction* as well
+ * as [observeLocalMerged]'s two-flow `combine`.
  */
 class FoodMovementHistoryRepositoryImpl(
     private val api: FoodMovementActivityApi,
@@ -42,81 +39,61 @@ class FoodMovementHistoryRepositoryImpl(
         (intakes + outflows).decodeAndSort()
     }
 
-    override suspend fun getPage(page: Int, pageSize: Int): Result<FoodMovementHistoryPage> =
-        coroutineScope {
-            // Parallel, not sequential: the two calls are independent and the user is waiting.
-            val intakes = async { runCatching { api.listIntakes(page, pageSize) } }
-            val outflows = async { runCatching { api.listOutflows(page, pageSize) } }
-            fold(page, pageSize, intakes.await(), outflows.await())
-        }
-
-    private suspend fun fold(
-        page: Int,
-        pageSize: Int,
-        intakes: Result<PaginatedFoodMovementActivityResponse>,
-        outflows: Result<PaginatedFoodMovementActivityResponse>,
-    ): Result<FoodMovementHistoryPage> {
-        // Partial success is a success: one direction being unavailable must not blank the tab.
-        // Only a total failure with nothing cached is surfaced as an error (CA 3's retryable state).
-        if (intakes.isFailure && outflows.isFailure) {
-            val cached = cachedPage(page, pageSize)
-            val error = intakes.exceptionOrNull() ?: outflows.exceptionOrNull()!!
-            return if (cached.isNotEmpty()) {
+    override suspend fun getPage(page: Int, pageSize: Int): Result<FoodMovementHistoryPage> {
+        val remote = runCatching { api.list(page, pageSize) }
+        return remote.fold(
+            onSuccess = { response ->
+                val movements = response.items.mapNotNull { it.toDomain() }
+                persist(movements)
                 Result.success(
                     FoodMovementHistoryPage(
-                        items = cached,
-                        // Unknown watermark offline: show everything cached rather than truncate.
-                        cutoffMillis = null,
-                        hasMore = cached.size >= pageSize,
-                        isStale = true,
+                        // Re-sorted locally even though the server already ordered the page: a row
+                        // whose `occurred_at` failed to parse is dropped by the mapper, and the cache
+                        // flow sorts the same way, so both paths must agree byte for byte.
+                        items = movements.sortedNewestFirst(),
+                        // `total_pages`, not `items.size >= pageSize`: the envelope is authoritative
+                        // and the heuristic costs a wasted round-trip on an exactly-full last page.
+                        hasMore = page < response.totalPages,
                     ),
                 )
-            } else {
-                Result.failure(error)
-            }
-        }
-
-        val intakeItems = intakes.persist(ActivityItemType.FOOD_INTAKE)
-        val outflowItems = outflows.persist(ActivityItemType.FOOD_OUTFLOW)
-
-        return Result.success(
-            FoodMovementHistoryPage(
-                items = (intakeItems + outflowItems).sortedNewestFirst(),
-                // Newest of the two floors: below it, one source has already run out of rows.
-                cutoffMillis = listOfNotNull(
-                    intakes.mergeBound(intakeItems),
-                    outflows.mergeBound(outflowItems),
-                ).maxOrNull(),
-                // `total_pages`, not `items.size >= pageSize`: the watermark needs exact per-source
-                // exhaustion, and the heuristic would pin the cutoff for a wasted round-trip.
-                hasMore = intakes.hasMore(page) || outflows.hasMore(page),
-                isStale = intakes.isFailure || outflows.isFailure,
-            ),
+            },
+            onFailure = { error ->
+                // Offline: serve the requested cached page instead of failing. Mirrors
+                // SubjectHistoryRepositoryImpl / SurveyResponseHistoryRepositoryImpl, minus the
+                // queue half (there is no food-movement queue).
+                val cached = cachedPage(page, pageSize)
+                if (cached.isNotEmpty()) {
+                    // `hasMore = false` is this repository's equivalent of the house
+                    // `totalPages = page`: an offline read is a TERMINAL page. The cache is a
+                    // 200-row-per-type LRU, not a paginated mirror, so letting the counter advance
+                    // off it would skip real server pages once connectivity returns.
+                    Result.success(FoodMovementHistoryPage(items = cached, hasMore = false))
+                } else {
+                    Result.failure(error)
+                }
+            },
         )
     }
 
-    private suspend fun Result<PaginatedFoodMovementActivityResponse>.persist(
-        type: ActivityItemType,
-    ): List<FoodMovement> {
-        val movements = getOrNull()?.items?.mapNotNull { it.toDomain() } ?: return emptyList()
-        cache.upsertPage(type, movements.map { it.toCachedRow() })
-        return movements
-    }
-
     /**
-     * This source's contribution to the merge watermark: the oldest row it returned, or null when
-     * it cannot constrain the merge — it is exhausted (`page >= total_pages`) or it failed, so
-     * nothing more will arrive from it this round.
+     * One response, two cache keys. `CachedActivityItem` has a single `type` column, so the merged
+     * page is regrouped by direction before it is written — that keeps the 200-row cap per direction
+     * and keeps [observeLocalMerged]'s two-flow `combine` working unchanged.
+     *
+     * Both keys are written on every page, including with an empty list, so a direction that
+     * contributed no rows to this page is a no-op rather than a stale write.
      */
-    private fun Result<PaginatedFoodMovementActivityResponse>.mergeBound(
-        items: List<FoodMovement>,
-    ): Long? {
-        val exhausted = getOrNull()?.let { it.page >= it.totalPages } ?: true
-        return if (exhausted) null else items.minOfOrNull { it.occurredAtMillis }
+    private suspend fun persist(movements: List<FoodMovement>) {
+        val byDirection = movements.groupBy { it.direction }
+        cache.upsertPage(
+            ActivityItemType.FOOD_INTAKE,
+            byDirection[FoodMovementDirection.Intake].orEmpty().map { it.toCachedRow() },
+        )
+        cache.upsertPage(
+            ActivityItemType.FOOD_OUTFLOW,
+            byDirection[FoodMovementDirection.Outflow].orEmpty().map { it.toCachedRow() },
+        )
     }
-
-    private fun Result<PaginatedFoodMovementActivityResponse>.hasMore(page: Int): Boolean =
-        getOrNull()?.let { page < it.totalPages } ?: false
 
     private suspend fun cachedPage(page: Int, pageSize: Int): List<FoodMovement> {
         val offset = (page - 1) * pageSize
@@ -146,8 +123,8 @@ class FoodMovementHistoryRepositoryImpl(
     )
 }
 
-/** Globally date-descending, id-descending — the same order the backend emits per source, so the
- *  merged list and each source's own stream agree. */
+/** Globally date-descending, id-descending — the same order the backend emits, so the fetched page
+ *  and the cache flow agree. */
 private fun List<FoodMovement>.sortedNewestFirst(): List<FoodMovement> =
     sortedWith(compareByDescending<FoodMovement> { it.occurredAtMillis }.thenByDescending { it.id })
 

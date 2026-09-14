@@ -10,8 +10,9 @@ import kotlin.time.Instant
 
 /**
  * Never branches on [FoodMovementActivityItemResponse.type] — it maps whichever sibling key the
- * filtered call populated, so an unexpected `type` string yields null and is skipped rather than
- * throwing.
+ * response populated, so an unexpected `type` string yields null and is skipped rather than
+ * throwing. That fallback matters more now than it did: one response interleaves both directions,
+ * so a type the client has not seen before arrives on the same page as rows it must still render.
  *
  * Returns null when the payload is missing, or when `occurred_at` is unparseable: a row the client
  * cannot date would sort to the epoch and land under the wrong day header.

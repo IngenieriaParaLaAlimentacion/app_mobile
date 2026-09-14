@@ -1,19 +1,17 @@
 package ar.com.ingenieriaalimentacion.domain.model.food
 
 /**
- * One fetched page of the merged food-movement feed.
+ * One fetched page of the food-movement feed, ingresos and salidas already merged and ordered by the
+ * server.
  *
- * [cutoffMillis] is the bounded-merge watermark: rows older than it may still have missing
- * counterparts from the other direction, so the screen hides them until the next page lands. Null
- * means "nothing to hide" — both directions are exhausted, or the page came from cache where no
- * watermark can be computed.
+ * [items] is a complete global prefix of the feed — there is no client-side merge and therefore no
+ * cutoff to apply, no partially-complete tail and nothing for the screen to hold back.
  *
- * [isStale] marks a page assembled from cache or from only one of the two directions, so the screen
- * can show a soft notice without treating it as a failure.
+ * [hasMore] is false for a page served from cache while offline: the cache is a recency-capped LRU,
+ * not a paginated mirror, so an offline page is terminal and the page counter must not advance off
+ * it.
  */
 data class FoodMovementHistoryPage(
     val items: List<FoodMovement>,
-    val cutoffMillis: Long?,
     val hasMore: Boolean,
-    val isStale: Boolean = false,
 )

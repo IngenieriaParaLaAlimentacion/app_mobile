@@ -20,6 +20,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class FoodMovementActivityApiTest {
 
@@ -69,39 +70,44 @@ class FoodMovementActivityApiTest {
     """.trimIndent()
 
     @Test
-    fun `listIntakes sends page, page_size and type=food_intake`() = runTest {
+    fun `list sends page and page_size`() = runTest {
         var captured: HttpRequestData? = null
         val movementApi = api {
             captured = it
             respondPage(this, emptyPage)
         }
 
-        movementApi.listIntakes(page = 2, pageSize = 10)
+        movementApi.list(page = 2, pageSize = 10)
 
         val params = requireNotNull(captured).url.parameters
         assertEquals("2", params["page"])
         assertEquals("10", params["page_size"])
-        assertEquals("food_intake", params["type"])
     }
 
     @Test
-    fun `listOutflows sends type=food_outflow`() = runTest {
+    fun `list appends type twice rather than overwriting`() = runTest {
         var captured: HttpRequestData? = null
         val movementApi = api {
             captured = it
             respondPage(this, emptyPage)
         }
 
-        movementApi.listOutflows(page = 1, pageSize = 20)
+        movementApi.list(page = 1, pageSize = 20)
 
-        assertEquals("food_outflow", requireNotNull(captured).url.parameters["type"])
+        val url = requireNotNull(captured).url
+        // `getAll`, not `get`: `get` returns only the first value and would pass even if the second
+        // were dropped — precisely the failure mode an older backend would then hide.
+        assertEquals(listOf("food_intake", "food_outflow"), url.parameters.getAll("type"))
+        // The literal wire form, so a future Ktor upgrade changing `parameter`'s append semantics
+        // from multi-map to overwrite fails here instead of silently halving the feed.
+        assertTrue(url.toString().contains("type=food_intake&type=food_outflow"))
     }
 
     @Test
     fun `decodes a full payload with quantity as a JSON number`() = runTest {
         val movementApi = api { respondPage(this, intakePage("0.750")) }
 
-        val page = movementApi.listIntakes(page = 1, pageSize = 20)
+        val page = movementApi.list(page = 1, pageSize = 20)
 
         assertEquals(1, page.totalPages)
         val payload = requireNotNull(page.items.single().foodIntake)
@@ -116,7 +122,7 @@ class FoodMovementActivityApiTest {
     fun `decodes quantity sent as a string just as well`() = runTest {
         val movementApi = api { respondPage(this, intakePage("\"0.750\"")) }
 
-        val page = movementApi.listIntakes(page = 1, pageSize = 20)
+        val page = movementApi.list(page = 1, pageSize = 20)
 
         assertEquals("0.750", requireNotNull(page.items.single().foodIntake).items.single().quantity)
     }
@@ -141,7 +147,7 @@ class FoodMovementActivityApiTest {
         """.trimIndent()
         val movementApi = api { respondPage(this, body) }
 
-        val payload = requireNotNull(movementApi.listOutflows(1, 20).items.single().foodOutflow)
+        val payload = requireNotNull(movementApi.list(1, 20).items.single().foodOutflow)
 
         assertNull(payload.establishment.city)
         assertNull(payload.establishment.province)
@@ -158,6 +164,6 @@ class FoodMovementActivityApiTest {
             )
         }
 
-        assertFailsWith<IllegalStateException> { movementApi.listIntakes(1, 20) }
+        assertFailsWith<IllegalStateException> { movementApi.list(1, 20) }
     }
 }

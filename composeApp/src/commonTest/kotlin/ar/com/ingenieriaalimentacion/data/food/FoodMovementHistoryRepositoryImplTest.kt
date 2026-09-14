@@ -9,6 +9,7 @@ import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.respondError
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.request.HttpRequestData
 import io.ktor.client.request.url
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -20,7 +21,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class FoodMovementHistoryRepositoryImplTest {
@@ -28,13 +28,13 @@ class FoodMovementHistoryRepositoryImplTest {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true; encodeDefaults = true }
     private val cache = FakeActivityLocalStore()
 
-    /** `null` for a direction means that call fails, exercising the partial-failure branches. */
-    private fun repository(
-        intakes: String?,
-        outflows: String?,
-    ): FoodMovementHistoryRepositoryImpl {
+    /** [requests] records every request the engine saw — the fan-out guard reads it. */
+    private val requests = mutableListOf<HttpRequestData>()
+
+    /** `null` means the single request fails, exercising the offline-fallback branches. */
+    private fun repository(body: String?): FoodMovementHistoryRepositoryImpl {
         val engine = MockEngine { request ->
-            val body = if (request.url.parameters["type"] == "food_intake") intakes else outflows
+            requests += request
             if (body == null) {
                 respondError(HttpStatusCode.InternalServerError)
             } else {
@@ -74,13 +74,35 @@ class FoodMovementHistoryRepositoryImplTest {
     private val outflow1 = movementJson("food_outflow", "o1", "2026-04-02T00:00:00Z")
 
     @Test
-    fun `both sources succeed - merged date-descending and cached under two distinct types`() = runTest {
-        val repo = repository(page(1, 1, intake1, intake2), page(1, 1, outflow1))
+    fun `getPage issues exactly ONE http request`() = runTest {
+        val repo = repository(page(1, 1, intake1, outflow1))
+
+        repo.getPage(page = 1, pageSize = 20).getOrThrow()
+
+        // The guard against the fan-out creeping back: two independently paginated sources driven
+        // by one page counter is exactly the design this feature removed.
+        assertEquals(1, requests.size)
+    }
+
+    @Test
+    fun `the request carries type twice, ingresos and salidas`() = runTest {
+        val repo = repository(page(1, 1, intake1))
+
+        repo.getPage(page = 2, pageSize = 10).getOrThrow()
+
+        val params = requests.single().url.parameters
+        assertEquals(listOf("food_intake", "food_outflow"), params.getAll("type"))
+        assertEquals("2", params["page"])
+        assertEquals("10", params["page_size"])
+    }
+
+    @Test
+    fun `one merged response is sorted date-descending and cached under two distinct types`() = runTest {
+        val repo = repository(page(1, 1, intake1, outflow1, intake2))
 
         val result = repo.getPage(page = 1, pageSize = 20).getOrThrow()
 
         assertEquals(listOf("i1", "o1", "i2"), result.items.map { it.id })
-        assertEquals(false, result.isStale)
         assertEquals(
             listOf("in:i1", "in:i2"),
             cache.getPage(ActivityItemType.FOOD_INTAKE, 20, 0).map { it.id },
@@ -94,8 +116,12 @@ class FoodMovementHistoryRepositoryImplTest {
     @Test
     fun `an intake and an outflow sharing an id both survive thanks to the cache id prefix`() = runTest {
         val repo = repository(
-            page(1, 1, movementJson("food_intake", "same", "2026-04-03T00:00:00Z")),
-            page(1, 1, movementJson("food_outflow", "same", "2026-04-02T00:00:00Z")),
+            page(
+                1,
+                1,
+                movementJson("food_intake", "same", "2026-04-03T00:00:00Z"),
+                movementJson("food_outflow", "same", "2026-04-02T00:00:00Z"),
+            ),
         )
 
         repo.getPage(page = 1, pageSize = 20).getOrThrow()
@@ -105,80 +131,95 @@ class FoodMovementHistoryRepositoryImplTest {
     }
 
     @Test
-    fun `the watermark is the oldest row of the only source that still has pages`() = runTest {
-        // Intakes have a page 2; outflows are exhausted, so only intakes constrain the cut.
-        val repo = repository(page(2, 1, intake1, intake2), page(1, 1, outflow1))
+    fun `a page with rows in only one direction still writes both cache keys`() = runTest {
+        cache.seed(
+            ActivityItemType.FOOD_OUTFLOW,
+            listOf(CachedActivityRow(id = "out:seeded", occurredAtMillis = 1L, payloadJson = "{}")),
+        )
+        val repo = repository(page(1, 1, intake1))
 
-        val result = repo.getPage(page = 1, pageSize = 20).getOrThrow()
+        repo.getPage(page = 1, pageSize = 20).getOrThrow()
 
-        assertEquals(1775001600000L, result.cutoffMillis) // i2, 2026-04-01
-        assertEquals(true, result.hasMore)
+        assertEquals(listOf("in:i1"), cache.getPage(ActivityItemType.FOOD_INTAKE, 20, 0).map { it.id })
+        // The empty-list upsert is a no-op: it must not clear the direction that contributed nothing.
+        assertEquals(listOf("out:seeded"), cache.getPage(ActivityItemType.FOOD_OUTFLOW, 20, 0).map { it.id })
     }
 
     @Test
-    fun `both sources exhausted hides nothing`() = runTest {
-        val repo = repository(page(1, 1, intake1, intake2), page(1, 1, outflow1))
+    fun `an item whose type the client does not recognise is skipped, not fatal`() = runTest {
+        val unknown = """
+            {
+              "type": "food_transfer",
+              "occurred_at": "2026-04-04T00:00:00Z",
+              "food_transfer": { "id": "t1" }
+            }
+        """.trimIndent()
+        val repo = repository(page(1, 1, unknown, intake1))
 
         val result = repo.getPage(page = 1, pageSize = 20).getOrThrow()
 
-        assertNull(result.cutoffMillis)
-        assertEquals(false, result.hasMore)
-    }
-
-    @Test
-    fun `no rows at all leaves the watermark null`() = runTest {
-        val repo = repository(page(0, 1), page(0, 1))
-
-        val result = repo.getPage(page = 1, pageSize = 20).getOrThrow()
-
-        assertNull(result.cutoffMillis)
-        assertEquals(false, result.hasMore)
-        assertEquals(emptyList(), result.items)
+        assertEquals(listOf("i1"), result.items.map { it.id })
     }
 
     @Test
     fun `hasMore comes from total_pages, not from a full page of items`() = runTest {
         // A page whose items fill it exactly but which the envelope declares final.
-        val repo = repository(page(1, 1, intake1, intake2), page(1, 1, outflow1))
+        val repo = repository(page(1, 1, intake1, outflow1, intake2))
 
         assertEquals(false, repo.getPage(page = 1, pageSize = 3).getOrThrow().hasMore)
     }
 
     @Test
-    fun `one source failing is a partial success that does not constrain the watermark`() = runTest {
-        val repo = repository(intakes = null, outflows = page(2, 1, outflow1))
+    fun `hasMore is true while the envelope declares further pages`() = runTest {
+        val repo = repository(page(3, 1, intake1))
+
+        assertEquals(true, repo.getPage(page = 1, pageSize = 20).getOrThrow().hasMore)
+    }
+
+    @Test
+    fun `an empty page is neither an error nor paginated further`() = runTest {
+        val repo = repository(page(0, 1))
 
         val result = repo.getPage(page = 1, pageSize = 20).getOrThrow()
 
-        assertEquals(listOf("o1"), result.items.map { it.id })
-        assertTrue(result.isStale)
-        // Only outflows constrain: intakes failed and will contribute nothing this round.
-        assertEquals(1775088000000L, result.cutoffMillis)
+        assertEquals(emptyList(), result.items)
+        assertEquals(false, result.hasMore)
     }
 
     @Test
-    fun `both sources failing with a non-empty cache serves the cached page`() = runTest {
-        val seeded = repository(page(1, 1, intake1), page(1, 1, outflow1))
+    fun `a failed request with a non-empty cache serves the cached page`() = runTest {
+        val seeded = repository(page(1, 1, intake1, outflow1))
         seeded.getPage(page = 1, pageSize = 20).getOrThrow()
 
-        val offline = repository(intakes = null, outflows = null)
+        val offline = repository(null)
         val result = offline.getPage(page = 1, pageSize = 20).getOrThrow()
 
         assertEquals(listOf("i1", "o1"), result.items.map { it.id })
-        assertNull(result.cutoffMillis)
-        assertTrue(result.isStale)
     }
 
     @Test
-    fun `both sources failing with an empty cache is the only failure path`() = runTest {
-        val repo = repository(intakes = null, outflows = null)
+    fun `an offline page is terminal so the page counter cannot advance off the cache`() = runTest {
+        val seeded = repository(page(5, 1, intake1, intake2, outflow1))
+        seeded.getPage(page = 1, pageSize = 2).getOrThrow()
+
+        val offline = repository(null)
+        val result = offline.getPage(page = 1, pageSize = 2).getOrThrow()
+
+        assertTrue(result.items.isNotEmpty())
+        // The cache is a recency-capped LRU, not a paginated mirror of the server.
+        assertEquals(false, result.hasMore)
+    }
+
+    @Test
+    fun `a failed request with an empty cache is the only failure path`() = runTest {
+        val repo = repository(null)
 
         assertTrue(repo.getPage(page = 1, pageSize = 20).isFailure)
     }
 
     @Test
     fun `observeLocalMerged unions both cache types, sorts globally and skips undecodable rows`() = runTest {
-        val repo = repository(page(1, 1, intake1, intake2), page(1, 1, outflow1))
+        val repo = repository(page(1, 1, intake1, outflow1, intake2))
         repo.getPage(page = 1, pageSize = 20).getOrThrow()
         cache.upsertPage(
             ActivityItemType.FOOD_INTAKE,

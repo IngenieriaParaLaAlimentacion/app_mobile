@@ -11,7 +11,7 @@ class FakeFoodMovementHistoryRepository : FoodMovementHistoryRepository {
 
     /** Consumed in order; the last entry is reused once the list runs out. */
     var pageResults: List<Result<FoodMovementHistoryPage>> = listOf(
-        Result.success(FoodMovementHistoryPage(items = emptyList(), cutoffMillis = null, hasMore = false)),
+        Result.success(FoodMovementHistoryPage(items = emptyList(), hasMore = false)),
     )
 
     val requestedPages = mutableListOf<Pair<Int, Int>>()

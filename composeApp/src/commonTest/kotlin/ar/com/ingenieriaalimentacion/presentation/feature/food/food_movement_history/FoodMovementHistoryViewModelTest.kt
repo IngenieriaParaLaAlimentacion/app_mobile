@@ -55,16 +55,14 @@ class FoodMovementHistoryViewModelTest {
         establishmentName = "Comedor",
     )
 
-    private fun page(
-        cutoffMillis: Long? = null,
-        hasMore: Boolean = false,
-    ) = Result.success(FoodMovementHistoryPage(emptyList(), cutoffMillis, hasMore))
+    private fun page(hasMore: Boolean = false) =
+        Result.success(FoodMovementHistoryPage(emptyList(), hasMore))
 
     @Test
     fun `items come from the cache flow and a page success advances the pagination state`() = runTest(dispatcher) {
         val repo = FakeFoodMovementHistoryRepository()
         repo.localMerged.value = listOf(movement("a", "2026-04-03T00:00:00Z"))
-        repo.pageResults = listOf(page(cutoffMillis = 10L, hasMore = true))
+        repo.pageResults = listOf(page(hasMore = true))
         val vm = viewModel(repo)
 
         advanceUntilIdle()
@@ -74,7 +72,6 @@ class FoodMovementHistoryViewModelTest {
         assertEquals(false, state.isLoading)
         assertEquals(1, state.page)
         assertEquals(true, state.hasMore)
-        assertEquals(10L, state.cutoffMillis)
         assertNull(state.error)
         assertEquals(listOf(1 to 20), repo.requestedPages)
     }
@@ -128,44 +125,26 @@ class FoodMovementHistoryViewModelTest {
     }
 
     @Test
-    fun `the cutoff is monotonically non-increasing and a null from a later page wins`() = runTest(dispatcher) {
-        val repo = FakeFoodMovementHistoryRepository()
-        repo.pageResults = listOf(
-            page(cutoffMillis = 100L, hasMore = true),
-            page(cutoffMillis = 200L, hasMore = true), // a higher cut must not hide visible rows
-            page(cutoffMillis = null, hasMore = false),
-        )
-        val vm = viewModel(repo)
-        advanceUntilIdle()
-
-        vm.onAction(FoodMovementHistoryAction.LoadMore)
-        advanceUntilIdle()
-        assertEquals(100L, vm.state.value.cutoffMillis)
-
-        vm.onAction(FoodMovementHistoryAction.LoadMore)
-        advanceUntilIdle()
-        assertNull(vm.state.value.cutoffMillis)
-    }
-
-    @Test
-    fun `visibleItems hides rows below the cutoff and reveals them once it drops`() = runTest(dispatcher) {
+    fun `a loadMore success advances the page without any client-side filtering`() = runTest(dispatcher) {
         val repo = FakeFoodMovementHistoryRepository()
         val newer = movement("a", "2026-04-03T00:00:00Z")
         val older = movement("b", "2026-04-01T00:00:00Z")
         repo.localMerged.value = listOf(newer, older)
-        repo.pageResults = listOf(
-            page(cutoffMillis = newer.occurredAtMillis, hasMore = true),
-            page(cutoffMillis = null, hasMore = false),
-        )
+        repo.pageResults = listOf(page(hasMore = true), page(hasMore = false))
         val vm = viewModel(repo)
         advanceUntilIdle()
 
-        assertEquals(listOf("a"), vm.state.value.visibleItems.map { it.id })
+        // Every cached row is rendered from the first page on: the server already merged them, so
+        // nothing is ever held back and the near-end trigger can never be starved of lines.
+        assertEquals(listOf("a", "b"), vm.state.value.items.map { it.id })
 
         vm.onAction(FoodMovementHistoryAction.LoadMore)
         advanceUntilIdle()
 
-        assertEquals(listOf("a", "b"), vm.state.value.visibleItems.map { it.id })
+        assertEquals(2, vm.state.value.page)
+        assertEquals(false, vm.state.value.hasMore)
+        assertEquals(listOf("a", "b"), vm.state.value.items.map { it.id })
+        assertEquals(listOf(1 to 20, 2 to 20), repo.requestedPages)
     }
 
     @Test

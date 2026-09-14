@@ -18,6 +18,12 @@
       "prompt": "Implementá el issue #131 tal como está escrito y corré los tests.",
       "expected_output": "The user-story skill should not take over an implementation-only task whose story is already agreed; the agent should proceed with the normal implementation workflow.",
       "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Creá una historia para el endpoint y otra para la pantalla móvil. Nuestro tablero está en https://github.com/orgs/IngenieriaParaLaAlimentacion/projects/1; cargá las dos ahí con los tags correctos.",
+      "expected_output": "Treats the organization Project separately from repository ownership, confirms the split, creates the API issue in IngenieriaParaLaAlimentacion/backend and the screen issue in IngenieriaParaLaAlimentacion/app_mobile, derives labels independently from each repository, uses fully qualified cross-repository links, adds both issues to Project 1, and verifies each Project item's repository field.",
+      "files": []
     }
   ]
 }

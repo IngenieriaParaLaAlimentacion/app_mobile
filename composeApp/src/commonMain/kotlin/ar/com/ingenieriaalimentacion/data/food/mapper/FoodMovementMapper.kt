@@ -11,7 +11,7 @@ import kotlin.time.Instant
 /**
  * Never branches on [FoodMovementActivityItemResponse.type] — it maps whichever sibling key the
  * filtered call populated, so an unexpected `type` string yields null and is skipped rather than
- * throwing (the failure mode `ActivityMapper` historically had; see its hardening in this PR).
+ * throwing.
  *
  * Returns null when the payload is missing, or when `occurred_at` is unparseable: a row the client
  * cannot date would sort to the epoch and land under the wrong day header.

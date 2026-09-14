@@ -82,7 +82,11 @@ class FoodMovementHistoryRepositoryImpl(
         return Result.success(
             FoodMovementHistoryPage(
                 items = (intakeItems + outflowItems).sortedNewestFirst(),
-                cutoffMillis = watermark(intakes, intakeItems, outflows, outflowItems),
+                // Newest of the two floors: below it, one source has already run out of rows.
+                cutoffMillis = listOfNotNull(
+                    intakes.mergeBound(intakeItems),
+                    outflows.mergeBound(outflowItems),
+                ).maxOrNull(),
                 // `total_pages`, not `items.size >= pageSize`: the watermark needs exact per-source
                 // exhaustion, and the heuristic would pin the cutoff for a wasted round-trip.
                 hasMore = intakes.hasMore(page) || outflows.hasMore(page),
@@ -100,26 +104,16 @@ class FoodMovementHistoryRepositoryImpl(
     }
 
     /**
-     * The oldest timestamp below which the merged list may still be missing rows. A source that is
-     * exhausted (`page >= total_pages`) or that failed (nothing more will arrive from it this
-     * round) does not constrain the merge. Null ⇒ nothing is hidden.
+     * This source's contribution to the merge watermark: the oldest row it returned, or null when
+     * it cannot constrain the merge — it is exhausted (`page >= total_pages`) or it failed, so
+     * nothing more will arrive from it this round.
      */
-    private fun watermark(
-        intakes: Result<PaginatedFoodMovementActivityResponse>,
-        intakeItems: List<FoodMovement>,
-        outflows: Result<PaginatedFoodMovementActivityResponse>,
-        outflowItems: List<FoodMovement>,
+    private fun Result<PaginatedFoodMovementActivityResponse>.mergeBound(
+        items: List<FoodMovement>,
     ): Long? {
-        val bounds = buildList {
-            if (intakes.constrains()) intakeItems.minOfOrNull { it.occurredAtMillis }?.let { add(it) }
-            if (outflows.constrains()) outflowItems.minOfOrNull { it.occurredAtMillis }?.let { add(it) }
-        }
-        // Newest of the two floors: below it, one source has already run out of fetched rows.
-        return bounds.maxOrNull()
+        val exhausted = getOrNull()?.let { it.page >= it.totalPages } ?: true
+        return if (exhausted) null else items.minOfOrNull { it.occurredAtMillis }
     }
-
-    private fun Result<PaginatedFoodMovementActivityResponse>.constrains(): Boolean =
-        getOrNull()?.let { it.page < it.totalPages } ?: false
 
     private fun Result<PaginatedFoodMovementActivityResponse>.hasMore(page: Int): Boolean =
         getOrNull()?.let { page < it.totalPages } ?: false

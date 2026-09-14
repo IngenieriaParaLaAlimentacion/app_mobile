@@ -21,9 +21,10 @@ data class FoodMovementHistoryState(
     val hasMore: Boolean = true,
     val error: FoodMovementHistoryError? = null,
 ) {
-    /** What the list actually renders: everything at or above the watermark. */
-    val visibleItems: List<FoodMovement>
-        get() = cutoffMillis?.let { cutoff -> items.filter { it.occurredAtMillis >= cutoff } } ?: items
+    /** What the list actually renders: everything at or above the watermark. Computed once per
+     *  state instance — [isEmpty], [showsBlockingError] and the screen all read it. */
+    val visibleItems: List<FoodMovement> =
+        cutoffMillis?.let { cutoff -> items.filter { it.occurredAtMillis >= cutoff } } ?: items
 
     val canLoadMore: Boolean get() = hasMore && !isLoading && !isLoadingMore && error == null
     val isEmpty: Boolean get() = !isLoading && error == null && visibleItems.isEmpty()

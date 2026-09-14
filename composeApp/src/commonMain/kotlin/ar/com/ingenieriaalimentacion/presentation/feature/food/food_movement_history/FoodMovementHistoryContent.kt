@@ -29,6 +29,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovement
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementDirection
 import ar.com.ingenieriaalimentacion.domain.model.food.lineCountLabel
+import ar.com.ingenieriaalimentacion.domain.model.food.movementTitle
 import ar.com.ingenieriaalimentacion.presentation.common.formatQuantityWithUnit
 import ar.com.ingenieriaalimentacion.presentation.common.today
 import com.komoui.components.Spinner
@@ -111,7 +112,7 @@ private fun FoodMovementRow(item: FoodMovement, showDivider: Boolean) {
     Column {
         AlListRow(
             horizontalPadding = AlTheme.spacing.md,
-            title = item.direction.title,
+            title = item.direction.movementTitle,
             subtitle = item.establishmentName,
             leadingIcon = item.direction.icon(),
             // No `onClick`: there is no detail endpoint. That also suppresses the chevron, so the
@@ -163,11 +164,9 @@ private fun FoodMovementRow(item: FoodMovement, showDivider: Boolean) {
 }
 
 /**
- * Recoverable-load surface. Built for this section only, deliberately: none of Sujetos/Mediciones/
- * Encuestas has one, and retrofitting all four in one PR would put three untested regressions next
- * to one new feature. The shape (a `*Error` sealed type in state + an `onFailure` on the page-1
- * refresh + this composable + a `RetryLoad` action) is the pattern to lift into
- * `core/design_system` + a shared `HistoryLoadError` once it has shipped once.
+ * Recoverable-load surface. Local to this section for now: none of Sujetos/Mediciones/Encuestas has
+ * one yet, and the shape here is the pattern to lift into `core/design_system` + a shared
+ * `HistoryLoadError` once it has shipped.
  */
 @Composable
 private fun FoodMovementHistoryErrorState(onRetry: () -> Unit, modifier: Modifier = Modifier) {
@@ -193,12 +192,6 @@ private fun FoodMovementHistoryErrorState(onRetry: () -> Unit, modifier: Modifie
         }
     }
 }
-
-private val FoodMovementDirection.title: String
-    get() = when (this) {
-        FoodMovementDirection.Intake -> "Ingreso de alimentos"
-        FoodMovementDirection.Outflow -> "Salida de alimentos"
-    }
 
 // ic_mingcute_bowl_line is already Home's "Alimentos" quick action — a history row must not look
 // like the button that creates one. Direction is always carried by the title text too, never by

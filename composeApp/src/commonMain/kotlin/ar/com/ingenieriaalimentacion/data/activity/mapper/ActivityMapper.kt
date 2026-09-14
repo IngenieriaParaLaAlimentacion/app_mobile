@@ -18,14 +18,10 @@ internal sealed interface ParsedActivityItem {
  * Validates the type/nesting invariant and maps to the matching entry.
  *
  * Returns **null** for a type this build does not know about — `food_intake`, `food_outflow`, or
- * anything the server adds later. It used to `error(...)`, and that throw escaped: in
- * [ar.com.ingenieriaalimentacion.data.subject.SubjectHistoryRepositoryImpl] the `runCatching` wraps
- * only the HTTP call, so the mapping runs outside it and an unknown type crashed instead of failing
- * the `Result`. Every call site filters by `type` today, so nothing was live-at-risk — but an
- * additive backend change must never be able to crash an already-installed build, and a feed the
- * client can only partially understand is a feed it should render partially, not refuse. Still
- * throws on a *malformed* item of a known type (`checkNotNull`), which is a real contract break
- * worth surfacing.
+ * anything the server adds later: an additive backend change must not be able to crash an
+ * already-installed build. (In [ar.com.ingenieriaalimentacion.data.subject.SubjectHistoryRepositoryImpl]
+ * the `runCatching` wraps only the HTTP call, so a throw here would escape the `Result`.) Still
+ * throws on a *malformed* item of a known type (`checkNotNull`) — that is a real contract break.
  */
 internal fun ActivityItemResponse.toParsedEntry(): ParsedActivityItem? {
     val occurredAtMillis = Instant.parse(occurredAt).toEpochMilliseconds()

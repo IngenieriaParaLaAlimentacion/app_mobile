@@ -49,3 +49,10 @@ data class FoodMovement(
 /** "3 alimentos" / "1 alimento" — counts **lines**, not distinct foods, matching what is rendered. */
 val FoodMovement.lineCountLabel: String
     get() = if (lines.size == 1) "1 alimento" else "${lines.size} alimentos"
+
+/** Row headline, shared by the Alimentos tab and Home's "Actividad reciente". */
+val FoodMovementDirection.movementTitle: String
+    get() = when (this) {
+        FoodMovementDirection.Intake -> "Ingreso de alimentos"
+        FoodMovementDirection.Outflow -> "Salida de alimentos"
+    }

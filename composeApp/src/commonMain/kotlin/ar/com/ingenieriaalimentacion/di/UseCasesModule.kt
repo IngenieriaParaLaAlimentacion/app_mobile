@@ -83,9 +83,6 @@ val useCasesModule = module {
     factory { GetAvailableEstablishmentsUseCase(get()) }
     factory { RequestEstablishmentAccessUseCase(get()) }
     factory { NotifyEstablishmentAbsenceUseCase(get()) }
-    // Positional: the 4th `get()` is the new FoodMovementHistoryRepository — keep this in step with
-    // the constructor's parameter ORDER, not just its arity. Koin resolves by type, so a reordered
-    // constructor silently keeps working; a missing `get()` is a runtime resolution failure.
     factory { WarmActivityCacheUseCase(get(), get(), get(), get()) }
     factory { GetAvailableSurveysUseCase(get()) }
     factory { WarmSurveyCacheUseCase(get()) }

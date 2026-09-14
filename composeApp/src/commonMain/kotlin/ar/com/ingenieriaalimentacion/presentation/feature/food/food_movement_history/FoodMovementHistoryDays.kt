@@ -19,5 +19,5 @@ import kotlinx.datetime.TimeZone
  */
 internal fun List<FoodMovement>.toDayGroups(
     today: LocalDate,
-    zone: TimeZone = TimeZone.currentSystemDefault(),
+    zone: TimeZone,
 ): List<DayGroup<FoodMovement>> = groupByDay(today) { dayOf(it.occurredAtMillis, zone) }

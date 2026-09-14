@@ -4,6 +4,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlBadge
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovement
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementDirection
 import ar.com.ingenieriaalimentacion.domain.model.food.lineCountLabel
+import ar.com.ingenieriaalimentacion.domain.model.food.movementTitle
 import ar.com.ingenieriaalimentacion.domain.model.measurement.ClinicalAlert
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.profile.Profile
@@ -30,8 +31,6 @@ internal fun deriveState(
     subjects: List<SubjectHistoryEntry>,
     measurements: List<MeasurementHistoryEntry>,
     surveyResponses: List<SurveyResponseSummary> = emptyList(),
-    // Defaulted and placed before `online` (which every caller already passes by name), so the
-    // existing call sites and tests keep compiling unchanged.
     foodMovements: List<FoodMovement> = emptyList(),
     online: Boolean,
     now: Long,
@@ -140,10 +139,7 @@ private fun FoodMovement.toRecentUi(): RecentActivityUi = RecentActivityUi(
         FoodMovementDirection.Intake -> RecentActivityUi.Kind.FoodIntake
         FoodMovementDirection.Outflow -> RecentActivityUi.Kind.FoodOutflow
     },
-    title = when (direction) {
-        FoodMovementDirection.Intake -> "Ingreso de alimentos"
-        FoodMovementDirection.Outflow -> "Salida de alimentos"
-    },
+    title = direction.movementTitle,
     subtitle = establishmentName,
     value = null,
     badgeText = lineCountLabel,

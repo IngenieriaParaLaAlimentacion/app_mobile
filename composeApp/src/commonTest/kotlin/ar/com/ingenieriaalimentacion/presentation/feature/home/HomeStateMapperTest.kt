@@ -3,6 +3,8 @@ package ar.com.ingenieriaalimentacion.presentation.feature.home
 import ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlBadgeTone
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovement
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementDirection
+import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementLine
+import ar.com.ingenieriaalimentacion.domain.model.food.FoodUnit
 import ar.com.ingenieriaalimentacion.domain.model.measurement.ClinicalAlert
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
@@ -306,11 +308,11 @@ class HomeStateMapperTest {
         occurredAtMillis = occurredAtMillis,
         establishmentName = "Comedor Los Aromos",
         lines = List(lineCount) {
-            ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementLine(
+            FoodMovementLine(
                 foodId = "f$it",
                 foodName = "Alimento $it",
                 quantity = "1.000",
-                unit = ar.com.ingenieriaalimentacion.domain.model.food.FoodUnit.Kilogramos,
+                unit = FoodUnit.Kilogramos,
             )
         },
     )

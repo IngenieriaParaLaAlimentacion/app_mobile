@@ -14,7 +14,7 @@ Keep the agreement in the conversation. Do not create ADRs, glossaries, planning
 Before asking questions, use available read-only evidence to learn what is already true:
 
 - inspect the relevant code, API contracts, schemas, tests, and repository instructions;
-- inspect existing issue templates, recent user stories, labels, milestones, and project conventions;
+- inspect existing issue templates, recent user stories, labels, milestones, and project conventions in each candidate implementation repository independently;
 - distinguish an implementation repository from an organization-level GitHub Project that aggregates issues from several repositories;
 - identify existing capabilities, dependencies, conflicting stories, and likely non-goals.
 
@@ -78,6 +78,8 @@ Treat a GitHub Project and a repository as separate choices:
 - the repository owns the issue and should normally match the implementation;
 - the organization Project is a planning view and may contain issues from multiple repositories.
 
+Never infer that every issue belongs to the repository where a Project appears to be managed. Map each approved story to the repository whose code will implement it: for example, an API contract normally belongs to `backend`, a mobile screen to `app_mobile`, and an administration UI to `backoffice`. Resolve the full `OWNER/REPOSITORY` slug for every story before publishing.
+
 ## 5. Draft each user story
 
 After the user approves the split, follow the target repository's established format. Inspect existing stories rather than assuming every repository uses the same template.
@@ -128,16 +130,20 @@ Call out mismatches between a story and the current system. Do not mark existing
 
 Drafting stories does not by itself authorize creating GitHub issues. Create or edit issues only when the user asked to publish/create them, either initially or after reviewing the drafts.
 
-Before publishing:
+Before publishing, repeat the approved `story → OWNER/REPOSITORY` mapping and use that exact repository in each create command. This final check prevents the current working repository or the Project's apparent home from silently becoming the owner of every issue.
 
-1. resolve the exact owner/repository for every story;
-2. inspect valid labels and use existing labels only;
+Then:
+
+1. inspect templates and comparable user stories in each target repository separately;
+2. inspect that target repository's valid labels and use only labels that exist there—do not copy labels from another repository, and leave an issue unlabeled when that is the established convention;
 3. inspect title conventions such as `[US]`;
 4. inspect milestones, assignees, and project conventions without inventing values;
 5. check for likely duplicate or overlapping issues;
-6. cross-link dependencies after issue numbers exist.
+6. cross-link dependencies after issue numbers exist, using fully qualified references such as `OWNER/REPOSITORY#123` whenever the stories live in different repositories.
 
-When the user requested project placement, add every issue explicitly with `gh project item-add`; repository creation alone does not add an issue to a Project. Verify placement with `gh project item-list` or the issue's `projectItems` metadata. If authentication lacks `project` scope, explain the exact blocker instead of assuming an auto-add workflow will handle it.
+When the user requested project placement, add every issue explicitly with `gh project item-add`; repository creation alone does not add an issue to a Project. Verify both placement and ownership: the Project item must point to the intended issue URL and its `repository` field must equal the approved `OWNER/REPOSITORY`. Also verify the issue has only labels valid for that repository. If authentication lacks `project` scope, explain the exact blocker instead of assuming an auto-add workflow will handle it.
+
+If an issue was created in the wrong repository, prefer `gh issue transfer` within the same organization so its discussion and history survive. After transfer, verify its new number, Project status, labels, and repository field, then repair all cross-repository references with fully qualified names.
 
 After publishing, report for each story:
 
@@ -155,6 +161,7 @@ Before handing off, confirm:
 - every criterion traces to the shared agreement;
 - the split avoids both a cross-team mega-story and artificial layer-by-layer fragmentation;
 - repository ownership matches where the work will be implemented;
+- every Project item's repository field matches the approved story mapping;
 - dependencies are reciprocal and unambiguous;
 - no external issue or project mutation happened without authorization;
 - no context documents were created merely to conduct the interview.

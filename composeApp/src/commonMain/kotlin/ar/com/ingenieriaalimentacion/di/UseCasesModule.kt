@@ -10,6 +10,8 @@ import ar.com.ingenieriaalimentacion.domain.usecase.auth.SignInUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.SignOutUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.establishment.GetEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.CreateFoodIntakeUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.food.GetFoodMovementHistoryPageUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.food.ObserveFoodMovementsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.SearchFoodsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.CreateMeasurementUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.DeleteMeasurementUploadUseCase
@@ -81,7 +83,10 @@ val useCasesModule = module {
     factory { GetAvailableEstablishmentsUseCase(get()) }
     factory { RequestEstablishmentAccessUseCase(get()) }
     factory { NotifyEstablishmentAbsenceUseCase(get()) }
-    factory { WarmActivityCacheUseCase(get(), get(), get()) }
+    // Positional: the 4th `get()` is the new FoodMovementHistoryRepository — keep this in step with
+    // the constructor's parameter ORDER, not just its arity. Koin resolves by type, so a reordered
+    // constructor silently keeps working; a missing `get()` is a runtime resolution failure.
+    factory { WarmActivityCacheUseCase(get(), get(), get(), get()) }
     factory { GetAvailableSurveysUseCase(get()) }
     factory { WarmSurveyCacheUseCase(get()) }
     factory { GetSurveyDetailUseCase(get()) }
@@ -97,4 +102,6 @@ val useCasesModule = module {
     factory { RetrySurveyResponseEditUploadUseCase(get()) }
     factory { SearchFoodsUseCase(get()) }
     factory { CreateFoodIntakeUseCase(get()) }
+    factory { GetFoodMovementHistoryPageUseCase(get()) }
+    factory { ObserveFoodMovementsUseCase(get()) }
 }

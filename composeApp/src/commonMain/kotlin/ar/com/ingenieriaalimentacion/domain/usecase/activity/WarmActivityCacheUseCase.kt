@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.domain.usecase.activity
 
+import ar.com.ingenieriaalimentacion.domain.repository.FoodMovementHistoryRepository
 import ar.com.ingenieriaalimentacion.domain.repository.MeasurementHistoryRepository
 import ar.com.ingenieriaalimentacion.domain.repository.SubjectHistoryRepository
 import ar.com.ingenieriaalimentacion.domain.repository.SurveyResponseHistoryRepository
@@ -13,11 +14,14 @@ class WarmActivityCacheUseCase(
     private val subjects: SubjectHistoryRepository,
     private val measurements: MeasurementHistoryRepository,
     private val surveyResponses: SurveyResponseHistoryRepository,
+    private val foodMovements: FoodMovementHistoryRepository,
 ) {
     suspend operator fun invoke() {
         subjects.loadPage(page = 1, pageSize = PAGE_SIZE)
         measurements.loadPage(page = 1, pageSize = PAGE_SIZE)
         surveyResponses.getPage(page = 1, pageSize = PAGE_SIZE)
+        // One call, two requests: the repository fans out to food_intake + food_outflow itself.
+        foodMovements.getPage(page = 1, pageSize = PAGE_SIZE)
     }
     private companion object { const val PAGE_SIZE = 20 }
 }

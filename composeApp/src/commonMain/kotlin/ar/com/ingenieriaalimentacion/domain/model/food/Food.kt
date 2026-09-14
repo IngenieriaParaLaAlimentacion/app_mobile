@@ -1,9 +1,15 @@
 package ar.com.ingenieriaalimentacion.domain.model.food
 
+import kotlinx.serialization.Serializable
+
 /**
  * Unit a food's quantity is expressed in. It comes from the catalog's `base_unit` and is never
  * chosen by the user — the catalog decides it, and the wire body carries no unit at all.
+ *
+ * `@Serializable` because it is reachable from [FoodMovement], whose JSON *is* the cached
+ * `CachedActivityItem.payloadJson`.
  */
+@Serializable
 enum class FoodUnit {
     Unidades,
     Kilogramos,

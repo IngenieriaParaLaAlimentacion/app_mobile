@@ -74,6 +74,20 @@ class SqlDelightDatabaseCleanerTest {
             occurredAtMillis = 10L,
             payloadJson = "{}",
         )
+        // `deleteAll` takes no `:type`, so the food types are wiped by the same statement. Seeded
+        // explicitly so that property is locked rather than incidental.
+        database.cachedActivityItemQueries.upsert(
+            id = "in:a2",
+            type = "FOOD_INTAKE",
+            occurredAtMillis = 10L,
+            payloadJson = "{}",
+        )
+        database.cachedActivityItemQueries.upsert(
+            id = "out:a3",
+            type = "FOOD_OUTFLOW",
+            occurredAtMillis = 10L,
+            payloadJson = "{}",
+        )
         database.currentEstablishmentQueries.set("est-1", 10L)
         database.cachedSurveyQueries.insertOrReplace(
             id = "sv-1",
@@ -129,6 +143,8 @@ class SqlDelightDatabaseCleanerTest {
         assertTrue(database.pendingMeasurementQueries.selectAll().executeAsList().isNotEmpty())
         assertTrue(database.cachedEstablishmentQueries.selectAll().executeAsList().isNotEmpty())
         assertTrue(database.cachedActivityItemQueries.selectByType("SUBJECT").executeAsList().isNotEmpty())
+        assertTrue(database.cachedActivityItemQueries.selectByType("FOOD_INTAKE").executeAsList().isNotEmpty())
+        assertTrue(database.cachedActivityItemQueries.selectByType("FOOD_OUTFLOW").executeAsList().isNotEmpty())
         assertTrue(database.currentEstablishmentQueries.select().executeAsOneOrNull()?.establishmentId != null)
         assertTrue(database.cachedSurveyQueries.selectAll().executeAsList().isNotEmpty())
         assertTrue(database.pendingSurveyResponseQueries.selectAll().executeAsList().isNotEmpty())
@@ -140,6 +156,8 @@ class SqlDelightDatabaseCleanerTest {
         assertTrue(database.pendingMeasurementQueries.selectAll().executeAsList().isEmpty())
         assertTrue(database.cachedEstablishmentQueries.selectAll().executeAsList().isEmpty())
         assertTrue(database.cachedActivityItemQueries.selectByType("SUBJECT").executeAsList().isEmpty())
+        assertTrue(database.cachedActivityItemQueries.selectByType("FOOD_INTAKE").executeAsList().isEmpty())
+        assertTrue(database.cachedActivityItemQueries.selectByType("FOOD_OUTFLOW").executeAsList().isEmpty())
         assertTrue(database.currentEstablishmentQueries.select().executeAsOneOrNull()?.establishmentId == null)
         assertTrue(database.cachedSurveyQueries.selectAll().executeAsList().isEmpty())
         assertTrue(database.pendingSurveyResponseQueries.selectAll().executeAsList().isEmpty())

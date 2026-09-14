@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Same reactive floor as the other three sections — `items` come from the cache flow, not from the
- * page call; the page call only warms the cache and advances `page`/`hasMore`/`cutoffMillis`.
+ * page call; the page call only warms the cache and advances `page`/`hasMore`.
  *
  * Two departures from the survey template, both deliberate:
  *  1. **No `SyncCoordinator`.** Food movements have no offline queue, so there is nothing to sync.
@@ -60,14 +60,13 @@ class FoodMovementHistoryViewModel(
                     it.copy(
                         page = 1,
                         hasMore = page.hasMore,
-                        cutoffMillis = page.cutoffMillis,
                         isLoading = false,
                         error = null,
                     )
                 }
             },
             onFailure = {
-                // Only reachable when BOTH directions failed and nothing is cached.
+                // Only reachable when the request failed and nothing is cached.
                 _state.update {
                     it.copy(isLoading = false, error = FoodMovementHistoryError.Retryable)
                 }
@@ -86,9 +85,6 @@ class FoodMovementHistoryViewModel(
                         it.copy(
                             page = current.page + 1,
                             hasMore = page.hasMore,
-                            // Monotonically non-increasing: a later page can only ever *reveal*
-                            // rows, never hide ones already on screen.
-                            cutoffMillis = minOfNullable(it.cutoffMillis, page.cutoffMillis),
                             isLoadingMore = false,
                         )
                     }
@@ -99,10 +95,6 @@ class FoodMovementHistoryViewModel(
             )
         }
     }
-
-    /** null ⇒ "no cut", which is the weakest constraint, so it wins over any value. */
-    private fun minOfNullable(a: Long?, b: Long?): Long? =
-        if (a == null || b == null) null else minOf(a, b)
 
     private companion object { const val PAGE_SIZE = 20 }
 }

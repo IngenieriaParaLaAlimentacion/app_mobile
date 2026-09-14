@@ -9,9 +9,9 @@ import kotlinx.datetime.TimeZone
 
 /**
  * Day blocks for the Alimentos tab, dated by `occurredAtMillis` — the same value the repository
- * sorts on and the same one the pagination watermark compares against, so blocks, ordering and the
- * visible cut can never disagree. (`groupByDay` groups *consecutive* runs, so grouping on a
- * different timestamp than the sort key silently produces duplicate headers.)
+ * and the cache flow sort on, so blocks and ordering can never disagree. (`groupByDay` groups
+ * *consecutive* runs, so grouping on a different timestamp than the sort key silently produces
+ * duplicate headers.)
  *
  * Uses the `Long` overload of [dayOf], not the `String` one: `occurredAtMillis` was already parsed
  * once in the mapper, and re-parsing the ISO string would reintroduce a "Sin fecha" path that

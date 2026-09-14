@@ -3,34 +3,28 @@ package ar.com.ingenieriaalimentacion.presentation.feature.food.food_movement_hi
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovement
 
 /**
- * Unlike the other three sections this state carries an [error] and a [cutoffMillis].
+ * Unlike the other three sections this state carries an [error].
  *
  * [error] backs the recoverable error state: it is set only when the repository could serve
- * **nothing at all** (both directions failed AND the cache is empty), so a user with cached rows
- * never sees an error banner over usable content.
+ * **nothing at all** (the request failed AND the cache is empty), so a user with cached rows never
+ * sees an error banner over usable content.
  *
- * [cutoffMillis] is the bounded-merge watermark: rows older than it are held back so the visible
- * list stays append-only while two independently-paginated sources catch up.
+ * [items] is rendered as-is. There is no cutoff and no derived "visible" subset: the server merges
+ * the two directions, so every row the cache holds is already in its final position.
  */
 data class FoodMovementHistoryState(
     val items: List<FoodMovement> = emptyList(),
-    val cutoffMillis: Long? = null,
     val isLoading: Boolean = true,
     val isLoadingMore: Boolean = false,
     val page: Int = 1,
     val hasMore: Boolean = true,
     val error: FoodMovementHistoryError? = null,
 ) {
-    /** What the list actually renders: everything at or above the watermark. Computed once per
-     *  state instance — [isEmpty], [showsBlockingError] and the screen all read it. */
-    val visibleItems: List<FoodMovement> =
-        cutoffMillis?.let { cutoff -> items.filter { it.occurredAtMillis >= cutoff } } ?: items
-
     val canLoadMore: Boolean get() = hasMore && !isLoading && !isLoadingMore && error == null
-    val isEmpty: Boolean get() = !isLoading && error == null && visibleItems.isEmpty()
+    val isEmpty: Boolean get() = !isLoading && error == null && items.isEmpty()
 
     /** Error *over* content → inline banner; error *instead of* content → full-screen retry. */
-    val showsBlockingError: Boolean get() = error != null && visibleItems.isEmpty()
+    val showsBlockingError: Boolean get() = error != null && items.isEmpty()
 }
 
 /**

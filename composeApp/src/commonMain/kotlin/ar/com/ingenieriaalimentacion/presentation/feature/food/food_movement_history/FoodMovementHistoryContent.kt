@@ -49,10 +49,10 @@ fun FoodMovementHistoryContent(
     val listState = rememberLazyListState()
     val currentState by rememberUpdatedState(state)
     val zone = TimeZone.currentSystemDefault()
-    val visible = state.visibleItems
-    val days = remember(visible) { visible.toDayGroups(today = today(zone), zone = zone) }
+    val items = state.items
+    val days = remember(items) { items.toDayGroups(today = today(zone), zone = zone) }
     // Headers occupy list slots too, so the near-end check counts lines, not movements.
-    val lineCount by rememberUpdatedState(days.size + visible.size)
+    val lineCount by rememberUpdatedState(days.size + items.size)
 
     LaunchedEffect(listState) {
         snapshotFlow {

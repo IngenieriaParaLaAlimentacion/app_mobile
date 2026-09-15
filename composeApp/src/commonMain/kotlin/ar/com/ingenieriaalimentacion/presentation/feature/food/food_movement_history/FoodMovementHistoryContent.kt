@@ -19,10 +19,9 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import ar.com.ingenieriaalimentacion.core.design_system.components.AlErrorState
 import ar.com.ingenieriaalimentacion.core.design_system.components.EmptyState
-import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlDateSeparator
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
@@ -68,7 +67,9 @@ fun FoodMovementHistoryContent(
 
         // A recoverable failure with nothing to fall back on. Full-surface, not a toast, so it
         // cannot be missed, and the retry sits next to the explanation.
-        state.showsBlockingError -> FoodMovementHistoryErrorState(
+        state.showsBlockingError -> AlErrorState(
+            title = "No pudimos cargar los movimientos",
+            caption = "Revisá tu conexión e intentá de nuevo. No se perdió ningún registro.",
             onRetry = { onAction(FoodMovementHistoryAction.RetryLoad) },
             modifier = modifier,
         )
@@ -159,36 +160,6 @@ private fun FoodMovementRow(item: FoodMovement, showDivider: Boolean) {
             item.comments?.let {
                 Text(text = it, style = AlTheme.typography.caption, color = AlTheme.colors.textMuted)
             }
-        }
-    }
-}
-
-/**
- * Recoverable-load surface. Local to this section for now: none of Sujetos/Mediciones/Encuestas has
- * one yet, and the shape here is the pattern to lift into `core/design_system` + a shared
- * `HistoryLoadError` once it has shipped.
- */
-@Composable
-private fun FoodMovementHistoryErrorState(onRetry: () -> Unit, modifier: Modifier = Modifier) {
-    Box(modifier.fillMaxSize(), Alignment.Center) {
-        Column(
-            modifier = Modifier.padding(AlTheme.spacing.xl),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
-        ) {
-            Text(
-                text = "No pudimos cargar los movimientos",
-                style = AlTheme.typography.bodyStrong,
-                color = AlTheme.colors.textBase,
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                text = "Revisá tu conexión e intentá de nuevo. No se perdió ningún registro.",
-                style = AlTheme.typography.caption,
-                color = AlTheme.colors.textMuted,
-                textAlign = TextAlign.Center,
-            )
-            AlButton(onClick = onRetry) { Text("Reintentar") }
         }
     }
 }

@@ -42,3 +42,12 @@ data class FoodSearchResult(
     val items: List<Food>,
     val total: Int,
 )
+
+/**
+ * One SARA 2 food group. The table is structurally bounded (24 rows), which is why the endpoint is
+ * unpaginated and the whole list is loaded in one call for the stock filter.
+ */
+data class FoodCategory(
+    val id: String,
+    val name: String,
+)

@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.food
 
+import ar.com.ingenieriaalimentacion.data.food.dto.FoodCategoryRefDto
 import ar.com.ingenieriaalimentacion.data.food.dto.PaginatedFoodsResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -24,6 +25,24 @@ class FoodCatalogApi(private val client: HttpClient) {
             search?.takeIf { it.isNotBlank() }?.let { parameter("search", it) }
         }
         if (!response.status.isSuccess()) error("food search failed: ${response.status.value}")
+        return response.body()
+    }
+
+    /**
+     * `GET /api/v1/food-catalog/categories` — a **bare JSON array** of `{id, name}`, not the house
+     * `{items, total, …}` envelope, and deliberately unpaginated: the table is structurally bounded
+     * to the 24 SARA 2 food groups.
+     *
+     * Thin `error()` branching (not the richer problem+json tier) is correct here: there is exactly
+     * one failure mode from the caller's point of view — the filter stays empty.
+     */
+    suspend fun listCategories(): List<FoodCategoryRefDto> {
+        val response = client.get("api/v1/food-catalog/categories") {
+            parameter("sort_order", "name_asc")
+        }
+        if (!response.status.isSuccess()) {
+            error("food categories failed: ${response.status.value}")
+        }
         return response.body()
     }
 }

@@ -18,7 +18,7 @@ class ResolveCurrentEstablishmentUseCase(private val repository: ProfileReposito
                 val storedId = repository.getCurrentEstablishmentId()
                     ?: return CurrentEstablishmentResult.NoneSelected(approved)
                 approved.firstOrNull { it.id == storedId }
-                    ?.let { CurrentEstablishmentResult.Selected(it) }
+                    ?.let { CurrentEstablishmentResult.Selected(it, approved) }
                     ?: CurrentEstablishmentResult.StaleSelection(approved)
             },
             onFailure = { CurrentEstablishmentResult.LoadFailed(it) },

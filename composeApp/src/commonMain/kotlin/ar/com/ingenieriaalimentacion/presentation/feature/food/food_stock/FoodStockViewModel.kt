@@ -14,8 +14,7 @@ import ar.com.ingenieriaalimentacion.domain.usecase.profile.ResolveCurrentEstabl
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.SetCurrentEstablishmentUseCase
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -27,9 +26,9 @@ import kotlinx.coroutines.launch
  *  1. **[FoodStockState.items] is accumulated here.** The history screen's `items` come from a
  *     cache flow that re-sorts globally on every emission, so its `loadMore` never appends. This
  *     screen has no such floor: every page is concatenated onto the previous one, in server order.
- *     There is deliberately **no client-side dedup** — the backend adds an `id` tiebreaker to the
- *     stock ORDER BY (separate PR), which is the correct place to fix it: a client-side `distinctBy`
- *     would hide *skipped* rows while only papering over *duplicated* ones.
+ *     There is deliberately **no client-side dedup**: the backend breaks ties on `id` in the
+ *     stock ORDER BY (backend#136), which is the correct place to fix it — a client-side
+ *     `distinctBy` would hide *skipped* rows while only papering over *duplicated* ones.
  *  2. **A filter or sort change cancels the in-flight job and replaces the list.** The page counter
  *     and the filter tuple must move together, or a late page from the previous filter appends rows
  *     that do not match the current one.
@@ -43,7 +42,7 @@ class FoodStockViewModel(
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(FoodStockState())
-    val state = _state.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), _state.value)
+    val state = _state.asStateFlow()
 
     /** The single in-flight list job. Cancelled by every reset so a stale page cannot append. */
     private var loadJob: Job? = null
@@ -78,15 +77,17 @@ class FoodStockViewModel(
             FoodStockAction.RetryLoad -> retry()
 
             is FoodStockAction.OnlyAvailableChanged ->
-                applyFilters { it.copy(onlyAvailable = action.onlyAvailable) }
+                applyFilters(update = { it.copy(onlyAvailable = action.onlyAvailable) })
 
-            is FoodStockAction.CategorySelected ->
-                applyFilters { it.copy(categoryId = action.categoryId) }
-                    .also { _state.update { s -> s.copy(showCategorySheet = false) } }
+            is FoodStockAction.CategorySelected -> applyFilters(
+                closeSheet = { it.copy(showCategorySheet = false) },
+                update = { it.copy(categoryId = action.categoryId) },
+            )
 
-            is FoodStockAction.SortSelected ->
-                applyFilters { it.copy(sortOrder = action.sortOrder) }
-                    .also { _state.update { s -> s.copy(showSortSheet = false) } }
+            is FoodStockAction.SortSelected -> applyFilters(
+                closeSheet = { it.copy(showSortSheet = false) },
+                update = { it.copy(sortOrder = action.sortOrder) },
+            )
 
             FoodStockAction.SortSheetOpen -> _state.update { it.copy(showSortSheet = true) }
             FoodStockAction.SortSheetDismiss -> _state.update { it.copy(showSortSheet = false) }
@@ -125,6 +126,10 @@ class FoodStockViewModel(
                 _state.update {
                     it.copy(
                         establishment = result.establishment,
+                        // Kept for the picker offered by the 403/404 surfaces: those are reached
+                        // from this branch, which never opens the sheet itself, so without this
+                        // the only action on that screen opens an empty sheet.
+                        establishmentOptions = result.options,
                         needsEstablishment = false,
                         staleSelection = false,
                         error = null,
@@ -196,8 +201,18 @@ class FoodStockViewModel(
      * Filter/sort change: reset to page 1 and **replace**, never append. `items` is cleared eagerly
      * so a slow network cannot leave the previous filter's rows on screen under the new chip.
      */
-    private fun applyFilters(update: (FoodStockFilters) -> FoodStockFilters) {
-        _state.update { it.copy(filters = update(it.filters)) }
+    private fun applyFilters(
+        closeSheet: (FoodStockState) -> FoodStockState = { it },
+        update: (FoodStockFilters) -> FoodStockFilters,
+    ) {
+        val next = update(_state.value.filters)
+        // Re-tapping the selected sort, the selected category, or the active segment is a no-op:
+        // clearing the list and re-requesting page 1 would spin for a result already on screen.
+        if (next == _state.value.filters) {
+            _state.update(closeSheet)
+            return
+        }
+        _state.update { closeSheet(it).copy(filters = next) }
         refreshPage1()
     }
 

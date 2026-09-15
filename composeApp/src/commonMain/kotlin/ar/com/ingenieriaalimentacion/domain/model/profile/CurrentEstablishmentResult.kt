@@ -11,8 +11,16 @@ package ar.com.ingenieriaalimentacion.domain.model.profile
  * on a cold cache, the picker has nothing to show either.
  */
 sealed interface CurrentEstablishmentResult {
-    /** A stored id resolved against the caller's approved list. */
-    data class Selected(val establishment: EstablishmentWithStatus) : CurrentEstablishmentResult
+    /**
+     * A stored id resolved against the caller's approved list. [options] is that list, carried
+     * along so a screen can offer the picker *after* a per-establishment call fails (a 403 on the
+     * selected establishment is exactly when the user needs to switch, and re-resolving to get
+     * the options would be a second round trip for a list this call already loaded).
+     */
+    data class Selected(
+        val establishment: EstablishmentWithStatus,
+        val options: List<EstablishmentWithStatus>,
+    ) : CurrentEstablishmentResult
 
     /** The list loaded fine; nothing was ever picked. [options] may legitimately be empty — that is
      *  a user with no approved establishment yet, which reads differently again. */

@@ -4,13 +4,6 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * The backend's shared `IdentifierRefSchema` — `{id, name}`. Used for both `food` and `category` on
- * a stock row; neither exposes `code` here (only the catalog *listing* does).
- */
-@Serializable
-data class FoodStockRefDto(val id: String, val name: String)
-
-/**
  * One row of `GET /api/v1/establishments/{id}/stock`.
  *
  * [quantity] uses [QuantitySerializer]: the server sends `numeric(10,3)` as a quoted JSON **string**
@@ -22,8 +15,8 @@ data class FoodStockRefDto(val id: String, val name: String)
  */
 @Serializable
 data class FoodStockItemDto(
-    val food: FoodStockRefDto,
-    val category: FoodStockRefDto,
+    val food: IdentifierRefDto,
+    val category: IdentifierRefDto,
     val unit: String,
     @Serializable(with = QuantitySerializer::class) val quantity: String,
     @SerialName("updated_at") val updatedAt: String? = null,

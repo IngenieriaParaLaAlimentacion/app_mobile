@@ -1,6 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.food
 
-import ar.com.ingenieriaalimentacion.data.food.dto.FoodCategoryRefDto
+import ar.com.ingenieriaalimentacion.data.food.dto.IdentifierRefDto
 import ar.com.ingenieriaalimentacion.data.food.dto.PaginatedFoodsResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -36,7 +36,7 @@ class FoodCatalogApi(private val client: HttpClient) {
      * Thin `error()` branching (not the richer problem+json tier) is correct here: there is exactly
      * one failure mode from the caller's point of view — the filter stays empty.
      */
-    suspend fun listCategories(): List<FoodCategoryRefDto> {
+    suspend fun listCategories(): List<IdentifierRefDto> {
         val response = client.get("api/v1/food-catalog/categories") {
             parameter("sort_order", "name_asc")
         }

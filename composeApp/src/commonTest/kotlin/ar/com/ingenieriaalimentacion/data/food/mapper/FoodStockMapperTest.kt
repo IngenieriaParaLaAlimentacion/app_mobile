@@ -1,7 +1,7 @@
 package ar.com.ingenieriaalimentacion.data.food.mapper
 
 import ar.com.ingenieriaalimentacion.data.food.dto.FoodStockItemDto
-import ar.com.ingenieriaalimentacion.data.food.dto.FoodStockRefDto
+import ar.com.ingenieriaalimentacion.data.food.dto.IdentifierRefDto
 import ar.com.ingenieriaalimentacion.data.food.dto.PaginatedFoodStockResponse
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodUnit
 import kotlin.test.Test
@@ -22,8 +22,8 @@ class FoodStockMapperTest {
         quantity: String = "10.000",
         updatedAt: String? = "2026-09-02T10:15:33.412000Z",
     ) = FoodStockItemDto(
-        food = FoodStockRefDto(id = foodId, name = foodName),
-        category = FoodStockRefDto(id = categoryId, name = categoryName),
+        food = IdentifierRefDto(id = foodId, name = foodName),
+        category = IdentifierRefDto(id = categoryId, name = categoryName),
         unit = unit,
         quantity = quantity,
         updatedAt = updatedAt,

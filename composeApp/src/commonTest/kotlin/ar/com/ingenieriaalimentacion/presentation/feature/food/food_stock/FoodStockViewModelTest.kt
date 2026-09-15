@@ -69,10 +69,7 @@ class FoodStockViewModelTest {
     private fun page(vararg ids: String, hasMore: Boolean = false) =
         Result.success(FoodStockPage(ids.map { row(it) }, hasMore))
 
-    /**
-     * `state` is a `stateIn(WhileSubscribed)`, so it only mirrors the ViewModel's internal flow
-     * while something collects it. Every test therefore keeps a background collector alive.
-     */
+    /** Keeps a background collector alive, so every test sees the same flow the screen sees. */
     private fun TestScope.viewModel(
         stock: FakeFoodStockRepository,
         profile: FakeProfileRepository = FakeProfileRepository().apply {
@@ -219,38 +216,49 @@ class FoodStockViewModelTest {
     }
 
     @Test
-    fun `a 403 surfaces AccessDenied, not a retry`() = runTest(dispatcher) {
+    fun `the picker offered by an access error has something to pick`() = runTest(dispatcher) {
+        val profile = FakeProfileRepository().apply {
+            myEstablishmentsResult = Result.success(
+                listOf(establishment("e1"), establishment("e2")),
+            )
+            currentEstablishmentId = "e1"
+        }
         val stock = FakeFoodStockRepository().apply {
             pageResults = listOf(
                 Result.failure(FoodStockFailure(FoodStockError.EstablishmentAccessDenied, null)),
             )
         }
-        val vm = viewModel(stock)
-
+        val vm = viewModel(stock, profile)
         advanceUntilIdle()
 
+        // The only action the 403 surface offers.
+        vm.onAction(FoodStockAction.EstablishmentPickerOpen)
+
         assertEquals(FoodStockScreenError.AccessDenied, vm.state.value.error)
+        assertTrue(vm.state.value.showEstablishmentPicker)
+        assertEquals(listOf("e1", "e2"), vm.state.value.establishmentOptions.map { it.id })
     }
 
     @Test
-    fun `a 404 is terminal EstablishmentNotFound and 422 is Terminal`() = runTest(dispatcher) {
-        val notFound = FakeFoodStockRepository().apply {
-            pageResults = listOf(
-                Result.failure(FoodStockFailure(FoodStockError.EstablishmentNotFound, null)),
-            )
-        }
-        val invalid = FakeFoodStockRepository().apply {
-            pageResults = listOf(
-                Result.failure(FoodStockFailure(FoodStockError.InvalidRequest, null)),
-            )
-        }
-        val notFoundVm = viewModel(notFound)
-        val invalidVm = viewModel(invalid)
+    fun `every domain error maps to its screen error`() = runTest(dispatcher) {
+        val expected = mapOf(
+            FoodStockError.EstablishmentAccessDenied to FoodStockScreenError.AccessDenied,
+            FoodStockError.EstablishmentNotFound to FoodStockScreenError.EstablishmentNotFound,
+            FoodStockError.InvalidRequest to FoodStockScreenError.Terminal,
+            FoodStockError.Unauthorized to FoodStockScreenError.Terminal,
+            FoodStockError.Network to FoodStockScreenError.Retryable,
+        )
 
-        advanceUntilIdle()
+        val actual = expected.keys.associateWith { error ->
+            val stock = FakeFoodStockRepository().apply {
+                pageResults = listOf(Result.failure(FoodStockFailure(error, null)))
+            }
+            val vm = viewModel(stock)
+            advanceUntilIdle()
+            vm.state.value.error
+        }
 
-        assertEquals(FoodStockScreenError.EstablishmentNotFound, notFoundVm.state.value.error)
-        assertEquals(FoodStockScreenError.Terminal, invalidVm.state.value.error)
+        assertEquals(expected, actual)
     }
 
     @Test

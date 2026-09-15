@@ -1,6 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.food.mapper
 
-import ar.com.ingenieriaalimentacion.data.food.dto.FoodCategoryRefDto
+import ar.com.ingenieriaalimentacion.data.food.dto.IdentifierRefDto
 import ar.com.ingenieriaalimentacion.data.food.dto.FoodStockItemDto
 import ar.com.ingenieriaalimentacion.data.food.dto.PaginatedFoodStockResponse
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodCategory
@@ -37,4 +37,4 @@ internal fun PaginatedFoodStockResponse.toDomain(): FoodStockPage = FoodStockPag
     hasMore = page < totalPages,
 )
 
-internal fun FoodCategoryRefDto.toDomain(): FoodCategory = FoodCategory(id = id, name = name)
+internal fun IdentifierRefDto.toDomain(): FoodCategory = FoodCategory(id = id, name = name)

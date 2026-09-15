@@ -44,5 +44,7 @@ data class RecentActivityUi(
     val badgeTone: AlBadgeTone,
     val createdAt: Long,
 ) {
-    enum class Kind { Subject, Measurement, SurveyResponse }
+    /** Ingreso and salida are separate kinds, not one `Food` kind: this enum is the only carrier
+     *  for the row's leading icon, and direction is the row's headline fact. */
+    enum class Kind { Subject, Measurement, SurveyResponse, FoodIntake, FoodOutflow }
 }

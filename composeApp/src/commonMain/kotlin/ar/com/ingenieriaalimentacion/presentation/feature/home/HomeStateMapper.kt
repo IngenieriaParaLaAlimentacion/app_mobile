@@ -1,6 +1,10 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.home
 
 import ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlBadgeTone
+import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovement
+import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementDirection
+import ar.com.ingenieriaalimentacion.domain.model.food.lineCountLabel
+import ar.com.ingenieriaalimentacion.domain.model.food.movementTitle
 import ar.com.ingenieriaalimentacion.domain.model.measurement.ClinicalAlert
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.profile.Profile
@@ -27,6 +31,7 @@ internal fun deriveState(
     subjects: List<SubjectHistoryEntry>,
     measurements: List<MeasurementHistoryEntry>,
     surveyResponses: List<SurveyResponseSummary> = emptyList(),
+    foodMovements: List<FoodMovement> = emptyList(),
     online: Boolean,
     now: Long,
     timeZone: TimeZone = TimeZone.currentSystemDefault(),
@@ -56,7 +61,8 @@ internal fun deriveState(
     val recent = (
         subjects.map { it.toRecentUi() } +
             measurements.map { it.toRecentUi() } +
-            surveyResponses.map { it.toRecentUi() }
+            surveyResponses.map { it.toRecentUi() } +
+            foodMovements.map { it.toRecentUi() }
         )
         .sortedByDescending { it.createdAt }
         .take(RECENT_LIMIT)
@@ -121,6 +127,25 @@ private fun SurveyResponseSummary.toRecentUi(): RecentActivityUi {
         createdAt = eventAtMillis(eventAt),
     )
 }
+
+/**
+ * No sync badge: food movements have no offline queue, so every row is already on the server. The
+ * badge slot carries the movement's size instead, which is the only other fact worth 20 characters.
+ */
+private fun FoodMovement.toRecentUi(): RecentActivityUi = RecentActivityUi(
+    // Unique across both directions, same rule as the Alimentos LazyColumn key.
+    id = "${direction.name}:$id",
+    kind = when (direction) {
+        FoodMovementDirection.Intake -> RecentActivityUi.Kind.FoodIntake
+        FoodMovementDirection.Outflow -> RecentActivityUi.Kind.FoodOutflow
+    },
+    title = direction.movementTitle,
+    subtitle = establishmentName,
+    value = null,
+    badgeText = lineCountLabel,
+    badgeTone = AlBadgeTone.Neutral,
+    createdAt = occurredAtMillis,
+)
 
 private fun subjectSyncBadge(state: SyncState): Pair<String, AlBadgeTone> = when (state) {
     SyncState.Pending -> "Pendiente" to AlBadgeTone.Neutral

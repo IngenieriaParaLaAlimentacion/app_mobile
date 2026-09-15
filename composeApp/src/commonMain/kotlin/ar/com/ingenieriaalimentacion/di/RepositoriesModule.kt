@@ -8,6 +8,7 @@ import ar.com.ingenieriaalimentacion.data.device.DeviceIdProvider
 import ar.com.ingenieriaalimentacion.data.establishment.EstablishmentRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.food.FoodCatalogRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.food.FoodIntakeRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.food.FoodMovementHistoryRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.measurement.MeasurementHistoryRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.measurement.MeasurementRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.measurement.local.DefaultMeasurementLocalStore
@@ -37,6 +38,7 @@ import ar.com.ingenieriaalimentacion.domain.repository.AuthRepository
 import ar.com.ingenieriaalimentacion.domain.repository.EstablishmentRepository
 import ar.com.ingenieriaalimentacion.domain.repository.FoodCatalogRepository
 import ar.com.ingenieriaalimentacion.domain.repository.FoodIntakeRepository
+import ar.com.ingenieriaalimentacion.domain.repository.FoodMovementHistoryRepository
 import ar.com.ingenieriaalimentacion.domain.repository.MeasurementHistoryRepository
 import ar.com.ingenieriaalimentacion.domain.repository.ProfileRepository
 import ar.com.ingenieriaalimentacion.domain.repository.MeasurementRepository
@@ -152,6 +154,9 @@ val repositoriesModule = module {
     }
     single<FoodCatalogRepository> { FoodCatalogRepositoryImpl(api = get()) }
     single<FoodIntakeRepository> { FoodIntakeRepositoryImpl(api = get()) }
+    single<FoodMovementHistoryRepository> {
+        FoodMovementHistoryRepositoryImpl(api = get(), cache = get(), json = get(named("auth")))
+    }
     single<SurveyResponseHistoryRepository> {
         SurveyResponseHistoryRepositoryImpl(
             api = get(),

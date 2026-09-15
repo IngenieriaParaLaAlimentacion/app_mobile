@@ -53,6 +53,25 @@ class DefaultActivityLocalStoreTest {
     }
 
     @Test
+    fun `the cap is enforced per type independently with four types present`() = runTest {
+        // The Alimentos section is fed by two cache types at once, so the cache holds up to
+        // 200 + 200 food rows and the rarer direction is never starved by the common one.
+        store.upsertPage(ActivityItemType.SUBJECT, listOf(row("s-1", 1L)), cap = 200)
+        store.upsertPage(ActivityItemType.MEASUREMENT, listOf(row("m-1", 1L)), cap = 200)
+        store.upsertPage(ActivityItemType.FOOD_OUTFLOW, listOf(row("out:o-1", 1L)), cap = 200)
+
+        val intakes = (1..201).map { row("in:i-$it", occurredAtMillis = it.toLong()) }
+        store.upsertPage(ActivityItemType.FOOD_INTAKE, intakes, cap = 200)
+
+        val remainingIntakes = store.observe(ActivityItemType.FOOD_INTAKE).first()
+        assertEquals(200, remainingIntakes.size)
+        assertFalse(remainingIntakes.any { it.id == "in:i-1" })
+        assertEquals(listOf("out:o-1"), store.observe(ActivityItemType.FOOD_OUTFLOW).first().map { it.id })
+        assertEquals(listOf("s-1"), store.observe(ActivityItemType.SUBJECT).first().map { it.id })
+        assertEquals(listOf("m-1"), store.observe(ActivityItemType.MEASUREMENT).first().map { it.id })
+    }
+
+    @Test
     fun `getPage paginates newest-first`() = runTest {
         val rows = (1..30).map { row("subject-$it", occurredAtMillis = it.toLong()) }
         store.upsertPage(ActivityItemType.SUBJECT, rows, cap = 200)

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import ar.com.ingenieriaalimentacion.data.network.connectivity.ConnectivityObserver
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
+import ar.com.ingenieriaalimentacion.domain.usecase.food.ObserveFoodMovementsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.ObserveMeasurementsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
@@ -28,6 +29,7 @@ class HomeViewModel(
     observeSubjectUploads: ObserveSubjectUploadsUseCase,
     observeMeasurements: ObserveMeasurementsUseCase,
     observeSurveyResponseUploads: ObserveSurveyResponseUploadsUseCase,
+    observeFoodMovements: ObserveFoodMovementsUseCase,
     private val getMyProfile: GetMyProfileUseCase,
     private val getMyEstablishments: GetMyEstablishmentsUseCase,
     private val getCurrentEstablishment: GetCurrentEstablishmentUseCase,
@@ -54,13 +56,18 @@ class HomeViewModel(
         }
         // Reactive queue + connectivity -> derived state (identity + destination preserved).
         viewModelScope.launch {
+            // 5 flows — the LAST typed `combine` overload. A sixth source must NOT be added here:
+            // group the reactive flows into a `HomeSources` value first, then combine that with
+            // connectivity. This one fits only because the food repository already merges its two
+            // cache flows (food_intake + food_outflow) into a single flow in the data layer.
             combine(
                 observeSubjectUploads(),
                 observeMeasurements(),
                 observeSurveyResponseUploads(),
+                observeFoodMovements(),
                 connectivity.isOnline,
-            ) { subjects, measurements, surveyResponses, online ->
-                deriveState(subjects, measurements, surveyResponses, online, now())
+            ) { subjects, measurements, surveyResponses, foodMovements, online ->
+                deriveState(subjects, measurements, surveyResponses, foodMovements, online, now())
             }.collect { derived ->
                 _state.update {
                     derived.copy(

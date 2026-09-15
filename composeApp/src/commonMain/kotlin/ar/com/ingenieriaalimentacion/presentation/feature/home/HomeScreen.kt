@@ -49,6 +49,8 @@ import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_doc_li
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_document_2_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_down_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_location_line
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_package_2_line
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_package_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_ruler_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_time
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_upload_line
@@ -383,6 +385,10 @@ private fun RecentActivityUi.Kind.icon(): DrawableResource = when (this) {
     RecentActivityUi.Kind.Subject -> Res.drawable.ic_mingcute_user_3_line
     RecentActivityUi.Kind.Measurement -> Res.drawable.ic_mingcute_ruler_line
     RecentActivityUi.Kind.SurveyResponse -> Res.drawable.ic_mingcute_document_2_line
+    // ic_mingcute_bowl_line is already the "Alimentos" quick action below — a history row must not
+    // look like the button that creates one.
+    RecentActivityUi.Kind.FoodIntake -> Res.drawable.ic_mingcute_package_2_line
+    RecentActivityUi.Kind.FoodOutflow -> Res.drawable.ic_mingcute_package_line
 }
 
 @Composable

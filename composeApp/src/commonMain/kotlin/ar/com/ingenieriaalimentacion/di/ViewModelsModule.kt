@@ -7,6 +7,7 @@ import ar.com.ingenieriaalimentacion.presentation.feature.auth.login.LoginViewMo
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.reset_password.ResetPasswordViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_intake.CreateFoodIntakeViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.food.food_movement_history.FoodMovementHistoryViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.food.food_stock.FoodStockViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.get_started.GetStartedViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.home.HomeViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.measurement.create_measurement.MeasurementViewModel
@@ -87,6 +88,7 @@ val viewModelsModule = module {
     }
     viewModelOf(::SurveyResponseHistoryViewModel)
     viewModelOf(::FoodMovementHistoryViewModel)
+    viewModelOf(::FoodStockViewModel)
     viewModel { (route: Route.SurveyResponseDetail) ->
         SurveyResponseDetailViewModel(
             route = route,

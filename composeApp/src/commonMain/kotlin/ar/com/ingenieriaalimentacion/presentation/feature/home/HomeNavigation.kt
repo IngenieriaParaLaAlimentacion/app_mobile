@@ -11,6 +11,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.composable
 import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_intake.navigateToCreateFoodIntake
+import ar.com.ingenieriaalimentacion.presentation.feature.food.food_stock.navigateToFoodStock
 import ar.com.ingenieriaalimentacion.presentation.feature.measurement.create_measurement.navigateToCreateMeasurement
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.create_subject.navigateToCreateSubject
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_list.navigateToSurveyList
@@ -40,5 +41,6 @@ internal fun navigate(
         HomeDestination.NavigateToHistory -> navController.navigate(Route.History)
         HomeDestination.NavigateToSurveyList -> navController.navigateToSurveyList()
         HomeDestination.NavigateToCreateFoodIntake -> navController.navigateToCreateFoodIntake()
+        HomeDestination.NavigateToFoodStock -> navController.navigateToFoodStock()
     }
 }

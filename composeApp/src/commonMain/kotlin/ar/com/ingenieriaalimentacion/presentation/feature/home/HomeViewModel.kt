@@ -120,6 +120,9 @@ class HomeViewModel(
 
             HomeAction.NewFoodIntakeClick ->
                 _state.update { it.copy(destination = HomeDestination.NavigateToCreateFoodIntake) }
+
+            HomeAction.FoodStockClick ->
+                _state.update { it.copy(destination = HomeDestination.NavigateToFoodStock) }
         }
     }
 

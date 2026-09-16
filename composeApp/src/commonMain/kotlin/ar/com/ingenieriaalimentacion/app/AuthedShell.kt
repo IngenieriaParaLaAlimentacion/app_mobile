@@ -28,6 +28,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.navbar.AlBott
 import ar.com.ingenieriaalimentacion.core.design_system.components.navbar.AlBottomNavTab
 import ar.com.ingenieriaalimentacion.presentation.feature.home.HomeDestination
 import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_intake.navigateToCreateFoodIntake
+import ar.com.ingenieriaalimentacion.presentation.feature.food.food_stock.navigateToFoodStock
 import ar.com.ingenieriaalimentacion.presentation.feature.history.HistoryHubScreenRoot
 import ar.com.ingenieriaalimentacion.presentation.feature.home.HomeScreenRoot
 import ar.com.ingenieriaalimentacion.presentation.feature.measurement.create_measurement.navigateToCreateMeasurement
@@ -105,6 +106,9 @@ fun AuthedShell(onSignOut: () -> Unit) {
                             HomeDestination.NavigateToSurveyList -> outerNav.navigateToSurveyList()
                             HomeDestination.NavigateToCreateFoodIntake ->
                                 outerNav.navigateToCreateFoodIntake()
+                            // The OUTER nav: Stock is a pushed screen, not a tab, so the bottom bar
+                            // steps aside exactly as it does for CreateFoodIntake.
+                            HomeDestination.NavigateToFoodStock -> outerNav.navigateToFoodStock()
                         }
                     },
                 )

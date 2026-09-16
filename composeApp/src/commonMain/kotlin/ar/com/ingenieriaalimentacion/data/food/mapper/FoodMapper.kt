@@ -29,7 +29,9 @@ internal fun NewFoodIntake.toRequest(receivedAtIso: String): FoodIntakeRequest =
     items = items.map { FoodLineRequest(foodId = it.foodId, quantity = it.quantity) },
 )
 
-private fun String.toFoodUnit(): FoodUnit = when (this) {
+/** `internal`, not `private`: [FoodStockMapper] must degrade unknown units by the same rule, and
+ *  duplicating a degradation policy is how two code paths quietly start disagreeing. */
+internal fun String.toFoodUnit(): FoodUnit = when (this) {
     "unidades" -> FoodUnit.Unidades
     "litros" -> FoodUnit.Litros
     // Kilogramos covers the vast majority of the catalog, so an unrecognized value degrades to a

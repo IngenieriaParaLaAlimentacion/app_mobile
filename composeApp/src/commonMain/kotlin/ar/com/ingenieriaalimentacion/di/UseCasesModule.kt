@@ -10,7 +10,9 @@ import ar.com.ingenieriaalimentacion.domain.usecase.auth.SignInUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.SignOutUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.establishment.GetEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.CreateFoodIntakeUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.food.GetFoodCategoriesUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.GetFoodMovementHistoryPageUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.food.GetFoodStockPageUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.ObserveFoodMovementsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.SearchFoodsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.CreateMeasurementUseCase
@@ -26,6 +28,7 @@ import ar.com.ingenieriaalimentacion.domain.usecase.profile.RefreshMyEstablishme
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyProfileUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.NotifyEstablishmentAbsenceUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.RequestEstablishmentAccessUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.ResolveCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.SetCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.UpdateMyProfileUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.registration.RegisterFieldWorkerUseCase
@@ -101,4 +104,7 @@ val useCasesModule = module {
     factory { CreateFoodIntakeUseCase(get()) }
     factory { GetFoodMovementHistoryPageUseCase(get()) }
     factory { ObserveFoodMovementsUseCase(get()) }
+    factory { GetFoodStockPageUseCase(get()) }
+    factory { GetFoodCategoriesUseCase(get()) }
+    factory { ResolveCurrentEstablishmentUseCase(get()) }
 }

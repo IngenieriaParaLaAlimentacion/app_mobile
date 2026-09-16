@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -55,6 +56,7 @@ import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_ruler_
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_time
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_upload_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_user_3_line
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_wardrobe_line
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.vectorResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -249,20 +251,33 @@ private class QuickAction(
     val action: HomeAction,
 )
 
+// Labels are deliberately single words: the grid is 3-wide (see QuickActions), which leaves roughly
+// a third of a small phone per tile. A two-word label would wrap.
+// ic_mingcute_wardrobe_line (a despensa/cupboard) is used for Stock rather than package_*: those
+// two are already the intake/outflow history-row icons, and a "what is stored" affordance must not
+// look like a "what moved" row.
 private val QUICK_ACTIONS = listOf(
     QuickAction(Res.drawable.ic_mingcute_ruler_line, "Medición", HomeAction.NewMeasurementClick),
     QuickAction(Res.drawable.ic_mingcute_user_3_line, "Sujeto", HomeAction.NewSubjectClick),
     QuickAction(Res.drawable.ic_mingcute_doc_line, "Encuesta", HomeAction.RespondSurveyClick),
     QuickAction(Res.drawable.ic_mingcute_bowl_line, "Alimentos", HomeAction.NewFoodIntakeClick),
+    QuickAction(Res.drawable.ic_mingcute_wardrobe_line, "Stock", HomeAction.FoodStockClick),
 )
+
+/** 3, not 2 or 4: five actions in a 2-wide grid leave a lone full-width tile, and the original
+ *  2×2 comment only ever ruled out a **four**-wide row. */
+private const val QUICK_ACTION_COLUMNS = 3
 
 @Composable
 private fun QuickActions(state: HomeState, onAction: (HomeAction) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg)) {
-        // 2x2 rather than a 4-wide row: a fourth quick action would squeeze every
-        // label past truncation on a small phone.
+        // A fixed 3-column grid: 3 tiles, then 2 tiles plus one empty slot. The trailing Spacers are
+        // what keep every tile the same width — without them the last row's two tiles would stretch
+        // to half the screen each and read as a different, more important control. A 4-wide row is
+        // still ruled out (it squeezes every label past truncation on a small phone); 3 leaves room
+        // for the longest label, "Alimentos", at caption size.
         Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
-            QUICK_ACTIONS.chunked(2).forEach { row ->
+            QUICK_ACTIONS.chunked(QUICK_ACTION_COLUMNS).forEach { row ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
@@ -274,6 +289,9 @@ private fun QuickActions(state: HomeState, onAction: (HomeAction) -> Unit) {
                             label = quickAction.label,
                             onClick = { onAction(quickAction.action) },
                         )
+                    }
+                    repeat(QUICK_ACTION_COLUMNS - row.size) {
+                        Spacer(modifier = Modifier.weight(1f))
                     }
                 }
             }

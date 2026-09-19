@@ -283,4 +283,21 @@ class HomeViewModelTest {
             viewModel.state.value.destination,
         )
     }
+
+    @Test
+    fun `movement history click navigates and destination clears`() = runTest(dispatcher) {
+        val profileRepo = FakeProfileRepository().apply {
+            myEstablishmentsResult = Result.success(emptyList())
+        }
+        val vm = viewModel(profileRepo = profileRepo)
+        advanceUntilIdle()
+
+        vm.onAction(HomeAction.FoodMovementHistoryClick)
+        assertEquals(
+            HomeDestination.NavigateToEstablishmentFoodMovementHistory,
+            vm.state.value.destination,
+        )
+        vm.clearDestination()
+        assertNull(vm.state.value.destination)
+    }
 }

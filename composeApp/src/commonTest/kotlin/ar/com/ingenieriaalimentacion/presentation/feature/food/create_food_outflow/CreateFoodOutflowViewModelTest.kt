@@ -182,6 +182,20 @@ class CreateFoodOutflowViewModelTest {
     }
 
     @Test
+    fun `selecting current establishment preserves lines and does not refresh stock`() =
+        runTest(dispatcher) {
+            val f = readyFixture()
+            advanceUntilIdle()
+            f.viewModel.onAction(CreateFoodOutflowAction.FoodPicked(arroz))
+
+            f.viewModel.onAction(CreateFoodOutflowAction.EstablishmentSelected(establishment))
+            advanceUntilIdle()
+
+            assertEquals(listOf(arroz.foodId), f.viewModel.state.value.lines.map { it.stock.foodId })
+            assertEquals(1, f.stock.requests.size)
+        }
+
+    @Test
     fun `unidades rejects decimals and quantity cannot exceed available`() = runTest(dispatcher) {
         val f = fixture(stockPages = listOf(Result.success(page(huevos))))
         advanceUntilIdle()
@@ -193,7 +207,7 @@ class CreateFoodOutflowViewModelTest {
         advanceUntilIdle()
 
         assertTrue(f.outflows.created.isEmpty())
-        assertEquals("Disponible: 10.000.", f.viewModel.state.value.lines.single().quantity.displayError)
+        assertEquals("Disponible: 10.", f.viewModel.state.value.lines.single().quantity.displayError)
     }
 
     @Test

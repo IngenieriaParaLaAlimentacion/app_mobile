@@ -27,6 +27,7 @@ import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsU
 import ar.com.ingenieriaalimentacion.domain.util.IdGenerator
 import ar.com.ingenieriaalimentacion.domain.util.sanitizeIntegerInput
 import ar.com.ingenieriaalimentacion.domain.util.sanitizeQuantityInput
+import ar.com.ingenieriaalimentacion.presentation.common.formatQuantity
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -187,6 +188,10 @@ class CreateFoodOutflowViewModel(
     }
 
     private fun selectEstablishment(value: EstablishmentWithStatus) {
+        if (_state.value.selectedEstablishment?.id == value.id) {
+            _state.update { it.copy(showEstablishmentPicker = false) }
+            return
+        }
         stockJob?.cancel()
         _state.update {
             it.copy(
@@ -402,7 +407,8 @@ class CreateFoodOutflowViewModel(
             line.stock.unit == FoodUnit.Unidades && normalized.toLongOrNull() == null ->
                 "Ingresá una cantidad entera mayor a 0."
             entered == null || entered <= 0L -> "Ingresá una cantidad mayor a 0."
-            available == null || entered > available -> "Disponible: ${line.stock.quantity}."
+            available == null || entered > available ->
+                "Disponible: ${formatQuantity(line.stock.quantity)}."
             else -> null
         }
     }

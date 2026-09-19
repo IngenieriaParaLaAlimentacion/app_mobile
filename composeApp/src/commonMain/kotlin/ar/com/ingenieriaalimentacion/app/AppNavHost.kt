@@ -10,6 +10,7 @@ import ar.com.ingenieriaalimentacion.presentation.feature.auth.login.loginScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.reset_password.resetPasswordScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.establishment.select_establishment.selectEstablishmentScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_intake.createFoodIntakeScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_outflow.createFoodOutflowScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.food.food_stock.foodStockScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.get_started.getStartedScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.measurement.create_measurement.createMeasurementScreen
@@ -44,6 +45,7 @@ fun AppNavHost(
             createSubjectScreen(navController)
             createMeasurementScreen(navController)
             createFoodIntakeScreen(navController)
+            createFoodOutflowScreen(navController)
             foodStockScreen(navController)
             selectSubjectScreen(navController)
             editProfileScreen(navController)

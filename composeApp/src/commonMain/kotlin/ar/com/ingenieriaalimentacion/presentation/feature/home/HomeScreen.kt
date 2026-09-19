@@ -49,6 +49,7 @@ import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_check_
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_doc_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_document_2_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_down_line
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_exit_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_location_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_package_2_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_package_line
@@ -260,22 +261,22 @@ private val QUICK_ACTIONS = listOf(
     QuickAction(Res.drawable.ic_mingcute_ruler_line, "Medición", HomeAction.NewMeasurementClick),
     QuickAction(Res.drawable.ic_mingcute_user_3_line, "Sujeto", HomeAction.NewSubjectClick),
     QuickAction(Res.drawable.ic_mingcute_doc_line, "Encuesta", HomeAction.RespondSurveyClick),
-    QuickAction(Res.drawable.ic_mingcute_bowl_line, "Alimentos", HomeAction.NewFoodIntakeClick),
+    QuickAction(Res.drawable.ic_mingcute_bowl_line, "Ingreso", HomeAction.NewFoodIntakeClick),
+    QuickAction(Res.drawable.ic_mingcute_exit_line, "Egreso", HomeAction.NewFoodOutflowClick),
     QuickAction(Res.drawable.ic_mingcute_wardrobe_line, "Stock", HomeAction.FoodStockClick),
 )
 
-/** 3, not 2 or 4: five actions in a 2-wide grid leave a lone full-width tile, and the original
- *  2×2 comment only ever ruled out a **four**-wide row. */
+/** Three columns keep the six actions in two complete rows without squeezing their labels. */
 private const val QUICK_ACTION_COLUMNS = 3
 
 @Composable
 private fun QuickActions(state: HomeState, onAction: (HomeAction) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg)) {
-        // A fixed 3-column grid: 3 tiles, then 2 tiles plus one empty slot. The trailing Spacers are
+        // A fixed 3-column grid. The trailing Spacers keep incomplete rows evenly sized if another
         // what keep every tile the same width — without them the last row's two tiles would stretch
         // to half the screen each and read as a different, more important control. A 4-wide row is
         // still ruled out (it squeezes every label past truncation on a small phone); 3 leaves room
-        // for the longest label, "Alimentos", at caption size.
+        // for the longest label at caption size.
         Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
             QUICK_ACTIONS.chunked(QUICK_ACTION_COLUMNS).forEach { row ->
                 Row(

@@ -37,6 +37,10 @@ sealed class Route {
     @SerialName("create_food_intake")
     data object CreateFoodIntake : Route()
 
+    @Serializable
+    @SerialName("create_food_outflow")
+    data object CreateFoodOutflow : Route()
+
     /** Stock of the *currently selected* establishment — the id is resolved at screen entry from
      *  `CurrentEstablishmentLocalStore`, never passed as a route argument, so a deep link or a
      *  restored back stack can never pin a stale establishment. */

@@ -10,6 +10,7 @@ import ar.com.ingenieriaalimentacion.domain.usecase.auth.SignInUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.SignOutUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.establishment.GetEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.CreateFoodIntakeUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.food.CreateFoodOutflowUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.GetFoodCategoriesUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.GetFoodMovementHistoryPageUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.GetFoodStockPageUseCase
@@ -102,6 +103,7 @@ val useCasesModule = module {
     factory { RetrySurveyResponseEditUploadUseCase(get()) }
     factory { SearchFoodsUseCase(get()) }
     factory { CreateFoodIntakeUseCase(get()) }
+    factory { CreateFoodOutflowUseCase(get()) }
     factory { GetFoodMovementHistoryPageUseCase(get()) }
     factory { ObserveFoodMovementsUseCase(get()) }
     factory { GetFoodStockPageUseCase(get()) }

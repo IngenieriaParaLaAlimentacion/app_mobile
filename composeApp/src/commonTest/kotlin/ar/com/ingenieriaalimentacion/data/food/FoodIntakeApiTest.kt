@@ -31,7 +31,7 @@ class FoodIntakeApiTest {
     private val request = FoodIntakeRequest(
         id = "11111111-1111-4111-8111-111111111111",
         establishmentId = "22222222-2222-4222-8222-222222222222",
-        receivedAt = "2026-09-06T12:00:00Z",
+        occurredAt = "2026-09-06T12:00:00Z",
         comments = "Donación",
         items = listOf(FoodLineRequest(foodId = "food-1", quantity = "12.5")),
     )
@@ -145,5 +145,18 @@ class FoodIntakeApiTest {
             captured?.contains("\"id\":\"11111111-1111-4111-8111-111111111111\"") == true,
             "body: $captured",
         )
+    }
+
+    @Test
+    fun `request body uses occurred_at and never received_at`() = runTest {
+        var captured: String? = null
+        val api = api { req ->
+            captured = (req.body as io.ktor.http.content.TextContent).text
+            respond(successBody, HttpStatusCode.Created, jsonHeaders())
+        }
+        api.create(request)
+        val body = assertNotNull(captured)
+        assertTrue(body.contains("\"occurred_at\":"), "body: $body")
+        assertFalse(body.contains("\"received_at\":"), "body: $body")
     }
 }

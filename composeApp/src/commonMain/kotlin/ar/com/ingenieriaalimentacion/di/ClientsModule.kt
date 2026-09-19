@@ -4,6 +4,7 @@ import ar.com.ingenieriaalimentacion.data.activity.ActivityApi
 import ar.com.ingenieriaalimentacion.data.auth.AuthApi
 import ar.com.ingenieriaalimentacion.data.establishment.EstablishmentApi
 import ar.com.ingenieriaalimentacion.data.food.FoodCatalogApi
+import ar.com.ingenieriaalimentacion.data.food.EstablishmentFoodMovementApi
 import ar.com.ingenieriaalimentacion.data.food.FoodIntakeApi
 import ar.com.ingenieriaalimentacion.data.food.FoodOutflowApi
 import ar.com.ingenieriaalimentacion.data.food.FoodMovementActivityApi
@@ -65,5 +66,6 @@ val clientsModule = module {
     single { FoodOutflowApi(client = get()) }
     single { FoodMovementActivityApi(client = get()) }
     single { FoodStockApi(client = get()) }
+    single { EstablishmentFoodMovementApi(client = get()) }
     single { PushDeviceApi(client = get()) }
 }

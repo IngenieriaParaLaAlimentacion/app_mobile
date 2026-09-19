@@ -264,9 +264,10 @@ private val QUICK_ACTIONS = listOf(
     QuickAction(Res.drawable.ic_mingcute_bowl_line, "Ingreso", HomeAction.NewFoodIntakeClick),
     QuickAction(Res.drawable.ic_mingcute_exit_line, "Egreso", HomeAction.NewFoodOutflowClick),
     QuickAction(Res.drawable.ic_mingcute_wardrobe_line, "Stock", HomeAction.FoodStockClick),
+    QuickAction(Res.drawable.ic_mingcute_time, "Movimientos", HomeAction.FoodMovementHistoryClick),
 )
 
-/** Three columns keep the six actions in two complete rows without squeezing their labels. */
+/** Three columns keep the actions readable and preserve equal tile widths on incomplete rows. */
 private const val QUICK_ACTION_COLUMNS = 3
 
 @Composable

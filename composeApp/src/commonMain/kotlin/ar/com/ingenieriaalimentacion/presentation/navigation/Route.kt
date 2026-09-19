@@ -49,6 +49,17 @@ sealed class Route {
     data object FoodStock : Route()
 
     @Serializable
+    @SerialName("establishment_food_movement_history")
+    data object EstablishmentFoodMovementHistory : Route()
+
+    @Serializable
+    @SerialName("establishment_food_movement_detail")
+    data class EstablishmentFoodMovementDetail(
+        val establishmentId: String,
+        val movementId: String,
+    ) : Route()
+
+    @Serializable
     @SerialName("history")
     data object History : Route()
 

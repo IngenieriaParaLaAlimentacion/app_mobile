@@ -7,14 +7,14 @@ import kotlinx.serialization.Serializable
  * Body of `POST /api/v1/food-intakes`.
  *
  * [id] is the client-generated UUID (idempotency key): a replay of the same id answers 200 and
- * leaves the stock untouched. [receivedAt] is ISO 8601 UTC with zone (`…Z`) and is rejected by the
+ * leaves the stock untouched. [occurredAt] is ISO 8601 UTC with zone (`…Z`) and is rejected by the
  * server if it is in the future.
  */
 @Serializable
 data class FoodIntakeRequest(
     val id: String,
     @SerialName("establishment_id") val establishmentId: String,
-    @SerialName("received_at") val receivedAt: String,
+    @SerialName("occurred_at") val occurredAt: String,
     val comments: String? = null,
     val source: String = MANUAL_SOURCE,
     val items: List<FoodLineRequest>,

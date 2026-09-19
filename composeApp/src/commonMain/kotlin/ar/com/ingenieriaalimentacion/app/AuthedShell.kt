@@ -29,6 +29,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.navbar.AlBott
 import ar.com.ingenieriaalimentacion.presentation.feature.home.HomeDestination
 import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_intake.navigateToCreateFoodIntake
 import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_outflow.navigateToCreateFoodOutflow
+import ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_food_movement_history.navigateToEstablishmentFoodMovementHistory
 import ar.com.ingenieriaalimentacion.presentation.feature.food.food_stock.navigateToFoodStock
 import ar.com.ingenieriaalimentacion.presentation.feature.history.HistoryHubScreenRoot
 import ar.com.ingenieriaalimentacion.presentation.feature.home.HomeScreenRoot
@@ -112,6 +113,8 @@ fun AuthedShell(onSignOut: () -> Unit) {
                             // The OUTER nav: Stock is a pushed screen, not a tab, so the bottom bar
                             // steps aside exactly as it does for CreateFoodIntake.
                             HomeDestination.NavigateToFoodStock -> outerNav.navigateToFoodStock()
+                            HomeDestination.NavigateToEstablishmentFoodMovementHistory ->
+                                outerNav.navigateToEstablishmentFoodMovementHistory()
                         }
                     },
                 )

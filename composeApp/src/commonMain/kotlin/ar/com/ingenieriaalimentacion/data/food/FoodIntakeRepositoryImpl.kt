@@ -11,8 +11,8 @@ class FoodIntakeRepositoryImpl(private val api: FoodIntakeApi) : FoodIntakeRepos
 
     override suspend fun createIntake(intake: NewFoodIntake): Result<Unit> {
         // ISO 8601 UTC with zone (…Z) — same stamping as MeasurementRepositoryImpl.enqueue.
-        val receivedAt = Instant.fromEpochMilliseconds(intake.receivedAtEpochMillis).toString()
-        return when (val outcome = api.create(intake.toRequest(receivedAt))) {
+        val occurredAt = Instant.fromEpochMilliseconds(intake.receivedAtEpochMillis).toString()
+        return when (val outcome = api.create(intake.toRequest(occurredAt))) {
             is FoodIntakeUploadOutcome.Created -> Result.success(Unit)
             FoodIntakeUploadOutcome.EstablishmentAccessDenied ->
                 fail(FoodIntakeError.EstablishmentAccessDenied)

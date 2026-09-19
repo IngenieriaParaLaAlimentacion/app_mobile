@@ -14,4 +14,5 @@ sealed interface HomeAction {
     data object NewFoodIntakeClick : HomeAction
     data object NewFoodOutflowClick : HomeAction
     data object FoodStockClick : HomeAction
+    data object FoodMovementHistoryClick : HomeAction
 }

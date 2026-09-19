@@ -8,11 +8,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class FakeAuthRepository : AuthRepository {
+class FakeAuthRepository(
+    private val sharedEvents: MutableList<String>? = null,
+) : AuthRepository {
     private val _status = MutableStateFlow<SessionStatus>(SessionStatus.Initializing)
     override val sessionStatus: StateFlow<SessionStatus> = _status.asStateFlow()
 
     var signOutCount: Int = 0
+    var resetPasswordResult: Result<Unit> = Result.success(Unit)
 
     /** Drives the session-status flow from tests. */
     fun emit(status: SessionStatus) {
@@ -24,11 +27,14 @@ class FakeAuthRepository : AuthRepository {
         Result.failure(IllegalStateException("not used"))
 
     override suspend fun signOut() {
+        sharedEvents?.add("authSignOut")
         signOutCount++
     }
 
-    override suspend fun resetPassword(token: String, newPassword: String): Result<Unit> =
-        Result.success(Unit)
+    override suspend fun resetPassword(token: String, newPassword: String): Result<Unit> {
+        sharedEvents?.add("resetPassword")
+        return resetPasswordResult
+    }
 
     override suspend fun requestPasswordRecovery(email: String): Result<Unit> =
         Result.success(Unit)

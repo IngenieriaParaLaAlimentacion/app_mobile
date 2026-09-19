@@ -94,6 +94,7 @@ plugins {
     alias(libs.plugins.sqldelight)
     alias(libs.plugins.buildkonfig)
     alias(libs.plugins.firebase.appdistribution)
+    alias(libs.plugins.google.services)
 }
 
 buildkonfig {
@@ -148,7 +149,10 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+            implementation(libs.androidx.core)
             implementation(libs.androidx.core.splashscreen)
+            implementation(project.dependencies.platform(libs.firebase.bom))
+            implementation(libs.firebase.messaging)
             implementation(libs.koin.android)
             implementation(libs.koin.androidx.compose)
             implementation(libs.ktor.client.okhttp)

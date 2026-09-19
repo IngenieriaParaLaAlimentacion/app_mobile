@@ -9,4 +9,5 @@ plugins {
     alias(libs.plugins.sqldelight) apply false
     alias(libs.plugins.buildkonfig) apply false
     alias(libs.plugins.firebase.appdistribution) apply false
+    alias(libs.plugins.google.services) apply false
 }

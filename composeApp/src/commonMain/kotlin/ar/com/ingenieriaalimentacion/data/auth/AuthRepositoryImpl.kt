@@ -62,9 +62,6 @@ class AuthRepositoryImpl(
 
     override suspend fun resetPassword(token: String, newPassword: String): Result<Unit> = runCatching {
         api.resetPassword(token, newPassword)
-        // Force a clean re-login with the new password — and clear any stale session
-        // (safe whether or not a session exists).
-        signOut()
     }.recoverCatching { throwable ->
         throw AuthFailure(mapResetError(throwable), throwable)
     }

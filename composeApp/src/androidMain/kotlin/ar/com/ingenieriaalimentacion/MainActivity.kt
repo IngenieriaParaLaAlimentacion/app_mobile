@@ -10,6 +10,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import ar.com.ingenieriaalimentacion.app.App
+import ar.com.ingenieriaalimentacion.data.notification.PushOpenBridge
 
 class MainActivity : ComponentActivity() {
 
@@ -24,10 +25,28 @@ class MainActivity : ComponentActivity() {
             SideEffect { navController = controller }
             App(navController = controller)
         }
+        handlePushIntent(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        setIntent(intent)
+        handlePushIntent(intent)
         navController?.handleDeepLink(intent)
     }
+
+    private fun handlePushIntent(intent: Intent?) {
+        val payload = mapOfNotNull(
+            "type" to intent?.getStringExtra("type"),
+            "establishment_id" to intent?.getStringExtra("establishment_id"),
+            "stale_days" to intent?.getStringExtra("stale_days"),
+        )
+        PushOpenBridge.handle(payload)
+        intent?.removeExtra("type")
+        intent?.removeExtra("establishment_id")
+        intent?.removeExtra("stale_days")
+    }
+
+    private fun mapOfNotNull(vararg pairs: Pair<String, String?>): Map<String, String> =
+        pairs.mapNotNull { (key, value) -> value?.let { key to it } }.toMap()
 }

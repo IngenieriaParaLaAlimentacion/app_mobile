@@ -19,3 +19,8 @@ keystore.properties
 google-services.json
 composeApp/google-services.json
 firebase.properties
+
+# Environment-specific Firebase client configuration (provision out-of-band)
+composeApp/src/tst/google-services.json
+composeApp/src/prod/google-services.json
+iosApp/**/GoogleService-Info.plist

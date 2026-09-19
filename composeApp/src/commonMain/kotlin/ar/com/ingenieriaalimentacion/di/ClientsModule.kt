@@ -9,6 +9,7 @@ import ar.com.ingenieriaalimentacion.data.food.FoodMovementActivityApi
 import ar.com.ingenieriaalimentacion.data.food.FoodStockApi
 import ar.com.ingenieriaalimentacion.data.measurement.MeasurementApi
 import ar.com.ingenieriaalimentacion.data.network.HttpClientFactory
+import ar.com.ingenieriaalimentacion.data.notification.PushDeviceApi
 import ar.com.ingenieriaalimentacion.data.profile.ProfileApi
 import ar.com.ingenieriaalimentacion.data.registration.RegistrationApi
 import ar.com.ingenieriaalimentacion.data.subject.SubjectApi
@@ -62,4 +63,5 @@ val clientsModule = module {
     single { FoodIntakeApi(client = get()) }
     single { FoodMovementActivityApi(client = get()) }
     single { FoodStockApi(client = get()) }
+    single { PushDeviceApi(client = get()) }
 }

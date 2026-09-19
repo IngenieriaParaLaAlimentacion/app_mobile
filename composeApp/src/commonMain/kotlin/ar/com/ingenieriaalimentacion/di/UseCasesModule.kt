@@ -20,6 +20,9 @@ import ar.com.ingenieriaalimentacion.domain.usecase.measurement.DeleteMeasuremen
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.GetMeasurementHistoryPageUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.ObserveMeasurementsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.RetryMeasurementUploadUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.notification.RegisterPushDeviceUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.notification.SelectEstablishmentFromPushUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.notification.UnregisterPushDeviceUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.ClearEstablishmentCacheUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetAvailableEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
@@ -57,9 +60,12 @@ import org.koin.dsl.module
 val useCasesModule = module {
     factory { InitializeAuthUseCase(get()) }
     factory { SignInUseCase(get()) }
-    factory { SignOutUseCase(get()) }
+    factory { RegisterPushDeviceUseCase(authRepository = get(), pushRepository = get()) }
+    factory { UnregisterPushDeviceUseCase(repository = get()) }
+    factory { SelectEstablishmentFromPushUseCase(profileRepository = get()) }
+    factory { SignOutUseCase(repository = get(), unregisterPushDevice = get()) }
     factory { ClearLocalDataUseCase(get()) }
-    factory { ResetPasswordUseCase(get()) }
+    factory { ResetPasswordUseCase(repository = get(), unregisterPushDevice = get()) }
     factory { RequestPasswordRecoveryUseCase(get()) }
     factory { ObserveSessionStatusUseCase(get()) }
     factory { GetEstablishmentsUseCase(get()) }

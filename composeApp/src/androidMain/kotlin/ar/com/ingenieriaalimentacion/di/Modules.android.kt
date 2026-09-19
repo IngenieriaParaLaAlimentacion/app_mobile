@@ -6,6 +6,8 @@ import ar.com.ingenieriaalimentacion.data.db.DatabaseDriverFactory
 import ar.com.ingenieriaalimentacion.data.device.DeviceIdStore
 import ar.com.ingenieriaalimentacion.data.network.connectivity.AndroidConnectivityObserver
 import ar.com.ingenieriaalimentacion.data.network.connectivity.ConnectivityObserver
+import ar.com.ingenieriaalimentacion.data.notification.AndroidPushTokenProvider
+import ar.com.ingenieriaalimentacion.data.notification.PushTokenProvider
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
 import org.koin.android.ext.koin.androidContext
@@ -18,4 +20,5 @@ actual val platformModule: Module = module {
     single { DeviceIdStore(context = androidContext()) }
     single<DatabaseDriverFactory> { AndroidDatabaseDriverFactory(androidContext()) }
     single<ConnectivityObserver> { AndroidConnectivityObserver(androidContext()) }
+    single<PushTokenProvider> { AndroidPushTokenProvider() }
 }

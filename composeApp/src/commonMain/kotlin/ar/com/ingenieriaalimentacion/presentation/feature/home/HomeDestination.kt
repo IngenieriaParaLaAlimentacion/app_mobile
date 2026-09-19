@@ -9,4 +9,5 @@ sealed class HomeDestination {
     data object NavigateToCreateFoodIntake : HomeDestination()
     data object NavigateToCreateFoodOutflow : HomeDestination()
     data object NavigateToFoodStock : HomeDestination()
+    data object NavigateToEstablishmentFoodMovementHistory : HomeDestination()
 }

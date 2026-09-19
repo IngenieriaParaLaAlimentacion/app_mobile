@@ -7,6 +7,8 @@ import ar.com.ingenieriaalimentacion.presentation.feature.auth.login.LoginViewMo
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.reset_password.ResetPasswordViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_intake.CreateFoodIntakeViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_outflow.CreateFoodOutflowViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_food_movement_detail.EstablishmentFoodMovementDetailViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_food_movement_history.EstablishmentFoodMovementHistoryViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.food.food_movement_history.FoodMovementHistoryViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.food.food_stock.FoodStockViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.get_started.GetStartedViewModel
@@ -91,6 +93,14 @@ val viewModelsModule = module {
     viewModelOf(::SurveyResponseHistoryViewModel)
     viewModelOf(::FoodMovementHistoryViewModel)
     viewModelOf(::FoodStockViewModel)
+    viewModelOf(::EstablishmentFoodMovementHistoryViewModel)
+    viewModel { (route: Route.EstablishmentFoodMovementDetail) ->
+        EstablishmentFoodMovementDetailViewModel(
+            route = route,
+            getDetail = get(),
+            connectivity = get(),
+        )
+    }
     viewModel { (route: Route.SurveyResponseDetail) ->
         SurveyResponseDetailViewModel(
             route = route,

@@ -126,6 +126,13 @@ class HomeViewModel(
 
             HomeAction.FoodStockClick ->
                 _state.update { it.copy(destination = HomeDestination.NavigateToFoodStock) }
+
+            HomeAction.FoodMovementHistoryClick ->
+                _state.update {
+                    it.copy(
+                        destination = HomeDestination.NavigateToEstablishmentFoodMovementHistory,
+                    )
+                }
         }
     }
 

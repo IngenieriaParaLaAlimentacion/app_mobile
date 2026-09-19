@@ -267,4 +267,20 @@ class HomeViewModelTest {
             cancelAndIgnoreRemainingEvents()
         }
     }
+
+    @Test
+    fun `food outflow click navigates to outflow`() = runTest(dispatcher) {
+        val profileRepo = FakeProfileRepository().apply {
+            myEstablishmentsResult = Result.success(emptyList())
+        }
+        val viewModel = viewModel(profileRepo = profileRepo)
+        advanceUntilIdle()
+
+        viewModel.onAction(HomeAction.NewFoodOutflowClick)
+
+        assertEquals(
+            HomeDestination.NavigateToCreateFoodOutflow,
+            viewModel.state.value.destination,
+        )
+    }
 }

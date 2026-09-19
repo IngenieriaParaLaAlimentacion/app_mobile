@@ -12,6 +12,8 @@ import ar.com.ingenieriaalimentacion.domain.usecase.establishment.GetEstablishme
 import ar.com.ingenieriaalimentacion.domain.usecase.food.CreateFoodIntakeUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.CreateFoodOutflowUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.GetFoodCategoriesUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.food.GetEstablishmentFoodMovementDetailUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.food.GetEstablishmentFoodMovementPageUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.GetFoodMovementHistoryPageUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.GetFoodStockPageUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.ObserveFoodMovementsUseCase
@@ -114,5 +116,7 @@ val useCasesModule = module {
     factory { ObserveFoodMovementsUseCase(get()) }
     factory { GetFoodStockPageUseCase(get()) }
     factory { GetFoodCategoriesUseCase(get()) }
+    factory { GetEstablishmentFoodMovementPageUseCase(get()) }
+    factory { GetEstablishmentFoodMovementDetailUseCase(get()) }
     factory { ResolveCurrentEstablishmentUseCase(get()) }
 }

@@ -20,11 +20,11 @@ internal fun FoodListItemDto.toDomain(): Food = Food(
 internal fun PaginatedFoodsResponse.toDomain(): FoodSearchResult =
     FoodSearchResult(items = items.map { it.toDomain() }, total = total)
 
-/** [receivedAtIso] is stamped by the repository so the ISO formatting lives in one place. */
-internal fun NewFoodIntake.toRequest(receivedAtIso: String): FoodIntakeRequest = FoodIntakeRequest(
+/** [occurredAtIso] is stamped by the repository so the ISO formatting lives in one place. */
+internal fun NewFoodIntake.toRequest(occurredAtIso: String): FoodIntakeRequest = FoodIntakeRequest(
     id = id,
     establishmentId = establishmentId,
-    receivedAt = receivedAtIso,
+    occurredAt = occurredAtIso,
     comments = comments?.takeIf { it.isNotBlank() },
     items = items.map { FoodLineRequest(foodId = it.foodId, quantity = it.quantity) },
 )

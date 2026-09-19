@@ -269,35 +269,29 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `food outflow click navigates to outflow`() = runTest(dispatcher) {
+    fun `food overview click navigates and destination clears`() = runTest(dispatcher) {
         val profileRepo = FakeProfileRepository().apply {
             myEstablishmentsResult = Result.success(emptyList())
         }
         val viewModel = viewModel(profileRepo = profileRepo)
         advanceUntilIdle()
 
-        viewModel.onAction(HomeAction.NewFoodOutflowClick)
+        viewModel.onAction(HomeAction.FoodOverviewClick)
 
         assertEquals(
-            HomeDestination.NavigateToCreateFoodOutflow,
+            HomeDestination.NavigateToFoodOverview,
             viewModel.state.value.destination,
         )
+        viewModel.clearDestination()
+        assertNull(viewModel.state.value.destination)
     }
 
     @Test
-    fun `movement history click navigates and destination clears`() = runTest(dispatcher) {
-        val profileRepo = FakeProfileRepository().apply {
-            myEstablishmentsResult = Result.success(emptyList())
-        }
-        val vm = viewModel(profileRepo = profileRepo)
-        advanceUntilIdle()
-
-        vm.onAction(HomeAction.FoodMovementHistoryClick)
+    fun `quick actions expose exactly the four home entry points`() {
         assertEquals(
-            HomeDestination.NavigateToEstablishmentFoodMovementHistory,
-            vm.state.value.destination,
+            listOf("Medición", "Sujeto", "Encuesta", "Alimentos"),
+            QUICK_ACTIONS.map { it.label },
         )
-        vm.clearDestination()
-        assertNull(vm.state.value.destination)
+        assertEquals(HomeAction.FoodOverviewClick, QUICK_ACTIONS.last().action)
     }
 }

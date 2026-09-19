@@ -33,9 +33,7 @@ data class CreateFoodOutflowState(
     val outflowId: String = "",
     val isLoadingProfile: Boolean = true,
     val profileError: String? = null,
-    val establishmentOptions: List<EstablishmentWithStatus> = emptyList(),
     val selectedEstablishment: EstablishmentWithStatus? = null,
-    val showEstablishmentPicker: Boolean = false,
     val occurredAt: TextFieldState = TextFieldState(),
     val comments: TextFieldState = TextFieldState(),
     val lines: List<FoodOutflowLine> = emptyList(),
@@ -43,7 +41,6 @@ data class CreateFoodOutflowState(
     val isOnline: Boolean = true,
     val isSubmitting: Boolean = false,
     val submitError: String? = null,
-    val successMessage: String? = null,
 ) {
     val commentsCount: String get() = "${comments.value.length}/$MAX_OUTFLOW_COMMENTS"
     val canSubmit: Boolean

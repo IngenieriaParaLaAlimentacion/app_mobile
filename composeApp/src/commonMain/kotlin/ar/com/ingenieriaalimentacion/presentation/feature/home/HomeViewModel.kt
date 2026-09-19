@@ -118,21 +118,8 @@ class HomeViewModel(
             HomeAction.RespondSurveyClick ->
                 _state.update { it.copy(destination = HomeDestination.NavigateToSurveyList) }
 
-            HomeAction.NewFoodIntakeClick ->
-                _state.update { it.copy(destination = HomeDestination.NavigateToCreateFoodIntake) }
-
-            HomeAction.NewFoodOutflowClick ->
-                _state.update { it.copy(destination = HomeDestination.NavigateToCreateFoodOutflow) }
-
-            HomeAction.FoodStockClick ->
-                _state.update { it.copy(destination = HomeDestination.NavigateToFoodStock) }
-
-            HomeAction.FoodMovementHistoryClick ->
-                _state.update {
-                    it.copy(
-                        destination = HomeDestination.NavigateToEstablishmentFoodMovementHistory,
-                    )
-                }
+            HomeAction.FoodOverviewClick ->
+                _state.update { it.copy(destination = HomeDestination.NavigateToFoodOverview) }
         }
     }
 

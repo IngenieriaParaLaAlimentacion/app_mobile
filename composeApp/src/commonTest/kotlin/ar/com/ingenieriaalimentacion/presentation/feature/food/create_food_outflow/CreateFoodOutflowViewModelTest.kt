@@ -12,8 +12,7 @@ import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatu
 import ar.com.ingenieriaalimentacion.domain.usecase.food.CreateFoodOutflowUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.GetFoodCategoriesUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.GetFoodStockPageUseCase
-import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
-import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.ResolveCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.fake.FakeConnectivityObserver
 import ar.com.ingenieriaalimentacion.fake.FakeFoodCatalogRepository
 import ar.com.ingenieriaalimentacion.fake.FakeFoodOutflowRepository
@@ -85,8 +84,7 @@ class CreateFoodOutflowViewModelTest {
                 createFoodOutflow = CreateFoodOutflowUseCase(outflows),
                 getFoodStockPage = GetFoodStockPageUseCase(stock),
                 getFoodCategories = GetFoodCategoriesUseCase(catalog),
-                getMyEstablishments = GetMyEstablishmentsUseCase(profile),
-                getCurrentEstablishment = GetCurrentEstablishmentUseCase(profile),
+                resolveCurrentEstablishment = ResolveCurrentEstablishmentUseCase(profile),
                 connectivity = FakeConnectivityObserver(initial = online),
                 idGenerator = ids,
             ),
@@ -167,33 +165,24 @@ class CreateFoodOutflowViewModelTest {
     }
 
     @Test
-    fun `changing establishment clears lines and refreshes its stock`() = runTest(dispatcher) {
-        val other = establishment("e-2")
-        val f = fixture(establishments = listOf(establishment, other))
-        advanceUntilIdle()
-        f.viewModel.onAction(CreateFoodOutflowAction.FoodPicked(arroz))
-
-        f.viewModel.onAction(CreateFoodOutflowAction.EstablishmentSelected(other))
+    fun `missing global establishment shows profile error without loading stock`() = runTest(dispatcher) {
+        val f = fixture(currentEstablishmentId = null)
         advanceUntilIdle()
 
-        assertTrue(f.viewModel.state.value.lines.isEmpty())
-        assertEquals("e-2", f.stock.requests.last().first)
-        assertEquals(1, f.stock.requests.last().third)
+        assertNull(f.viewModel.state.value.selectedEstablishment)
+        assertTrue(f.viewModel.state.value.profileError!!.contains("Inicio"))
+        assertTrue(f.stock.requests.isEmpty())
     }
 
     @Test
-    fun `selecting current establishment preserves lines and does not refresh stock`() =
-        runTest(dispatcher) {
-            val f = readyFixture()
-            advanceUntilIdle()
-            f.viewModel.onAction(CreateFoodOutflowAction.FoodPicked(arroz))
+    fun `stale global establishment shows profile error without loading stock`() = runTest(dispatcher) {
+        val f = fixture(currentEstablishmentId = "revoked")
+        advanceUntilIdle()
 
-            f.viewModel.onAction(CreateFoodOutflowAction.EstablishmentSelected(establishment))
-            advanceUntilIdle()
-
-            assertEquals(listOf(arroz.foodId), f.viewModel.state.value.lines.map { it.stock.foodId })
-            assertEquals(1, f.stock.requests.size)
-        }
+        assertNull(f.viewModel.state.value.selectedEstablishment)
+        assertTrue(f.viewModel.state.value.profileError!!.contains("Inicio"))
+        assertTrue(f.stock.requests.isEmpty())
+    }
 
     @Test
     fun `unidades rejects decimals and quantity cannot exceed available`() = runTest(dispatcher) {
@@ -269,10 +258,11 @@ class CreateFoodOutflowViewModelTest {
         assertEquals(2, f.outflows.created.size)
         assertEquals(f.outflows.created[0].id, f.outflows.created[1].id)
         assertTrue(f.viewModel.state.value.lines.isNotEmpty())
+        assertNull(f.viewModel.state.value.destination)
     }
 
     @Test
-    fun `success resets form mints id keeps establishment and refreshes stock`() = runTest(dispatcher) {
+    fun `success emits Saved preserves form and does not refresh local stock`() = runTest(dispatcher) {
         val f = readyFixture()
         advanceUntilIdle()
         val firstId = f.viewModel.state.value.outflowId
@@ -281,13 +271,14 @@ class CreateFoodOutflowViewModelTest {
         advanceUntilIdle()
 
         with(f.viewModel.state.value) {
-            assertTrue(outflowId != firstId)
-            assertTrue(lines.isEmpty())
-            assertEquals("", comments.value)
+            assertEquals(firstId, outflowId)
+            assertEquals(listOf(arroz.foodId), lines.map { it.stock.foodId })
+            assertEquals("Almuerzo", comments.value)
             assertEquals(establishment, selectedEstablishment)
-            assertEquals("Egreso registrado", successMessage)
+            assertEquals(CreateFoodOutflowDestination.Saved, destination)
         }
-        assertTrue(f.stock.requests.size >= 2)
+        assertEquals(establishment.id, f.outflows.created.single().establishmentId)
+        assertEquals(1, f.stock.requests.size)
     }
 
     @Test
@@ -308,6 +299,7 @@ class CreateFoodOutflowViewModelTest {
         assertEquals("2.000", f.viewModel.state.value.lines.single().stock.quantity)
         assertTrue(f.viewModel.state.value.submitError!!.contains("Disponible: 2"))
         assertTrue(f.stock.requests.size >= 2)
+        assertNull(f.viewModel.state.value.destination)
     }
 
     private fun dateDigits(daysFromToday: Int): String {

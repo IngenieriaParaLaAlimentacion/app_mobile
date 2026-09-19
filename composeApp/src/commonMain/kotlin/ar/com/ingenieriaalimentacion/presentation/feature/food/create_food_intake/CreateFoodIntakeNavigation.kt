@@ -5,6 +5,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.composable
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
+import ar.com.ingenieriaalimentacion.presentation.navigation.FOOD_MOVEMENT_CREATED_RESULT
 
 fun NavController.navigateToCreateFoodIntake(navOptions: NavOptions? = null) =
     navigate(Route.CreateFoodIntake, navOptions)
@@ -23,5 +24,10 @@ internal fun navigate(
 ) {
     when (destination) {
         CreateFoodIntakeDestination.Back -> navController.popBackStack()
+        CreateFoodIntakeDestination.Saved -> {
+            navController.previousBackStackEntry?.savedStateHandle
+                ?.set(FOOD_MOVEMENT_CREATED_RESULT, true)
+            navController.popBackStack()
+        }
     }
 }

@@ -10,6 +10,7 @@ import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_outfl
 import ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_food_movement_detail.EstablishmentFoodMovementDetailViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_food_movement_history.EstablishmentFoodMovementHistoryViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.food.food_movement_history.FoodMovementHistoryViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.food.food_overview.FoodOverviewViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.food.food_stock.FoodStockViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.get_started.GetStartedViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.home.HomeViewModel
@@ -93,6 +94,7 @@ val viewModelsModule = module {
     viewModelOf(::SurveyResponseHistoryViewModel)
     viewModelOf(::FoodMovementHistoryViewModel)
     viewModelOf(::FoodStockViewModel)
+    viewModelOf(::FoodOverviewViewModel)
     viewModelOf(::EstablishmentFoodMovementHistoryViewModel)
     viewModel { (route: Route.EstablishmentFoodMovementDetail) ->
         EstablishmentFoodMovementDetailViewModel(

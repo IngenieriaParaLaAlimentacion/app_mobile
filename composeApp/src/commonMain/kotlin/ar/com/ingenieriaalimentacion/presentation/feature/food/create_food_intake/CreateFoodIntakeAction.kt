@@ -1,12 +1,8 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_intake
 
 import ar.com.ingenieriaalimentacion.domain.model.food.Food
-import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 
 sealed interface CreateFoodIntakeAction {
-    data object EstablishmentPickerOpen : CreateFoodIntakeAction
-    data object EstablishmentPickerDismiss : CreateFoodIntakeAction
-    data class EstablishmentSelected(val establishment: EstablishmentWithStatus) : CreateFoodIntakeAction
     data class ReceivedAtChanged(val value: String) : CreateFoodIntakeAction
     data class ReceivedAtFocusChanged(val focused: Boolean) : CreateFoodIntakeAction
     data class CommentsChanged(val value: String) : CreateFoodIntakeAction
@@ -22,7 +18,6 @@ sealed interface CreateFoodIntakeAction {
     data class LineRemoved(val foodId: String) : CreateFoodIntakeAction
 
     data object Submit : CreateFoodIntakeAction
-    data object DismissSuccess : CreateFoodIntakeAction
     data object RetryProfile : CreateFoodIntakeAction
     data object BackClick : CreateFoodIntakeAction
 }

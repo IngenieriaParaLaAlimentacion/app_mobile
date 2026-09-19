@@ -42,7 +42,6 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlSelec
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.DateVisualTransformation
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
-import ar.com.ingenieriaalimentacion.core.design_system.components.toast.AlToast
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.presentation.common.formatQuantityWithUnit
@@ -97,7 +96,6 @@ fun CreateFoodOutflowScreen(
                 else -> OutflowForm(state, onAction, scrollState, isImeVisible)
             }
         }
-        if (state.showEstablishmentPicker) EstablishmentSheet(state, onAction)
         if (state.stock.showPicker) StockSheet(state, onAction)
         if (state.stock.showCategoryPicker) CategorySheet(state, onAction)
     }
@@ -129,13 +127,18 @@ private fun OutflowForm(
                         variant = AlBannerVariant.Danger,
                     )
                 }
-                AlSelectField(
-                    label = "Establecimiento",
-                    value = state.selectedEstablishment?.name.orEmpty(),
-                    placeholder = "Elegí el establecimiento",
-                    enabled = enabled && state.establishmentOptions.isNotEmpty(),
-                    onClick = { onAction(CreateFoodOutflowAction.EstablishmentPickerOpen) },
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
+                    Text(
+                        text = "Establecimiento",
+                        style = AlTheme.typography.label,
+                        color = AlTheme.colors.textMuted,
+                    )
+                    Text(
+                        text = state.selectedEstablishment?.name.orEmpty(),
+                        style = AlTheme.typography.body,
+                        color = AlTheme.colors.textBase,
+                    )
+                }
                 AlInput(
                     label = "Fecha del egreso",
                     value = state.occurredAt.value,
@@ -212,39 +215,6 @@ private fun OutflowForm(
                 ) {
                     Text("Guardar")
                 }
-            }
-        }
-        AlToast(
-            message = state.successMessage,
-            onDismiss = { onAction(CreateFoodOutflowAction.DismissSuccess) },
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun EstablishmentSheet(
-    state: CreateFoodOutflowState,
-    onAction: (CreateFoodOutflowAction) -> Unit,
-) {
-    ModalBottomSheet(
-        onDismissRequest = { onAction(CreateFoodOutflowAction.EstablishmentPickerDismiss) },
-    ) {
-        Column(modifier = Modifier.navigationBarsPadding()) {
-            Text(
-                text = "Elegí el establecimiento",
-                modifier = Modifier.padding(AlTheme.spacing.md),
-                style = AlTheme.typography.body,
-                color = AlTheme.colors.textBase,
-            )
-            state.establishmentOptions.forEach { establishment ->
-                AlListRow(
-                    title = establishment.name,
-                    subtitle = establishment.formattedAddress,
-                    onClick = {
-                        onAction(CreateFoodOutflowAction.EstablishmentSelected(establishment))
-                    },
-                )
             }
         }
     }

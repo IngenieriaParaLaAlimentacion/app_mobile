@@ -9,8 +9,7 @@ import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import ar.com.ingenieriaalimentacion.domain.usecase.food.CreateFoodIntakeUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.SearchFoodsUseCase
-import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
-import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.ResolveCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.fake.FakeConnectivityObserver
 import ar.com.ingenieriaalimentacion.fake.FakeFoodCatalogRepository
 import ar.com.ingenieriaalimentacion.fake.FakeFoodIntakeRepository
@@ -76,12 +75,16 @@ class CreateFoodIntakeViewModelTest {
     private fun fixture(
         online: Boolean = true,
         establishments: List<EstablishmentWithStatus> = listOf(establishment),
+        currentEstablishmentId: String? = establishment.id,
         catalogResult: Result<FoodSearchResult> = Result.success(FoodSearchResult(emptyList(), 0)),
     ): Fixture {
         val catalog = FakeFoodCatalogRepository().apply { result = catalogResult }
         val intakes = FakeFoodIntakeRepository()
         val ids = FakeIdGenerator()
-        val profile = FakeProfileRepository().apply { myEstablishmentsResult = Result.success(establishments) }
+        val profile = FakeProfileRepository().apply {
+            myEstablishmentsResult = Result.success(establishments)
+            this.currentEstablishmentId = currentEstablishmentId
+        }
         return Fixture(
             catalog = catalog,
             intakes = intakes,
@@ -89,8 +92,7 @@ class CreateFoodIntakeViewModelTest {
             viewModel = CreateFoodIntakeViewModel(
                 searchFoods = SearchFoodsUseCase(catalog),
                 createFoodIntake = CreateFoodIntakeUseCase(intakes),
-                getMyEstablishments = GetMyEstablishmentsUseCase(profile),
-                getCurrentEstablishment = GetCurrentEstablishmentUseCase(profile),
+                resolveCurrentEstablishment = ResolveCurrentEstablishmentUseCase(profile),
                 connectivity = FakeConnectivityObserver(initial = online),
                 idGenerator = ids,
             ),
@@ -202,7 +204,6 @@ class CreateFoodIntakeViewModelTest {
     fun `a kilogramos line accepts a comma and normalizes it to a dot in the model`() = runTest(dispatcher) {
         val f = fixture()
         advanceUntilIdle()
-        f.viewModel.onAction(CreateFoodIntakeAction.EstablishmentSelected(establishment))
         f.viewModel.onAction(CreateFoodIntakeAction.FoodPicked(pollo))
         f.viewModel.onAction(CreateFoodIntakeAction.LineQuantityChanged(pollo.id, "12,5"))
 
@@ -212,14 +213,13 @@ class CreateFoodIntakeViewModelTest {
         advanceUntilIdle()
 
         assertEquals("12.5", f.intakes.created.single().items.single().quantity)
+        assertEquals(establishment.id, f.intakes.created.single().establishmentId)
     }
 
     @Test
     fun `submit with no lines is a no-op`() = runTest(dispatcher) {
         val f = fixture()
         advanceUntilIdle()
-        f.viewModel.onAction(CreateFoodIntakeAction.EstablishmentSelected(establishment))
-
         assertFalse(f.viewModel.state.value.canSubmit)
         f.viewModel.onAction(CreateFoodIntakeAction.Submit)
         advanceUntilIdle()
@@ -232,7 +232,6 @@ class CreateFoodIntakeViewModelTest {
         val f = fixture()
         f.intakes.result = Result.failure(FoodIntakeFailure(FoodIntakeError.Network, null))
         advanceUntilIdle()
-        f.viewModel.onAction(CreateFoodIntakeAction.EstablishmentSelected(establishment))
         f.viewModel.onAction(CreateFoodIntakeAction.FoodPicked(pollo))
         f.viewModel.onAction(CreateFoodIntakeAction.LineQuantityChanged(pollo.id, "10"))
 
@@ -246,14 +245,14 @@ class CreateFoodIntakeViewModelTest {
         assertEquals(2, f.intakes.created.size)
         assertEquals(f.intakes.created[0].id, f.intakes.created[1].id)
         assertEquals(1, f.viewModel.state.value.lines.size)
+        assertNull(f.viewModel.state.value.destination)
     }
 
     @Test
-    fun `a successful submit mints a new intake id and clears the form`() = runTest(dispatcher) {
+    fun `a successful submit emits Saved and preserves the form until pop`() = runTest(dispatcher) {
         val f = fixture()
         advanceUntilIdle()
         val firstId = f.viewModel.state.value.intakeId
-        f.viewModel.onAction(CreateFoodIntakeAction.EstablishmentSelected(establishment))
         f.viewModel.onAction(CreateFoodIntakeAction.FoodPicked(pollo))
         f.viewModel.onAction(CreateFoodIntakeAction.LineQuantityChanged(pollo.id, "10"))
         f.viewModel.onAction(CreateFoodIntakeAction.CommentsChanged("Donación"))
@@ -263,11 +262,10 @@ class CreateFoodIntakeViewModelTest {
 
         val state = f.viewModel.state.value
         assertEquals(firstId, f.intakes.created.single().id)
-        assertTrue(state.intakeId != firstId, "a spent id must not be reused")
-        assertTrue(state.lines.isEmpty())
-        assertEquals("", state.comments.value)
-        assertEquals("Ingreso registrado", state.successMessage)
-        // The establishment is deliberately kept for the next intake.
+        assertEquals(firstId, state.intakeId)
+        assertEquals(listOf(pollo.id), state.lines.map { it.food.id })
+        assertEquals("Donación", state.comments.value)
+        assertEquals(CreateFoodIntakeDestination.Saved, state.destination)
         assertEquals(establishment, state.selectedEstablishment)
     }
 
@@ -275,7 +273,6 @@ class CreateFoodIntakeViewModelTest {
     fun `offline blocks submit`() = runTest(dispatcher) {
         val f = fixture(online = false)
         advanceUntilIdle()
-        f.viewModel.onAction(CreateFoodIntakeAction.EstablishmentSelected(establishment))
         f.viewModel.onAction(CreateFoodIntakeAction.FoodPicked(pollo))
         f.viewModel.onAction(CreateFoodIntakeAction.LineQuantityChanged(pollo.id, "10"))
 
@@ -291,7 +288,6 @@ class CreateFoodIntakeViewModelTest {
     fun `a future date blocks submit and shows the error`() = runTest(dispatcher) {
         val f = fixture()
         advanceUntilIdle()
-        f.viewModel.onAction(CreateFoodIntakeAction.EstablishmentSelected(establishment))
         f.viewModel.onAction(CreateFoodIntakeAction.FoodPicked(pollo))
         f.viewModel.onAction(CreateFoodIntakeAction.LineQuantityChanged(pollo.id, "10"))
         f.viewModel.onAction(CreateFoodIntakeAction.ReceivedAtChanged(dateDigits(daysFromToday = 1)))
@@ -307,7 +303,6 @@ class CreateFoodIntakeViewModelTest {
     fun `a past date is accepted`() = runTest(dispatcher) {
         val f = fixture()
         advanceUntilIdle()
-        f.viewModel.onAction(CreateFoodIntakeAction.EstablishmentSelected(establishment))
         f.viewModel.onAction(CreateFoodIntakeAction.FoodPicked(pollo))
         f.viewModel.onAction(CreateFoodIntakeAction.LineQuantityChanged(pollo.id, "10"))
         f.viewModel.onAction(CreateFoodIntakeAction.ReceivedAtChanged(dateDigits(daysFromToday = -7)))
@@ -326,16 +321,34 @@ class CreateFoodIntakeViewModelTest {
 
         val state = f.viewModel.state.value
         assertEquals(dateDigits(daysFromToday = 0), state.receivedAt.value)
-        // Sole approved establishment auto-selects, per the pre-fill-not-gate rule.
+        // The stored global establishment is the only accepted scope.
         assertEquals(establishment, state.selectedEstablishment)
         assertNotNull(state.intakeId.takeIf { it.isNotBlank() })
+    }
+
+    @Test
+    fun `missing global establishment shows profile error`() = runTest(dispatcher) {
+        val f = fixture(currentEstablishmentId = null)
+        advanceUntilIdle()
+
+        assertNull(f.viewModel.state.value.selectedEstablishment)
+        assertTrue(f.viewModel.state.value.profileError!!.contains("Inicio"))
+    }
+
+    @Test
+    fun `stale global establishment shows profile error and cannot submit`() = runTest(dispatcher) {
+        val f = fixture(currentEstablishmentId = "revoked")
+        advanceUntilIdle()
+
+        assertNull(f.viewModel.state.value.selectedEstablishment)
+        assertFalse(f.viewModel.state.value.canSubmit)
+        assertTrue(f.intakes.created.isEmpty())
     }
 
     @Test
     fun `comments longer than the limit block submit`() = runTest(dispatcher) {
         val f = fixture()
         advanceUntilIdle()
-        f.viewModel.onAction(CreateFoodIntakeAction.EstablishmentSelected(establishment))
         f.viewModel.onAction(CreateFoodIntakeAction.FoodPicked(pollo))
         f.viewModel.onAction(CreateFoodIntakeAction.LineQuantityChanged(pollo.id, "10"))
         f.viewModel.onAction(CreateFoodIntakeAction.CommentsChanged("x".repeat(MAX_COMMENTS + 1)))

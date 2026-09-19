@@ -9,15 +9,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -34,12 +30,9 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.banner.AlInli
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlAutocompleteInput
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlInput
-import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlSelectField
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlSuggestion
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.DateVisualTransformation
-import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
-import ar.com.ingenieriaalimentacion.core.design_system.components.toast.AlToast
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.food.Food
@@ -64,7 +57,6 @@ fun CreateFoodIntakeScreenRoot(
     CreateFoodIntakeScreen(state = state, onAction = viewModel::onAction)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateFoodIntakeScreen(
     state: CreateFoodIntakeState,
@@ -72,8 +64,6 @@ fun CreateFoodIntakeScreen(
 ) {
     val scrollState = rememberScrollState()
     val isImeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-    val sheetState = rememberModalBottomSheetState()
-
     AlScaffold {
         Column(
             modifier = Modifier
@@ -121,31 +111,6 @@ fun CreateFoodIntakeScreen(
             }
         }
 
-        if (state.showEstablishmentPicker) {
-            ModalBottomSheet(
-                onDismissRequest = { onAction(CreateFoodIntakeAction.EstablishmentPickerDismiss) },
-                sheetState = sheetState,
-            ) {
-                Column(modifier = Modifier.navigationBarsPadding()) {
-                    Text(
-                        text = "Elegí el establecimiento",
-                        style = AlTheme.typography.body,
-                        color = AlTheme.colors.textBase,
-                        modifier = Modifier.padding(
-                            horizontal = AlTheme.spacing.md,
-                            vertical = AlTheme.spacing.sm,
-                        ),
-                    )
-                    state.establishmentOptions.forEach { establishment ->
-                        AlListRow(
-                            title = establishment.name,
-                            subtitle = establishment.formattedAddress,
-                            onClick = { onAction(CreateFoodIntakeAction.EstablishmentSelected(establishment)) },
-                        )
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -180,18 +145,16 @@ private fun CreateFoodIntakeForm(
                     )
                 }
 
-                AlSelectField(
-                    label = "Establecimiento",
-                    value = state.selectedEstablishment?.name ?: "",
-                    placeholder = "Elegí el establecimiento",
-                    enabled = enabled && state.establishmentOptions.isNotEmpty(),
-                    onClick = { onAction(CreateFoodIntakeAction.EstablishmentPickerOpen) },
-                )
-                if (state.establishmentOptions.isEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
                     Text(
-                        text = "No tenés establecimientos aprobados.",
-                        style = AlTheme.typography.caption,
+                        text = "Establecimiento",
+                        style = AlTheme.typography.label,
                         color = AlTheme.colors.textMuted,
+                    )
+                    Text(
+                        text = state.selectedEstablishment?.name.orEmpty(),
+                        style = AlTheme.typography.body,
+                        color = AlTheme.colors.textBase,
                     )
                 }
 
@@ -287,11 +250,6 @@ private fun CreateFoodIntakeForm(
                 }
             }
         }
-
-        AlToast(
-            message = state.successMessage,
-            onDismiss = { onAction(CreateFoodIntakeAction.DismissSuccess) },
-        )
     }
 }
 

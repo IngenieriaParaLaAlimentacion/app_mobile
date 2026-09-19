@@ -17,13 +17,11 @@ import ar.com.ingenieriaalimentacion.domain.model.food.FoodUnit
 import ar.com.ingenieriaalimentacion.domain.model.food.NewFoodOutflow
 import ar.com.ingenieriaalimentacion.domain.model.food.NewFoodOutflowLine
 import ar.com.ingenieriaalimentacion.domain.model.food.StockSortOrder
-import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
-import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
+import ar.com.ingenieriaalimentacion.domain.model.profile.CurrentEstablishmentResult
 import ar.com.ingenieriaalimentacion.domain.usecase.food.CreateFoodOutflowUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.GetFoodCategoriesUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.GetFoodStockPageUseCase
-import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
-import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.ResolveCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.util.IdGenerator
 import ar.com.ingenieriaalimentacion.domain.util.sanitizeIntegerInput
 import ar.com.ingenieriaalimentacion.domain.util.sanitizeQuantityInput
@@ -45,8 +43,7 @@ class CreateFoodOutflowViewModel(
     private val createFoodOutflow: CreateFoodOutflowUseCase,
     private val getFoodStockPage: GetFoodStockPageUseCase,
     private val getFoodCategories: GetFoodCategoriesUseCase,
-    private val getMyEstablishments: GetMyEstablishmentsUseCase,
-    private val getCurrentEstablishment: GetCurrentEstablishmentUseCase,
+    private val resolveCurrentEstablishment: ResolveCurrentEstablishmentUseCase,
     connectivity: ConnectivityObserver,
     private val idGenerator: IdGenerator,
 ) : ViewModel() {
@@ -73,23 +70,17 @@ class CreateFoodOutflowViewModel(
                 _state.update { it.copy(stock = it.stock.copy(categories = categories)) }
             }
         }
-        loadEstablishments()
+        loadEstablishment()
     }
 
     fun onAction(action: CreateFoodOutflowAction) {
         when (action) {
             CreateFoodOutflowAction.BackClick ->
                 _state.update { it.copy(destination = CreateFoodOutflowDestination.Back) }
-            CreateFoodOutflowAction.RetryProfile -> loadEstablishments()
-            CreateFoodOutflowAction.EstablishmentPickerOpen ->
-                _state.update { it.copy(showEstablishmentPicker = true) }
-            CreateFoodOutflowAction.EstablishmentPickerDismiss ->
-                _state.update { it.copy(showEstablishmentPicker = false) }
-            is CreateFoodOutflowAction.EstablishmentSelected -> selectEstablishment(action.value)
+            CreateFoodOutflowAction.RetryProfile -> loadEstablishment()
             is CreateFoodOutflowAction.OccurredAtChanged -> _state.update {
                 it.copy(
                     occurredAt = it.occurredAt.onChange(dateDigits(action.value), occurredAtValidator),
-                    successMessage = null,
                 )
             }
             is CreateFoodOutflowAction.OccurredAtFocusChanged -> _state.update {
@@ -98,7 +89,6 @@ class CreateFoodOutflowViewModel(
             is CreateFoodOutflowAction.CommentsChanged -> _state.update {
                 it.copy(
                     comments = it.comments.onChange(action.value, commentsValidator),
-                    successMessage = null,
                 )
             }
             is CreateFoodOutflowAction.CommentsFocusChanged -> _state.update {
@@ -153,57 +143,44 @@ class CreateFoodOutflowViewModel(
                 it.copy(lines = it.lines.filterNot { line -> line.stock.foodId == action.foodId })
             }
             CreateFoodOutflowAction.Submit -> submit()
-            CreateFoodOutflowAction.DismissSuccess -> _state.update { it.copy(successMessage = null) }
         }
     }
 
     fun clearDestination() = _state.update { it.copy(destination = null) }
 
-    private fun loadEstablishments() {
+    private fun loadEstablishment() {
         _state.update { it.copy(isLoadingProfile = true, profileError = null) }
         viewModelScope.launch {
-            getMyEstablishments().fold(
-                onSuccess = { all ->
-                    val approved = all.filter { it.status == EstablishmentStatus.Approved }
-                    val selected = getCurrentEstablishment(approved) ?: approved.singleOrNull()
+            when (val result = resolveCurrentEstablishment()) {
+                is CurrentEstablishmentResult.Selected -> {
                     _state.update {
                         it.copy(
                             isLoadingProfile = false,
-                            establishmentOptions = approved,
-                            selectedEstablishment = selected,
+                            selectedEstablishment = result.establishment,
+                            profileError = null,
                         )
                     }
-                    if (selected != null && _state.value.isOnline) refreshStock()
-                },
-                onFailure = {
+                    if (_state.value.isOnline) refreshStock()
+                }
+                is CurrentEstablishmentResult.NoneSelected,
+                is CurrentEstablishmentResult.StaleSelection ->
                     _state.update {
                         it.copy(
                             isLoadingProfile = false,
-                            profileError = "No se pudieron cargar los establecimientos. Intentá nuevamente.",
+                            selectedEstablishment = null,
+                            profileError = "Elegí un establecimiento en Inicio para registrar un egreso.",
                         )
                     }
-                },
-            )
+                is CurrentEstablishmentResult.LoadFailed ->
+                    _state.update {
+                        it.copy(
+                            isLoadingProfile = false,
+                            selectedEstablishment = null,
+                            profileError = "No se pudo cargar el establecimiento. Intentá nuevamente.",
+                        )
+                    }
+            }
         }
-    }
-
-    private fun selectEstablishment(value: EstablishmentWithStatus) {
-        if (_state.value.selectedEstablishment?.id == value.id) {
-            _state.update { it.copy(showEstablishmentPicker = false) }
-            return
-        }
-        stockJob?.cancel()
-        _state.update {
-            it.copy(
-                selectedEstablishment = value,
-                showEstablishmentPicker = false,
-                lines = emptyList(),
-                stock = it.stock.copy(items = emptyList(), page = 1, hasMore = false, error = null),
-                submitError = null,
-                successMessage = null,
-            )
-        }
-        refreshStock()
     }
 
     private fun refreshStock() {
@@ -235,26 +212,32 @@ class CreateFoodOutflowViewModel(
                 pageSize = PAGE_SIZE,
             ).fold(
                 onSuccess = { page ->
-                    _state.update {
-                        it.copy(
-                            stock = it.stock.copy(
+                    _state.update { current ->
+                        if (
+                            current.selectedEstablishment?.id == establishment.id &&
+                            current.stock.selectedCategoryId == category
+                        ) current.copy(
+                            stock = current.stock.copy(
                                 items = page.items,
                                 page = 1,
                                 hasMore = page.hasMore,
                                 isLoading = false,
                                 error = null,
                             ),
-                        )
+                        ) else current
                     }
                 },
                 onFailure = {
-                    _state.update {
-                        it.copy(
-                            stock = it.stock.copy(
+                    _state.update { current ->
+                        if (
+                            current.selectedEstablishment?.id == establishment.id &&
+                            current.stock.selectedCategoryId == category
+                        ) current.copy(
+                            stock = current.stock.copy(
                                 isLoading = false,
                                 error = "No pudimos cargar los alimentos disponibles.",
                             ),
-                        )
+                        ) else current
                     }
                 },
             )
@@ -269,32 +252,42 @@ class CreateFoodOutflowViewModel(
             !current.stock.hasMore || current.stock.error != null
         ) return
         val next = current.stock.page + 1
+        val category = current.stock.selectedCategoryId
         _state.update { it.copy(stock = it.stock.copy(isLoadingMore = true)) }
         stockJob = viewModelScope.launch {
             getFoodStockPage(
                 establishment.id,
                 FoodStockFilters(
                     onlyAvailable = true,
-                    categoryId = current.stock.selectedCategoryId,
+                    categoryId = category,
                     sortOrder = StockSortOrder.NameAsc,
                 ),
                 next,
                 PAGE_SIZE,
             ).fold(
                 onSuccess = { page ->
-                    _state.update {
-                        it.copy(
-                            stock = it.stock.copy(
-                                items = it.stock.items + page.items,
+                    _state.update { latest ->
+                        if (
+                            latest.selectedEstablishment?.id == establishment.id &&
+                            latest.stock.selectedCategoryId == category &&
+                            latest.stock.page == next - 1
+                        ) latest.copy(
+                            stock = latest.stock.copy(
+                                items = latest.stock.items + page.items,
                                 page = next,
                                 hasMore = page.hasMore,
                                 isLoadingMore = false,
                             ),
-                        )
+                        ) else latest
                     }
                 },
                 onFailure = {
-                    _state.update { it.copy(stock = it.stock.copy(isLoadingMore = false)) }
+                    _state.update { latest ->
+                        if (
+                            latest.selectedEstablishment?.id == establishment.id &&
+                            latest.stock.selectedCategoryId == category
+                        ) latest.copy(stock = latest.stock.copy(isLoadingMore = false)) else latest
+                    }
                 },
             )
         }
@@ -305,7 +298,6 @@ class CreateFoodOutflowViewModel(
         current.copy(
             lines = if (exists) current.lines else current.lines + FoodOutflowLine(item),
             stock = current.stock.copy(showPicker = false),
-            successMessage = null,
         )
     }
 
@@ -316,7 +308,6 @@ class CreateFoodOutflowViewModel(
         _state.update { current ->
             current.copy(
                 lines = current.lines.map { if (it.stock.foodId == foodId) transform(it) else it },
-                successMessage = null,
             )
         }
     }
@@ -334,22 +325,17 @@ class CreateFoodOutflowViewModel(
             _state.value = validated
             return
         }
-        _state.value = validated.copy(isSubmitting = true, submitError = null, successMessage = null)
+        _state.value = validated.copy(isSubmitting = true, submitError = null)
         viewModelScope.launch {
             createFoodOutflow(outflow).fold(
                 onSuccess = {
                     _state.update {
                         it.copy(
-                            outflowId = idGenerator.newId(),
-                            lines = emptyList(),
-                            comments = TextFieldState(),
-                            occurredAt = TextFieldState(value = todayDigits()),
                             isSubmitting = false,
                             submitError = null,
-                            successMessage = "Egreso registrado",
+                            destination = CreateFoodOutflowDestination.Saved,
                         )
                     }
-                    refreshStock()
                 },
                 onFailure = { throwable ->
                     if (throwable is CancellationException) throw throwable

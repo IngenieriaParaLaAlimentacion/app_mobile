@@ -16,12 +16,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -39,23 +38,24 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlAutoc
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlInput
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlSuggestion
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.DateVisualTransformation
+import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlDateSeparator
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.components.segmented.AlSegmentedControl
+import ar.com.ingenieriaalimentacion.core.design_system.components.sheet.AlBottomSheet
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.food.EstablishmentFoodMovementSummary
 import ar.com.ingenieriaalimentacion.domain.model.food.EstablishmentFoodMovementDirection
+import ar.com.ingenieriaalimentacion.presentation.common.formatMovementTime
+import ar.com.ingenieriaalimentacion.presentation.common.today
 import com.komoui.components.Spinner
 import ingenieria_alimentacion.composeapp.generated.resources.Res
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_package_2_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_package_line
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.number
-import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.viewmodel.koinViewModel
-import kotlin.time.Instant
 
 @Composable
 fun EstablishmentFoodMovementHistoryScreenRoot(
@@ -119,11 +119,16 @@ private fun MovementBody(
 ) {
     val listState = rememberLazyListState()
     val currentState by rememberUpdatedState(state)
+    val zone = TimeZone.currentSystemDefault()
+    val items = state.items
+    val days = remember(items) { items.toDayGroups(today = today(zone), zone = zone) }
+    // Headers occupy list slots too, so the near-end check counts lines, not movements.
+    val lineCount by rememberUpdatedState(days.size + items.size)
     LaunchedEffect(listState) {
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1 }
             .distinctUntilChanged()
             .collect { last ->
-                if (last >= currentState.items.size - 1 - LOAD_MORE_THRESHOLD && currentState.canLoadMore) {
+                if (last >= lineCount - 1 - LOAD_MORE_THRESHOLD && currentState.canLoadMore) {
                     onAction(EstablishmentFoodMovementHistoryAction.LoadMore)
                 }
             }
@@ -168,12 +173,27 @@ private fun MovementBody(
             modifier = modifier,
         )
         else -> LazyColumn(state = listState, modifier = modifier.fillMaxSize()) {
-            itemsIndexed(
-                items = state.items,
-                key = { index, item -> "$index-${item.direction.wireValue}:${item.id}" },
-            ) { _, item -> MovementRow(item) {
-                onAction(EstablishmentFoodMovementHistoryAction.MovementClick(item.id))
-            } }
+            days.forEachIndexed { dayIndex, day ->
+                stickyHeader(key = day.key, contentType = "date-separator") {
+                    AlDateSeparator(
+                        label = day.label,
+                        topPadding = if (dayIndex == 0) AlTheme.spacing.xs else AlTheme.spacing.lg,
+                    )
+                }
+                itemsIndexed(
+                    items = day.items,
+                    // A write between two page requests shifts the OFFSET window and can repeat a
+                    // row, so the position keeps the key unique; the direction namespaces ids that
+                    // are only unique per direction.
+                    key = { index, item -> "$dayIndex-$index-${item.direction.wireValue}:${item.id}" },
+                    contentType = { _, _ -> "movement" },
+                ) { index, item ->
+                    // The last row of a day closes its block: the next header is the divider.
+                    MovementRow(item = item, showDivider = index != day.items.lastIndex) {
+                        onAction(EstablishmentFoodMovementHistoryAction.MovementClick(item.id))
+                    }
+                }
+            }
             if (state.isLoadingMore) {
                 item { Spinner(Modifier.fillMaxWidth().padding(16.dp), size = 24.dp) }
             }
@@ -184,18 +204,19 @@ private fun MovementBody(
 @Composable
 internal fun MovementRow(
     item: EstablishmentFoodMovementSummary,
+    showDivider: Boolean = true,
     onClick: () -> Unit,
 ) {
     AlListRow(
         title = if (item.direction == EstablishmentFoodMovementDirection.In) "Ingreso" else "Egreso",
-        subtitle = "${formatMovementDateTime(item.occurredAtMillis)} · ${item.responsible.fullName}",
+        subtitle = "${formatMovementTime(item.occurredAtMillis)} · ${item.responsible.fullName}",
         value = "${item.foodCount} alimento${if (item.foodCount == 1) "" else "s"}",
         leadingIcon = if (item.direction == EstablishmentFoodMovementDirection.In) {
             Res.drawable.ic_mingcute_package_line
         } else {
             Res.drawable.ic_mingcute_package_2_line
         },
-        leadingIconTint = AlTheme.colors.accent,
+        showDivider = showDivider,
         onClick = onClick,
     )
 }
@@ -244,9 +265,8 @@ private fun MovementFilterSheet(
     draft: MovementFilterDraft,
     onAction: (EstablishmentFoodMovementHistoryAction) -> Unit,
 ) {
-    ModalBottomSheet(
+    AlBottomSheet(
         onDismissRequest = { onAction(EstablishmentFoodMovementHistoryAction.FilterDismiss) },
-        sheetState = rememberModalBottomSheetState(),
     ) {
         Column(
             modifier = Modifier
@@ -348,11 +368,10 @@ private fun EstablishmentPickerSheet(
     state: EstablishmentFoodMovementHistoryState,
     onAction: (EstablishmentFoodMovementHistoryAction) -> Unit,
 ) {
-    ModalBottomSheet(
+    AlBottomSheet(
         onDismissRequest = {
             onAction(EstablishmentFoodMovementHistoryAction.EstablishmentPickerDismiss)
         },
-        sheetState = rememberModalBottomSheetState(),
     ) {
         Column(Modifier.navigationBarsPadding()) {
             Text(
@@ -381,15 +400,6 @@ private fun EstablishmentPickerSheet(
             }
         }
     }
-}
-
-private fun formatMovementDateTime(epochMillis: Long): String {
-    val value = Instant.fromEpochMilliseconds(epochMillis)
-        .toLocalDateTime(TimeZone.currentSystemDefault())
-    return "${value.day.toString().padStart(2, '0')}/" +
-        "${value.month.number.toString().padStart(2, '0')}/${value.year} " +
-        "${value.hour.toString().padStart(2, '0')}:" +
-        value.minute.toString().padStart(2, '0')
 }
 
 private const val LOAD_MORE_THRESHOLD = 3

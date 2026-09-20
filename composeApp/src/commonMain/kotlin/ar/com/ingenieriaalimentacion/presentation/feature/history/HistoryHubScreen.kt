@@ -61,7 +61,14 @@ private fun HubHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(AlTheme.spacing.md),
+            // Roomier above the title than around it: this is the first thing under the status
+            // bar, and at a flat `md` the display face sat too close to the top edge.
+            .padding(
+                start = AlTheme.spacing.md,
+                end = AlTheme.spacing.md,
+                top = AlTheme.spacing.lg,
+                bottom = AlTheme.spacing.md,
+            ),
         verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
     ) {
         Text(

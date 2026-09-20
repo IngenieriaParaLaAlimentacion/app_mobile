@@ -105,7 +105,9 @@ fun MeasurementUploadsContent(
                         // The list already insets horizontally, and its 8dp arrangement supplies
                         // the gap under the header.
                         horizontalPadding = 0.dp,
-                        topPadding = if (dayIndex == 0) AlTheme.spacing.md else AlTheme.spacing.lg,
+                        // `sm`, not `xs`: the hub's segmented control adds its own `md` below, so
+                        // 16 + 8 is the `lg` that separates one day's block from the next.
+                        topPadding = if (dayIndex == 0) AlTheme.spacing.sm else AlTheme.spacing.lg,
                         bottomPadding = 0.dp,
                     )
                 }

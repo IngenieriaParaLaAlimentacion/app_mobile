@@ -1,10 +1,10 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_food_movement_history
 
 import ar.com.ingenieriaalimentacion.core.validation.TextFieldState
+import ar.com.ingenieriaalimentacion.domain.model.food.EstablishmentFoodMovementDirection
 import ar.com.ingenieriaalimentacion.domain.model.food.EstablishmentFoodMovementFilters
 import ar.com.ingenieriaalimentacion.domain.model.food.EstablishmentFoodMovementSummary
 import ar.com.ingenieriaalimentacion.domain.model.food.Food
-import ar.com.ingenieriaalimentacion.domain.model.food.EstablishmentFoodMovementDirection
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 
 data class MovementFilterDraft(
@@ -31,6 +31,7 @@ data class EstablishmentFoodMovementHistoryState(
     val filters: EstablishmentFoodMovementFilters = EstablishmentFoodMovementFilters(),
     val filterDraft: MovementFilterDraft = MovementFilterDraft(),
     val showFilters: Boolean = false,
+    val appliedFoodName: String? = null,
     val isLoading: Boolean = true,
     val isLoadingMore: Boolean = false,
     val page: Int = 1,

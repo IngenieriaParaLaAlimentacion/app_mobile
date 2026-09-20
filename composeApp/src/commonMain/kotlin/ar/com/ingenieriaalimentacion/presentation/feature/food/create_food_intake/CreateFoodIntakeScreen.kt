@@ -13,11 +13,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -72,7 +73,7 @@ fun CreateFoodIntakeScreen(
         ) {
             AlBackTopAppBar(
                 onBackClick = { onAction(CreateFoodIntakeAction.BackClick) },
-                title = "Cargar ingreso",
+                title = "Registrar ingreso",
                 enabled = !state.isSubmitting,
             )
 
@@ -136,7 +137,7 @@ private fun CreateFoodIntakeForm(
                     .weight(1f)
                     .verticalScroll(scrollState)
                     .padding(top = AlTheme.spacing.lg, bottom = AlTheme.spacing.md),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg),
             ) {
                 if (!state.isOnline) {
                     AlInlineBanner(
@@ -172,46 +173,52 @@ private fun CreateFoodIntakeForm(
                     visualTransformation = DateVisualTransformation(),
                 )
 
-                AlAutocompleteInput(
-                    label = "Agregar alimento",
-                    value = state.search.query,
-                    onValueChange = { onAction(CreateFoodIntakeAction.SearchQueryChanged(it)) },
-                    onFocusChange = { onAction(CreateFoodIntakeAction.SearchFocusChanged(it)) },
-                    // Offline the catalog is unreachable, so the field says so by not accepting input.
-                    enabled = enabled && state.isOnline,
-                    placeholder = "Buscá por nombre",
-                    expanded = state.search.isExpanded,
-                    isLoading = state.search.isSearching,
-                    suggestions = suggestions,
-                    onSuggestionClick = { suggestion ->
-                        state.search.results
-                            .firstOrNull { it.id == suggestion.id }
-                            ?.let { onAction(CreateFoodIntakeAction.FoodPicked(it)) }
-                    },
-                    errorText = "No se pudo buscar en el catálogo.".takeIf { state.search.error },
-                    onRetry = { onAction(CreateFoodIntakeAction.SearchRetry) },
-                    footer = state.search.footer,
-                )
-
-                state.lines.forEach { line ->
-                    FoodLineRow(
-                        line = line,
-                        enabled = enabled,
-                        scrollState = scrollState,
-                        isImeVisible = isImeVisible,
-                        onQuantityChange = {
-                            onAction(CreateFoodIntakeAction.LineQuantityChanged(line.food.id, it))
+                Column(
+                    modifier = Modifier.padding(top = AlTheme.spacing.sm, bottom = AlTheme.spacing.sm),
+                    verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.md),
+                ) {
+                    Text("Alimentos", style = AlTheme.typography.subtitle, color = AlTheme.colors.textBase)
+                    AlAutocompleteInput(
+                        label = "Agregar alimento",
+                        value = state.search.query,
+                        onValueChange = { onAction(CreateFoodIntakeAction.SearchQueryChanged(it)) },
+                        onFocusChange = { onAction(CreateFoodIntakeAction.SearchFocusChanged(it)) },
+                        // Offline the catalog is unreachable, so the field says so by not accepting input.
+                        enabled = enabled && state.isOnline,
+                        placeholder = "Buscá por nombre",
+                        expanded = state.search.isExpanded,
+                        isLoading = state.search.isSearching,
+                        suggestions = suggestions,
+                        onSuggestionClick = { suggestion ->
+                            state.search.results
+                                .firstOrNull { it.id == suggestion.id }
+                                ?.let { onAction(CreateFoodIntakeAction.FoodPicked(it)) }
                         },
-                        onQuantityFocusChange = {
-                            onAction(CreateFoodIntakeAction.LineQuantityFocusChanged(line.food.id, it))
-                        },
-                        onRemove = { onAction(CreateFoodIntakeAction.LineRemoved(line.food.id)) },
+                        errorText = "No se pudo buscar en el catálogo.".takeIf { state.search.error },
+                        onRetry = { onAction(CreateFoodIntakeAction.SearchRetry) },
+                        footer = state.search.footer,
                     )
-                }
 
+                    state.lines.forEachIndexed { index, line ->
+                        if (index > 0) HorizontalDivider(color = AlTheme.colors.border)
+                        FoodLineRow(
+                            line = line,
+                            enabled = enabled,
+                            scrollState = scrollState,
+                            isImeVisible = isImeVisible,
+                            onQuantityChange = {
+                                onAction(CreateFoodIntakeAction.LineQuantityChanged(line.food.id, it))
+                            },
+                            onQuantityFocusChange = {
+                                onAction(CreateFoodIntakeAction.LineQuantityFocusChanged(line.food.id, it))
+                            },
+                            onRemove = { onAction(CreateFoodIntakeAction.LineRemoved(line.food.id)) },
+                        )
+                    }
+                }
                 Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
                     AlInput(
-                        label = "Comentarios",
+                        label = "Comentarios (opcional)",
                         value = state.comments.value,
                         onValueChange = { onAction(CreateFoodIntakeAction.CommentsChanged(it)) },
                         onFocusChange = { onAction(CreateFoodIntakeAction.CommentsFocusChanged(it)) },
@@ -220,21 +227,24 @@ private fun CreateFoodIntakeForm(
                         singleLine = false,
                         scrollState = scrollState,
                         isImeVisible = isImeVisible,
-                        placeholder = "Opcional",
+                        placeholder = "Agregá información adicional",
                     )
                     Text(
                         text = state.commentsCount,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.End,
                         style = AlTheme.typography.caption,
                         color = AlTheme.colors.textMuted,
                     )
                 }
             }
 
+            HorizontalDivider(color = AlTheme.colors.border)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = AlTheme.spacing.lg),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                    .padding(top = AlTheme.spacing.md, bottom = AlTheme.spacing.lg),
+                verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
             ) {
                 state.submitError?.let { error ->
                     Text(text = error, color = AlTheme.colors.danger, style = AlTheme.typography.body)
@@ -246,7 +256,7 @@ private fun CreateFoodIntakeForm(
                     loading = state.isSubmitting,
                     fullWidth = true,
                 ) {
-                    Text("Guardar")
+                    Text("Registrar ingreso")
                 }
             }
         }

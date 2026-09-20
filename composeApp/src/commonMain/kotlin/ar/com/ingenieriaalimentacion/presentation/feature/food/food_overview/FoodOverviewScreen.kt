@@ -1,45 +1,32 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.food.food_overview
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.RadioButtonDefaults
-import androidx.compose.material3.TextButton
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.semantics.Role
-import ingenieria_alimentacion.composeapp.generated.resources.Res
-import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_down_line
-import ingenieria_alimentacion.composeapp.generated.resources.ic_sort_order
-import org.jetbrains.compose.resources.vectorResource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -54,6 +41,8 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.A
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.food.StockSortOrder
 import ar.com.ingenieriaalimentacion.presentation.common.today
+import ar.com.ingenieriaalimentacion.presentation.feature.food.components.FoodSelectionOption
+import ar.com.ingenieriaalimentacion.presentation.feature.food.components.FoodStockControls
 import ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_food_movement_history.MovementRow
 import ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_food_movement_history.toDayGroups
 import ar.com.ingenieriaalimentacion.presentation.feature.food.food_stock.StockRow
@@ -139,7 +128,17 @@ private fun FoodOverviewContent(
                 modifier = Modifier.gutter().padding(top = AlTheme.spacing.lg),
             )
         }
-        item { StockControls(state.stock, onAction) }
+        item {
+            FoodStockControls(
+                categoryName = state.stock.selectedCategoryName,
+                filtered = state.stock.filters.categoryId != null,
+                categoriesEnabled = state.stock.categories.isNotEmpty(),
+                sortOrder = state.stock.filters.sortOrder,
+                onCategoryClick = { onAction(FoodOverviewAction.CategorySheetOpen) },
+                onSortClick = { onAction(FoodOverviewAction.SortSheetOpen) },
+                onClearCategory = { onAction(FoodOverviewAction.CategorySelected(null)) },
+            )
+        }
         when {
             state.stock.isLoading -> item { CenterSpinner() }
             state.stock.error != null && state.stock.items.isEmpty() -> item {
@@ -355,92 +354,6 @@ private fun OutflowButton(modifier: Modifier, onAction: (FoodOverviewAction) -> 
     ) { Text("Registrar egreso") }
 }
 
-@Composable
-private fun StockControls(stock: FoodOverviewStockState, onAction: (FoodOverviewAction) -> Unit) {
-    val filtered = stock.filters.categoryId != null
-    Column(
-        modifier = Modifier.gutter().padding(vertical = AlTheme.spacing.md),
-        verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs),
-    ) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
-            FilterChip(
-                selected = filtered,
-                onClick = { onAction(FoodOverviewAction.CategorySheetOpen) },
-                enabled = stock.categories.isNotEmpty() || filtered,
-                label = { Text(stock.selectedCategoryName ?: if (filtered) "Categoría seleccionada" else "Todas las categorías") },
-                trailingIcon = { PickerChevron() },
-                modifier = Modifier.heightIn(min = 48.dp),
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = AlTheme.colors.accentContainer,
-                    selectedLabelColor = AlTheme.colors.accent,
-                    selectedTrailingIconColor = AlTheme.colors.accent,
-                ),
-            )
-            AssistChip(
-                onClick = { onAction(FoodOverviewAction.SortSheetOpen) },
-                label = { Text("Ordenar") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = vectorResource(Res.drawable.ic_sort_order),
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                    )
-                },
-                modifier = Modifier.heightIn(min = 48.dp),
-            )
-            if (filtered) {
-                TextButton(
-                    onClick = { onAction(FoodOverviewAction.CategorySelected(null)) },
-                    modifier = Modifier.heightIn(min = 48.dp),
-                ) { Text("Quitar filtro", color = AlTheme.colors.accent) }
-            }
-        }
-        Text(
-            text = "Orden: ${stock.filters.sortOrder.label}",
-            style = AlTheme.typography.caption,
-            color = AlTheme.colors.textMuted,
-        )
-    }
-}
-
-@Composable
-private fun PickerChevron() {
-    Icon(
-        imageVector = vectorResource(Res.drawable.ic_mingcute_down_line),
-        contentDescription = null,
-        modifier = Modifier.size(20.dp),
-    )
-}
-
-@Composable
-private fun SelectionOption(title: String, selected: Boolean, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(if (selected) AlTheme.colors.accentContainer else AlTheme.colors.surfaceRaised)
-            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
-            .heightIn(min = 56.dp)
-            .padding(horizontal = AlTheme.spacing.md, vertical = AlTheme.spacing.sm),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.md),
-    ) {
-        Text(
-            text = title,
-            modifier = Modifier.weight(1f),
-            style = AlTheme.typography.body,
-            color = if (selected) AlTheme.colors.accent else AlTheme.colors.textBase,
-        )
-        RadioButton(
-            selected = selected,
-            onClick = null,
-            colors = RadioButtonDefaults.colors(
-                selectedColor = AlTheme.colors.accent,
-                unselectedColor = AlTheme.colors.textMuted,
-            ),
-        )
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CategorySheet(state: FoodOverviewState, onAction: (FoodOverviewAction) -> Unit) {
@@ -449,13 +362,13 @@ private fun CategorySheet(state: FoodOverviewState, onAction: (FoodOverviewActio
         Column(
             Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()).selectableGroup(),
         ) {
-            SelectionOption(
+            FoodSelectionOption(
                 title = "Todas las categorías",
                 selected = state.stock.filters.categoryId == null,
                 onClick = { onAction(FoodOverviewAction.CategorySelected(null)) },
             )
             state.stock.categories.forEach { category ->
-                SelectionOption(
+                FoodSelectionOption(
                     title = category.name,
                     selected = state.stock.filters.categoryId == category.id,
                     onClick = { onAction(FoodOverviewAction.CategorySelected(category.id)) },
@@ -474,7 +387,7 @@ private fun SortSheet(state: FoodOverviewState, onAction: (FoodOverviewAction) -
             Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()).selectableGroup(),
         ) {
             StockSortOrder.entries.forEach { sort ->
-                SelectionOption(
+                FoodSelectionOption(
                     title = sort.label,
                     selected = state.stock.filters.sortOrder == sort,
                     onClick = { onAction(FoodOverviewAction.SortSelected(sort)) },

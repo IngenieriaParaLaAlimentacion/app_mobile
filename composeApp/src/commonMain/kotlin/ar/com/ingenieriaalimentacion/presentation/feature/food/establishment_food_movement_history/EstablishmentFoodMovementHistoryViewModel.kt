@@ -130,7 +130,7 @@ class EstablishmentFoodMovementHistoryViewModel(
             },
             foodId = draft.selectedFood?.id,
         )
-        _state.update { it.copy(filters = filters, showFilters = false) }
+        _state.update { it.copy(filters = filters, appliedFoodName = draft.selectedFood?.name, showFilters = false) }
         refreshPage1()
     }
 
@@ -420,6 +420,7 @@ class EstablishmentFoodMovementHistoryViewModel(
         _state.update {
             it.copy(
                 filters = EstablishmentFoodMovementFilters(),
+                appliedFoodName = null,
                 filterDraft = MovementFilterDraft(),
                 showFilters = false,
             )

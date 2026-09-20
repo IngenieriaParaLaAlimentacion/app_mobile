@@ -2,13 +2,15 @@ package ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_fo
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -16,7 +18,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,6 +30,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -45,8 +51,9 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.segmented.AlS
 import ar.com.ingenieriaalimentacion.core.design_system.components.sheet.AlBottomSheet
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
-import ar.com.ingenieriaalimentacion.domain.model.food.EstablishmentFoodMovementSummary
 import ar.com.ingenieriaalimentacion.domain.model.food.EstablishmentFoodMovementDirection
+import ar.com.ingenieriaalimentacion.domain.model.food.EstablishmentFoodMovementSummary
+import ar.com.ingenieriaalimentacion.presentation.common.dayOf
 import ar.com.ingenieriaalimentacion.presentation.common.formatMovementTime
 import ar.com.ingenieriaalimentacion.presentation.common.today
 import com.komoui.components.Spinner
@@ -93,15 +100,38 @@ fun EstablishmentFoodMovementHistoryScreen(
                     text = it.name,
                     style = AlTheme.typography.caption,
                     color = AlTheme.colors.textMuted,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = AlTheme.spacing.sm),
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = AlTheme.spacing.md).padding(bottom = AlTheme.spacing.sm),
                 )
-                AlButton(
-                    onClick = { onAction(EstablishmentFoodMovementHistoryAction.FilterOpen) },
-                    variant = AlButtonVariant.Outline,
-                    modifier = Modifier.padding(horizontal = AlTheme.spacing.lg),
+                Column(
+                    modifier = Modifier.padding(horizontal = AlTheme.spacing.md, vertical = AlTheme.spacing.sm),
+                    verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
                 ) {
-                    Text(if (state.hasActiveFilters) "Filtros activos" else "Filtrar")
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+                        FilterChip(
+                            selected = state.hasActiveFilters,
+                            onClick = { onAction(EstablishmentFoodMovementHistoryAction.FilterOpen) },
+                            label = { Text("Filtros") },
+                            modifier = Modifier.heightIn(min = 48.dp),
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = AlTheme.colors.accentContainer,
+                                selectedLabelColor = AlTheme.colors.accent,
+                            ),
+                        )
+                        if (state.hasActiveFilters) {
+                            TextButton(
+                                onClick = { onAction(EstablishmentFoodMovementHistoryAction.FilterClear) },
+                                modifier = Modifier.heightIn(min = 48.dp),
+                            ) { Text("Limpiar filtros", color = AlTheme.colors.accent) }
+                        }
+                    }
+                    if (state.hasActiveFilters) {
+                        Text(
+                            text = state.appliedFilterSummary(),
+                            style = AlTheme.typography.label,
+                            color = AlTheme.colors.textMuted,
+                        )
+                    }
                 }
             }
             MovementBody(state, onAction, Modifier.weight(1f))
@@ -177,7 +207,7 @@ private fun MovementBody(
                 stickyHeader(key = day.key, contentType = "date-separator") {
                     AlDateSeparator(
                         label = day.label,
-                        topPadding = if (dayIndex == 0) AlTheme.spacing.xs else AlTheme.spacing.lg,
+                        topPadding = if (dayIndex == 0) AlTheme.spacing.md else AlTheme.spacing.lg,
                     )
                 }
                 itemsIndexed(
@@ -273,9 +303,9 @@ private fun MovementFilterSheet(
                 .navigationBarsPadding()
                 .verticalScroll(rememberScrollState())
                 .padding(AlTheme.spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.md),
+            verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg),
         ) {
-            Text("Filtrar movimientos", style = AlTheme.typography.bodyStrong)
+            Text("Filtrar movimientos", style = AlTheme.typography.subtitle)
             AlSegmentedControl(
                 segments = listOf("Todos", "Ingresos", "Egresos"),
                 selectedIndex = when (draft.direction) {
@@ -295,33 +325,44 @@ private fun MovementFilterSheet(
                     )
                 },
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
-                AlInput(
-                    value = draft.from.value,
-                    onValueChange = { onAction(EstablishmentFoodMovementHistoryAction.FromChanged(it)) },
-                    onFocusChange = {
-                        onAction(EstablishmentFoodMovementHistoryAction.FromFocusChanged(it))
-                    },
-                    label = "Desde",
-                    placeholder = "DD/MM/AAAA",
-                    error = draft.from.displayError,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    visualTransformation = DateVisualTransformation(),
-                    modifier = Modifier.weight(1f),
-                )
-                AlInput(
-                    value = draft.to.value,
-                    onValueChange = { onAction(EstablishmentFoodMovementHistoryAction.ToChanged(it)) },
-                    onFocusChange = {
-                        onAction(EstablishmentFoodMovementHistoryAction.ToFocusChanged(it))
-                    },
-                    label = "Hasta",
-                    placeholder = "DD/MM/AAAA",
-                    error = draft.to.displayError,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    visualTransformation = DateVisualTransformation(),
-                    modifier = Modifier.weight(1f),
-                )
+            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                val stack = maxWidth < 360.dp * LocalDensity.current.fontScale
+                val dateFieldModifier = if (stack) {
+                    Modifier.fillMaxWidth()
+                } else {
+                    Modifier.width((maxWidth - AlTheme.spacing.md) / 2)
+                }
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.md),
+                    verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg),
+                ) {
+                    AlInput(
+                        value = draft.from.value,
+                        onValueChange = { onAction(EstablishmentFoodMovementHistoryAction.FromChanged(it)) },
+                        onFocusChange = {
+                            onAction(EstablishmentFoodMovementHistoryAction.FromFocusChanged(it))
+                        },
+                        label = "Desde",
+                        placeholder = "DD/MM/AAAA",
+                        error = draft.from.displayError,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        visualTransformation = DateVisualTransformation(),
+                        modifier = dateFieldModifier,
+                    )
+                    AlInput(
+                        value = draft.to.value,
+                        onValueChange = { onAction(EstablishmentFoodMovementHistoryAction.ToChanged(it)) },
+                        onFocusChange = {
+                            onAction(EstablishmentFoodMovementHistoryAction.ToFocusChanged(it))
+                        },
+                        label = "Hasta",
+                        placeholder = "DD/MM/AAAA",
+                        error = draft.to.displayError,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        visualTransformation = DateVisualTransformation(),
+                        modifier = dateFieldModifier,
+                    )
+                }
             }
             AlAutocompleteInput(
                 value = draft.foodQuery,
@@ -352,12 +393,11 @@ private fun MovementFilterSheet(
             AlButton(
                 onClick = { onAction(EstablishmentFoodMovementHistoryAction.FilterApply) },
                 fullWidth = true,
-            ) { Text("Aplicar") }
-            AlButton(
+            ) { Text("Aplicar filtros") }
+            TextButton(
                 onClick = { onAction(EstablishmentFoodMovementHistoryAction.FilterClear) },
-                fullWidth = true,
-                variant = AlButtonVariant.Outline,
-            ) { Text("Limpiar") }
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+            ) { Text("Limpiar filtros", color = AlTheme.colors.accent) }
         }
     }
 }
@@ -403,3 +443,18 @@ private fun EstablishmentPickerSheet(
 }
 
 private const val LOAD_MORE_THRESHOLD = 3
+
+/** Read applied filters, never the draft that may be edited and dismissed. */
+private fun EstablishmentFoodMovementHistoryState.appliedFilterSummary(): String {
+    val zone = TimeZone.currentSystemDefault()
+    fun dateLabel(iso: String): String {
+        val date = dayOf(iso, zone) ?: return iso
+        return "${date.day.toString().padStart(2, '0')}/${(date.month.ordinal + 1).toString().padStart(2, '0')}/${date.year}"
+    }
+    return buildList {
+        filters.direction?.let { add(if (it == EstablishmentFoodMovementDirection.In) "Ingresos" else "Egresos") }
+        filters.occurredFromIso?.let { add("Desde ${dateLabel(it)}") }
+        filters.occurredToIso?.let { add("Hasta ${dateLabel(it)}") }
+        if (filters.foodId != null) add(appliedFoodName ?: "Alimento seleccionado")
+    }.joinToString(" · ")
+}

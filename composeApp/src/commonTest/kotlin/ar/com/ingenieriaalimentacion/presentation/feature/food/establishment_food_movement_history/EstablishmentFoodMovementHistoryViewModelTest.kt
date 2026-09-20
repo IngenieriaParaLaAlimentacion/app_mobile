@@ -260,7 +260,7 @@ class EstablishmentFoodMovementHistoryViewModelTest {
             result = Result.success(FoodSearchResult(listOf(food), 1))
         }
         val repository = FakeEstablishmentFoodMovementRepository().apply {
-            pageResults = listOf(page("initial"), page("filtered"))
+            pageResults = listOf(page("initial"), page("filtered"), page("cleared"))
         }
         val vm = viewModel(repository, catalog = catalog)
         advanceUntilIdle()
@@ -277,8 +277,16 @@ class EstablishmentFoodMovementHistoryViewModelTest {
         vm.onAction(EstablishmentFoodMovementHistoryAction.FilterApply)
         advanceUntilIdle()
         assertEquals("f1", repository.pageRequests.last().filters.foodId)
+        assertEquals("Arroz", vm.state.value.appliedFoodName)
+        vm.onAction(EstablishmentFoodMovementHistoryAction.FilterOpen)
         vm.onAction(EstablishmentFoodMovementHistoryAction.FoodQueryChanged("Arroz x"))
         assertNull(vm.state.value.filterDraft.selectedFood)
+        vm.onAction(EstablishmentFoodMovementHistoryAction.FilterDismiss)
+        assertEquals("f1", vm.state.value.filters.foodId)
+        assertEquals("Arroz", vm.state.value.appliedFoodName)
+        vm.onAction(EstablishmentFoodMovementHistoryAction.FilterClear)
+        assertNull(vm.state.value.filters.foodId)
+        assertNull(vm.state.value.appliedFoodName)
     }
 
     @Test

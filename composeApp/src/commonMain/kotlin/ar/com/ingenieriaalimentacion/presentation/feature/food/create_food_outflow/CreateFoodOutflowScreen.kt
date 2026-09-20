@@ -16,9 +16,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ar.com.ingenieriaalimentacion.core.design_system.components.AlErrorState
@@ -45,6 +48,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.sheet.AlBotto
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.presentation.common.formatQuantityWithUnit
+import ar.com.ingenieriaalimentacion.presentation.feature.food.components.FoodSelectionOption
 import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_outflow.components.FoodOutflowLineRow
 import com.komoui.components.Spinner
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -119,7 +123,7 @@ private fun OutflowForm(
                     .fillMaxWidth()
                     .verticalScroll(scrollState)
                     .padding(top = AlTheme.spacing.lg, bottom = AlTheme.spacing.md),
-                verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.md),
+                verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg),
             ) {
                 if (!state.isOnline) {
                     AlInlineBanner(
@@ -152,52 +156,62 @@ private fun OutflowForm(
                     scrollState = scrollState,
                     isImeVisible = isImeVisible,
                 )
-                AlSelectField(
-                    label = "Agregar alimento",
-                    value = "",
-                    placeholder = "Elegí del stock disponible",
-                    enabled = enabled && state.isOnline && state.selectedEstablishment != null,
-                    onClick = { onAction(CreateFoodOutflowAction.StockPickerOpen) },
-                )
-                state.lines.forEach { line ->
-                    FoodOutflowLineRow(
-                        line = line,
-                        enabled = enabled,
-                        scrollState = scrollState,
-                        isImeVisible = isImeVisible,
-                        onQuantityChange = {
-                            onAction(CreateFoodOutflowAction.LineQuantityChanged(line.stock.foodId, it))
-                        },
-                        onQuantityFocusChange = {
-                            onAction(CreateFoodOutflowAction.LineQuantityFocusChanged(line.stock.foodId, it))
-                        },
-                        onRemove = { onAction(CreateFoodOutflowAction.LineRemoved(line.stock.foodId)) },
+                Column(
+                    modifier = Modifier.padding(top = AlTheme.spacing.sm, bottom = AlTheme.spacing.sm),
+                    verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.md),
+                ) {
+                    Text("Alimentos", style = AlTheme.typography.subtitle, color = AlTheme.colors.textBase)
+                    AlSelectField(
+                        label = "Agregar alimento",
+                        value = "",
+                        placeholder = "Elegí del stock disponible",
+                        enabled = enabled && state.isOnline && state.selectedEstablishment != null,
+                        onClick = { onAction(CreateFoodOutflowAction.StockPickerOpen) },
                     )
+                    state.lines.forEachIndexed { index, line ->
+                        if (index > 0) HorizontalDivider(color = AlTheme.colors.border)
+                        FoodOutflowLineRow(
+                            line = line,
+                            enabled = enabled,
+                            scrollState = scrollState,
+                            isImeVisible = isImeVisible,
+                            onQuantityChange = {
+                                onAction(CreateFoodOutflowAction.LineQuantityChanged(line.stock.foodId, it))
+                            },
+                            onQuantityFocusChange = {
+                                onAction(CreateFoodOutflowAction.LineQuantityFocusChanged(line.stock.foodId, it))
+                            },
+                            onRemove = { onAction(CreateFoodOutflowAction.LineRemoved(line.stock.foodId)) },
+                        )
+                    }
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
                     AlInput(
-                        label = "Comentarios",
+                        label = "Comentarios (opcional)",
                         value = state.comments.value,
                         onValueChange = { onAction(CreateFoodOutflowAction.CommentsChanged(it)) },
                         onFocusChange = { onAction(CreateFoodOutflowAction.CommentsFocusChanged(it)) },
                         error = state.comments.displayError,
                         enabled = enabled,
                         singleLine = false,
-                        placeholder = "Opcional",
+                        placeholder = "Agregá información adicional",
                         scrollState = scrollState,
                         isImeVisible = isImeVisible,
                     )
                     Text(
                         text = state.commentsCount,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.End,
                         style = AlTheme.typography.caption,
                         color = AlTheme.colors.textMuted,
                     )
                 }
             }
+            HorizontalDivider(color = AlTheme.colors.border)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = AlTheme.spacing.sm, bottom = AlTheme.spacing.lg),
+                    .padding(top = AlTheme.spacing.md, bottom = AlTheme.spacing.lg),
                 verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
             ) {
                 state.submitError?.let {
@@ -213,7 +227,7 @@ private fun OutflowForm(
                     loading = state.isSubmitting,
                     fullWidth = true,
                 ) {
-                    Text("Guardar")
+                    Text("Registrar egreso")
                 }
             }
         }
@@ -244,7 +258,7 @@ private fun StockSheet(
             Text(
                 text = "Elegí un alimento",
                 modifier = Modifier.padding(AlTheme.spacing.md),
-                style = AlTheme.typography.body,
+                style = AlTheme.typography.subtitle,
                 color = AlTheme.colors.textBase,
             )
             AlSelectField(
@@ -325,17 +339,24 @@ private fun CategorySheet(
             modifier = Modifier
                 .navigationBarsPadding()
                 .heightIn(max = 480.dp)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(rememberScrollState())
+                .selectableGroup(),
         ) {
-            AlListRow(
+            Text(
+                "Categoría",
+                style = AlTheme.typography.subtitle,
+                color = AlTheme.colors.textBase,
+                modifier = Modifier.padding(AlTheme.spacing.md),
+            )
+            FoodSelectionOption(
                 title = "Todas las categorías",
-                showChevron = false,
+                selected = state.stock.selectedCategoryId == null,
                 onClick = { onAction(CreateFoodOutflowAction.CategorySelected(null)) },
             )
             state.stock.categories.forEach { category ->
-                AlListRow(
+                FoodSelectionOption(
                     title = category.name,
-                    showChevron = false,
+                    selected = state.stock.selectedCategoryId == category.id,
                     onClick = { onAction(CreateFoodOutflowAction.CategorySelected(category.id)) },
                 )
             }

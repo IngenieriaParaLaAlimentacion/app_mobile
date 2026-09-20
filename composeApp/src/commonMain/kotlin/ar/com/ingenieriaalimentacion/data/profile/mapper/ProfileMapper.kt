@@ -53,5 +53,7 @@ private fun String.toEstablishmentStatus(): EstablishmentStatus = when (this) {
     "approved" -> EstablishmentStatus.Approved
     "pending" -> EstablishmentStatus.Pending
     "rejected" -> EstablishmentStatus.Rejected
+    "withdrawn" -> EstablishmentStatus.Withdrawn
+    "revoked" -> EstablishmentStatus.Revoked
     else -> EstablishmentStatus.Unknown
 }

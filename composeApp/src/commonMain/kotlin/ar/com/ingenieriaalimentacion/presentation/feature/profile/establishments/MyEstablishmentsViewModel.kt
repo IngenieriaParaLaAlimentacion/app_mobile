@@ -35,12 +35,15 @@ class MyEstablishmentsViewModel(
     /** Re-fetches on resume so an approval granted elsewhere shows up immediately. */
     fun refresh() = load()
 
-    /** Display order: approved first, then pending, then rejected, then unknown. */
+    /** Display order: approved first, then pending, then rejected, then unknown.
+     *  Withdrawn/Revoked never reach this list (filtered upstream by
+     *  [ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase])
+     *  but still need a spot to keep this `when` exhaustive. */
     private fun statusOrder(status: EstablishmentStatus): Int = when (status) {
         EstablishmentStatus.Approved -> 0
         EstablishmentStatus.Pending -> 1
         EstablishmentStatus.Rejected -> 2
-        EstablishmentStatus.Unknown -> 3
+        EstablishmentStatus.Withdrawn, EstablishmentStatus.Revoked, EstablishmentStatus.Unknown -> 3
     }
 
     fun clearDestination() {

@@ -147,13 +147,19 @@ private fun MyEstablishmentsContent(
 }
 
 /** Status pill shown at the end of an establishment card. Approved (and the
- *  defensive Unknown) render nothing — only in-flight/rejected states get a pill. */
+ *  defensive Unknown) render nothing — only in-flight/rejected states get a pill.
+ *  Withdrawn/Revoked never reach here: [ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase]
+ *  filters them out of the list entirely. */
 @Composable
 private fun EstablishmentStatusPill(status: EstablishmentStatus) {
     when (status) {
         EstablishmentStatus.Pending -> AlPill(text = "Pendiente", tone = AlPillTone.Warning)
         EstablishmentStatus.Rejected -> AlPill(text = "Rechazado", tone = AlPillTone.Danger)
-        EstablishmentStatus.Approved, EstablishmentStatus.Unknown -> Unit
+        EstablishmentStatus.Approved,
+        EstablishmentStatus.Withdrawn,
+        EstablishmentStatus.Revoked,
+        EstablishmentStatus.Unknown,
+        -> Unit
     }
 }
 

@@ -8,6 +8,7 @@ import ar.com.ingenieriaalimentacion.domain.model.profile.Profile
 import ar.com.ingenieriaalimentacion.domain.model.profile.UpdateProfile
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetAvailableEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyProfileUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.RequestEstablishmentAccessUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.SetCurrentEstablishmentUseCase
@@ -86,6 +87,25 @@ class ProfileUseCasesTest {
     private fun establishment(id: String, status: EstablishmentStatus) = EstablishmentWithStatus(
         id, "Escuela $id", "Calle 1", 0.0, 0.0, "p$id", "Ciudad", "Provincia", status,
     )
+
+    @Test
+    fun `GetMyEstablishments filters out withdrawn and revoked relations`() = runTest {
+        val repo = FakeProfileRepository().apply {
+            myEstablishmentsResult = Result.success(
+                listOf(
+                    establishment("e1", EstablishmentStatus.Approved),
+                    establishment("e2", EstablishmentStatus.Pending),
+                    establishment("e3", EstablishmentStatus.Rejected),
+                    establishment("e4", EstablishmentStatus.Withdrawn),
+                    establishment("e5", EstablishmentStatus.Revoked),
+                ),
+            )
+        }
+
+        val result = GetMyEstablishmentsUseCase(repo)()
+
+        assertEquals(listOf("e1", "e2", "e3"), result.getOrNull()?.map { it.id })
+    }
 
     @Test
     fun `GetCurrentEstablishment returns null when nothing is stored`() = runTest {

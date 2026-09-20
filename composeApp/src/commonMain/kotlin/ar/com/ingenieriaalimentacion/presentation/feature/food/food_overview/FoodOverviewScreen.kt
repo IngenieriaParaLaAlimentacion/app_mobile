@@ -1,6 +1,5 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.food.food_overview
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,15 +15,13 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -32,18 +29,23 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.AlErrorState
 import ar.com.ingenieriaalimentacion.core.design_system.components.EmptyState
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButtonVariant
+import ar.com.ingenieriaalimentacion.core.design_system.components.header.AlSectionLabel
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlSelectField
+import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlDateSeparator
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
-import ar.com.ingenieriaalimentacion.core.design_system.components.segmented.AlSegmentedControl
+import ar.com.ingenieriaalimentacion.core.design_system.components.sheet.AlBottomSheet
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.food.StockSortOrder
+import ar.com.ingenieriaalimentacion.presentation.common.today
 import ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_food_movement_history.MovementRow
+import ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_food_movement_history.toDayGroups
 import ar.com.ingenieriaalimentacion.presentation.feature.food.food_stock.StockRow
 import ar.com.ingenieriaalimentacion.presentation.navigation.FOOD_MOVEMENT_CREATED_RESULT
 import ar.com.ingenieriaalimentacion.presentation.navigation.RefreshOnNavResult
 import com.komoui.components.Spinner
+import kotlinx.datetime.TimeZone
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -74,18 +76,9 @@ fun FoodOverviewScreen(
     AlScaffold {
         Column(Modifier.fillMaxSize()) {
             AlBackTopAppBar(
-                title = "Alimentos",
+                title = state.establishment?.name ?: "Alimentos",
                 onBackClick = { onAction(FoodOverviewAction.BackClick) },
             )
-            state.establishment?.let {
-                Text(
-                    text = it.name,
-                    style = AlTheme.typography.caption,
-                    color = AlTheme.colors.textMuted,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = AlTheme.spacing.sm),
-                )
-            }
             when {
                 state.isResolvingEstablishment -> Box(
                     modifier = Modifier.fillMaxSize(),
@@ -100,26 +93,59 @@ fun FoodOverviewScreen(
     }
 }
 
+/**
+ * The screen's single horizontal inset. `AlListRow` already carries the same `md` padding
+ * internally, so stock and movement rows line up with these without asking for it.
+ */
+@Composable
+private fun Modifier.gutter(): Modifier = padding(horizontal = AlTheme.spacing.md)
+
 @Composable
 private fun FoodOverviewContent(
     state: FoodOverviewState,
     onAction: (FoodOverviewAction) -> Unit,
 ) {
+    val zone = TimeZone.currentSystemDefault()
+    val movements = state.movements.items
+    val days = remember(movements) { movements.toDayGroups(today = today(zone), zone = zone) }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(AlTheme.spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.md),
+        // No horizontal inset: AlListRow pads itself by `md` and would be pushed in twice.
+        // Every item that is NOT a self-padding row carries `Modifier.gutter()` instead.
+        contentPadding = PaddingValues(vertical = AlTheme.spacing.lg),
+        // Deliberately no verticalArrangement: it would also space two consecutive AlListRows,
+        // which already close themselves with a hairline, leaving a gap above a row's text and
+        // none below its divider. Rows stack flush so the dividers carry the rhythm.
     ) {
-        item { SectionTitle("STOCK ACTUAL") }
         item {
-            AlSegmentedControl(
-                segments = listOf("Disponibles", "Todos"),
-                selectedIndex = if (state.stock.filters.onlyAvailable) 0 else 1,
-                onSelect = { onAction(FoodOverviewAction.OnlyAvailableChanged(it == 0)) },
+            Row(
+                modifier = Modifier.gutter(),
+                horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
+            ) {
+                AlButton(
+                    onClick = { onAction(FoodOverviewAction.IntakeClick) },
+                    modifier = Modifier.weight(1f),
+                ) { Text("Ingresar alimentos") }
+                AlButton(
+                    onClick = { onAction(FoodOverviewAction.OutflowClick) },
+                    modifier = Modifier.weight(1f),
+                    variant = AlButtonVariant.Outline,
+                ) { Text("Registrar egreso") }
+            }
+        }
+        item {
+            AlSectionLabel(
+                text = "Stock actual",
+                modifier = Modifier.gutter().padding(top = AlTheme.spacing.md),
             )
         }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+            Row(
+                modifier = Modifier
+                    .gutter()
+                    .padding(top = AlTheme.spacing.sm, bottom = AlTheme.spacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
+            ) {
                 AlSelectField(
                     value = state.stock.selectedCategoryName ?: "Todas",
                     enabled = state.stock.categories.isNotEmpty(),
@@ -147,7 +173,7 @@ private fun FoodOverviewContent(
                 EmptyState(
                     title = "No hay stock para mostrar",
                     caption = "Probá cambiar los filtros.",
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 140.dp),
+                    modifier = Modifier.gutter().fillMaxWidth().heightIn(min = 140.dp),
                 )
             }
             else -> itemsIndexed(
@@ -158,6 +184,7 @@ private fun FoodOverviewContent(
         if (state.stock.canLoadMore || state.stock.isLoadingMore) {
             item {
                 AlButton(
+                    modifier = Modifier.gutter().padding(top = AlTheme.spacing.md),
                     onClick = { onAction(FoodOverviewAction.LoadMoreStock) },
                     enabled = !state.stock.isLoadingMore,
                     loading = state.stock.isLoadingMore,
@@ -167,40 +194,12 @@ private fun FoodOverviewContent(
             }
         }
 
-        item { SectionTitle("MOVIMIENTOS") }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
-                AlButton(
-                    onClick = { onAction(FoodOverviewAction.IntakeClick) },
-                    modifier = Modifier.weight(1f),
-                ) { Text("Ingresar alimentos") }
-                AlButton(
-                    onClick = { onAction(FoodOverviewAction.OutflowClick) },
-                    modifier = Modifier.weight(1f),
-                    variant = AlButtonVariant.Outline,
-                ) { Text("Registrar egreso") }
-            }
-        }
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = "ÚLTIMOS MOVIMIENTOS",
-                    style = AlTheme.typography.caption,
-                    color = AlTheme.colors.textMuted,
-                )
-                Text(
-                    text = "Ver todo",
-                    style = AlTheme.typography.caption.copy(fontWeight = FontWeight.Medium),
-                    color = AlTheme.colors.textBase,
-                    modifier = Modifier.clickable {
-                        onAction(FoodOverviewAction.SeeAllMovementsClick)
-                    },
-                )
-            }
+            AlSectionLabel(
+                text = "Últimos movimientos",
+                modifier = Modifier.gutter().padding(top = AlTheme.spacing.lg),
+                onSeeAll = { onAction(FoodOverviewAction.SeeAllMovementsClick) },
+            )
         }
         when {
             state.movements.isLoading -> item { CenterSpinner() }
@@ -216,14 +215,35 @@ private fun FoodOverviewContent(
                 EmptyState(
                     title = "Todavía no hay movimientos",
                     caption = "Los ingresos y egresos aparecerán acá.",
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 140.dp),
+                    modifier = Modifier.gutter().fillMaxWidth().heightIn(min = 140.dp),
                 )
             }
-            else -> itemsIndexed(
-                items = state.movements.items,
-                key = { index, item -> "movement-$index-${item.direction.wireValue}:${item.id}" },
-            ) { _, item ->
-                MovementRow(item) { onAction(FoodOverviewAction.MovementClick(item.id)) }
+            else -> days.forEachIndexed { dayIndex, day ->
+                item(key = day.key, contentType = "date-separator") {
+                    // Not a stickyHeader: this list is a mixed page, and a pinned movement date
+                    // would hang over the stock section as the user scrolls back up.
+                    AlDateSeparator(
+                        label = day.label,
+                        // The first block already has the section header's gap above it.
+                        topPadding = if (dayIndex == 0) {
+                            AlTheme.spacing.sm
+                        } else {
+                            AlTheme.spacing.lg
+                        },
+                    )
+                }
+                itemsIndexed(
+                    items = day.items,
+                    key = { index, item ->
+                        "movement-$dayIndex-$index-${item.direction.wireValue}:${item.id}"
+                    },
+                    contentType = { _, _ -> "movement" },
+                ) { index, item ->
+                    // The last row of a day closes its block: the next header is the divider.
+                    MovementRow(item = item, showDivider = index != day.items.lastIndex) {
+                        onAction(FoodOverviewAction.MovementClick(item.id))
+                    }
+                }
             }
         }
     }
@@ -251,15 +271,6 @@ private fun ScopeProblem(
             onAction(if (loadFailed) FoodOverviewAction.RetryAll else FoodOverviewAction.BackClick)
         },
         modifier = Modifier.fillMaxSize(),
-    )
-}
-
-@Composable
-private fun SectionTitle(value: String) {
-    Text(
-        text = value,
-        style = AlTheme.typography.caption.copy(fontWeight = FontWeight.Medium),
-        color = AlTheme.colors.textMuted,
     )
 }
 
@@ -295,7 +306,7 @@ private fun SectionError(
         title = "No pudimos cargar $section",
         caption = caption,
         onRetry = retry.takeUnless { terminal },
-        modifier = Modifier.fillMaxWidth().heightIn(min = 160.dp),
+        modifier = Modifier.gutter().fillMaxWidth().heightIn(min = 160.dp),
     )
 }
 
@@ -305,7 +316,7 @@ private fun CategorySheet(
     state: FoodOverviewState,
     onAction: (FoodOverviewAction) -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = { onAction(FoodOverviewAction.CategorySheetDismiss) }) {
+    AlBottomSheet(onDismissRequest = { onAction(FoodOverviewAction.CategorySheetDismiss) }) {
         Column(
             modifier = Modifier
                 .navigationBarsPadding()
@@ -334,7 +345,7 @@ private fun SortSheet(
     state: FoodOverviewState,
     onAction: (FoodOverviewAction) -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = { onAction(FoodOverviewAction.SortSheetDismiss) }) {
+    AlBottomSheet(onDismissRequest = { onAction(FoodOverviewAction.SortSheetDismiss) }) {
         Column(Modifier.navigationBarsPadding()) {
             StockSortOrder.entries.forEach { sort ->
                 AlListRow(

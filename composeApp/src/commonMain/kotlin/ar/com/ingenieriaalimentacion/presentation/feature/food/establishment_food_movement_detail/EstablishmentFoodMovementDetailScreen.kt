@@ -98,7 +98,9 @@ fun EstablishmentFoodMovementDetailScreen(
 private fun DetailContent(detail: EstablishmentFoodMovementDetail) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.md),
+        // No verticalArrangement: the food lines below are AlListRows, which already close
+        // themselves with a hairline, so spacing every item would leave a gap above a row and
+        // none under its divider. The two items that are not rows carry their own gap instead.
         contentPadding = androidx.compose.foundation.layout.PaddingValues(AlTheme.spacing.lg),
     ) {
         item {
@@ -130,6 +132,10 @@ private fun DetailContent(detail: EstablishmentFoodMovementDetail) {
                 text = "Alimentos",
                 style = AlTheme.typography.bodyStrong,
                 color = AlTheme.colors.textBase,
+                modifier = Modifier.padding(
+                    top = AlTheme.spacing.md,
+                    bottom = AlTheme.spacing.sm,
+                ),
             )
         }
         itemsIndexed(

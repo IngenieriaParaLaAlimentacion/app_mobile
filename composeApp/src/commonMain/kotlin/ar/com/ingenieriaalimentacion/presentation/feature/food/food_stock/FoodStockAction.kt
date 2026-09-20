@@ -12,9 +12,6 @@ sealed interface FoodStockAction {
     /** The retry surface's button. Re-runs page 1 (or the establishment resolve) after clearing. */
     data object RetryLoad : FoodStockAction
 
-    /** `true` = "Disponibles" (sends `only_available=true`), `false` = "Todos". */
-    data class OnlyAvailableChanged(val onlyAvailable: Boolean) : FoodStockAction
-
     /** `null` = "Todas las categorías" — the param is then omitted entirely. */
     data class CategorySelected(val categoryId: String?) : FoodStockAction
 

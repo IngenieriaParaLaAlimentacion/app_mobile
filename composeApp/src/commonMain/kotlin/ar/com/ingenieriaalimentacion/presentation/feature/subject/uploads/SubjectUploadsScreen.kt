@@ -92,9 +92,9 @@ fun SubjectUploadsContent(
                 stickyHeader(key = day.key, contentType = "date-separator") {
                     AlDateSeparator(
                         label = day.label,
-                        // The first header sits right under the segmented control, which already
-                        // carries its own bottom padding.
-                        topPadding = if (dayIndex == 0) AlTheme.spacing.xs else AlTheme.spacing.lg,
+                        // `sm`, not `xs`: the hub's segmented control adds its own `md` below, so
+                        // 16 + 8 is the `lg` that separates one day's block from the next.
+                        topPadding = if (dayIndex == 0) AlTheme.spacing.sm else AlTheme.spacing.lg,
                     )
                 }
                 items(day.items, key = { it.localId }, contentType = { "subject" }) { upload ->

@@ -181,6 +181,9 @@ fun RequestEstablishmentScreen(
                                 item(key = NOTIFY_ABSENCE_ITEM_KEY) {
                                     AlListRow(
                                         horizontalPadding = 0.dp,
+                                        // A lone row after a list of cards: its default divider
+                                        // would be a hairline under the last thing on screen.
+                                        showDivider = false,
                                         title = NOTIFY_ABSENCE_CTA,
                                         titleColor = AlTheme.colors.accent,
                                         leadingIcon = Res.drawable.ic_mingcute_add_line,

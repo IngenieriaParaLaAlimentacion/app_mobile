@@ -19,7 +19,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,6 +41,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlSelec
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.DateVisualTransformation
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
+import ar.com.ingenieriaalimentacion.core.design_system.components.sheet.AlBottomSheet
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.presentation.common.formatQuantityWithUnit
@@ -237,7 +237,7 @@ private fun StockSheet(
                 }
             }
     }
-    ModalBottomSheet(
+    AlBottomSheet(
         onDismissRequest = { onAction(CreateFoodOutflowAction.StockPickerDismiss) },
     ) {
         Column(modifier = Modifier.navigationBarsPadding().heightIn(max = 620.dp)) {
@@ -318,7 +318,7 @@ private fun CategorySheet(
     state: CreateFoodOutflowState,
     onAction: (CreateFoodOutflowAction) -> Unit,
 ) {
-    ModalBottomSheet(
+    AlBottomSheet(
         onDismissRequest = { onAction(CreateFoodOutflowAction.CategoryPickerDismiss) },
     ) {
         Column(

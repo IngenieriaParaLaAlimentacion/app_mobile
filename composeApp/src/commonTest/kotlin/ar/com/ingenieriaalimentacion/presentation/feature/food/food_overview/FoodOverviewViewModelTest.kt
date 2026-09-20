@@ -39,7 +39,6 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -139,11 +138,11 @@ class FoodOverviewViewModelTest {
         )
         advanceUntilIdle()
 
-        fixture.viewModel.onAction(FoodOverviewAction.OnlyAvailableChanged(false))
+        fixture.viewModel.onAction(FoodOverviewAction.CategorySelected("c-9"))
         advanceUntilIdle()
 
         assertEquals(listOf(1, 1), fixture.stockRepo.requests.map { it.third })
-        assertFalse(fixture.stockRepo.requests.last().second.onlyAvailable)
+        assertEquals("c-9", fixture.stockRepo.requests.last().second.categoryId)
         assertEquals(listOf("filtered"), fixture.viewModel.state.value.stock.items.map { it.foodId })
         assertEquals(1, fixture.movementRepo.pageRequests.size)
     }
@@ -187,7 +186,7 @@ class FoodOverviewViewModelTest {
         )
         runCurrent()
 
-        viewModel.onAction(FoodOverviewAction.OnlyAvailableChanged(false))
+        viewModel.onAction(FoodOverviewAction.CategorySelected("c-9"))
         runCurrent()
         assertEquals(listOf("new"), viewModel.state.value.stock.items.map { it.foodId })
 

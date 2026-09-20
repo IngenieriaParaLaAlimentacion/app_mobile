@@ -14,7 +14,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -22,6 +21,7 @@ import ar.com.ingenieriaalimentacion.app.LocalOuterNavController
 import ar.com.ingenieriaalimentacion.core.design_system.components.avatar.AlAvatar
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.dialog.AlConfirmDialog
+import ar.com.ingenieriaalimentacion.core.design_system.components.header.AlSectionLabel
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
@@ -230,14 +230,12 @@ private fun ProfileSection(
     content: @Composable () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
+        AlSectionLabel(
             text = title,
             modifier = Modifier.padding(
                 horizontal = AlTheme.spacing.md,
                 vertical = AlTheme.spacing.sm,
             ),
-            style = AlTheme.typography.caption.copy(fontWeight = FontWeight.SemiBold),
-            color = AlTheme.colors.textMuted,
         )
         content()
     }

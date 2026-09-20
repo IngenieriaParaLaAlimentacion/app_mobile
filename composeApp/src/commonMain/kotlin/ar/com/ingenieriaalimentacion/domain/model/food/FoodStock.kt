@@ -61,12 +61,13 @@ enum class StockSortOrder(val wireValue: String, val label: String) {
 }
 
 /**
- * The three listing knobs, moved as one value so a page request can never be issued with a filter
- * set that half-belongs to the previous page.
+ * The listing knobs, moved as one value so a page request can never be issued with a filter set
+ * that half-belongs to the previous page.
  *
- * [onlyAvailable] defaults to `true`: a field worker opening "Stock" is asking what there *is*, and
- * the depleted rows the backend deliberately keeps (`0.000`) would otherwise dominate the first
- * screen. The user reveals them by switching to "Todos".
+ * [onlyAvailable] is `true` everywhere and has no UI control: the depleted rows the backend
+ * deliberately keeps (`0.000`) would otherwise dominate the screen. It stays a field rather than a
+ * constant because the wire param is optional and a future "ver agotados" affordance would only
+ * flip this.
  */
 data class FoodStockFilters(
     val onlyAvailable: Boolean = true,

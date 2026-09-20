@@ -40,6 +40,10 @@ import org.jetbrains.compose.resources.vectorResource
  *
  * Pass [onClick] to make the row tappable (also enables a [showChevron] default
  * of `true`); leave it null for read-only info rows.
+ *
+ * [topPadding] and [bottomPadding] are separate because Work Sans reserves space above its
+ * cap height that a title rarely uses, so symmetric padding *looks* top-heavy on a two-line
+ * row. Shift a couple of dp from top to bottom, keeping the total, to correct it.
  */
 @Composable
 fun AlListRow(
@@ -55,6 +59,8 @@ fun AlListRow(
     showChevron: Boolean = onClick != null,
     showDivider: Boolean = true,
     horizontalPadding: Dp = AlTheme.spacing.md,
+    topPadding: Dp = AlTheme.spacing.sm,
+    bottomPadding: Dp = AlTheme.spacing.sm,
     trailing: (@Composable RowScope.() -> Unit)? = null,
 ) {
     Column(
@@ -67,7 +73,12 @@ fun AlListRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .defaultMinSize(minHeight = 56.dp)
-                .padding(horizontal = horizontalPadding, vertical = AlTheme.spacing.sm),
+                .padding(
+                    start = horizontalPadding,
+                    end = horizontalPadding,
+                    top = topPadding,
+                    bottom = bottomPadding,
+                ),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
         ) {

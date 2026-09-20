@@ -76,9 +76,6 @@ class FoodStockViewModel(
 
             FoodStockAction.RetryLoad -> retry()
 
-            is FoodStockAction.OnlyAvailableChanged ->
-                applyFilters(update = { it.copy(onlyAvailable = action.onlyAvailable) })
-
             is FoodStockAction.CategorySelected -> applyFilters(
                 closeSheet = { it.copy(showCategorySheet = false) },
                 update = { it.copy(categoryId = action.categoryId) },

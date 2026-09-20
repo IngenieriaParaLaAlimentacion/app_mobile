@@ -186,21 +186,6 @@ class FoodStockViewModelTest {
     }
 
     @Test
-    fun `turning off only-available re-requests without the flag`() = runTest(dispatcher) {
-        val stock = FakeFoodStockRepository().apply {
-            pageResults = listOf(page("a"), page("a", "z"))
-        }
-        val vm = viewModel(stock)
-        advanceUntilIdle()
-
-        vm.onAction(FoodStockAction.OnlyAvailableChanged(false))
-        advanceUntilIdle()
-
-        assertEquals(false, stock.requests.last().second.onlyAvailable)
-        assertEquals(listOf("a", "z"), vm.state.value.items.map { it.foodId })
-    }
-
-    @Test
     fun `a page-1 failure produces the blocking retryable error`() = runTest(dispatcher) {
         val stock = FakeFoodStockRepository().apply {
             pageResults = listOf(Result.failure(FoodStockFailure(FoodStockError.Network, null)))

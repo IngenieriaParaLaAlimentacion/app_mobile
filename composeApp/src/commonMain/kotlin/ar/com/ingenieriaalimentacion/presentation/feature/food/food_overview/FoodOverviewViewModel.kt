@@ -59,9 +59,6 @@ class FoodOverviewViewModel(
             FoodOverviewAction.RetryStock -> refreshStock()
             FoodOverviewAction.RetryMovements -> refreshMovements()
             FoodOverviewAction.LoadMoreStock -> loadMoreStock()
-            is FoodOverviewAction.OnlyAvailableChanged -> updateFilters {
-                it.copy(onlyAvailable = action.value)
-            }
             is FoodOverviewAction.CategorySelected -> {
                 updateStock { it.copy(showCategorySheet = false) }
                 updateFilters { it.copy(categoryId = action.categoryId) }

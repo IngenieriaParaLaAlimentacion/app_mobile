@@ -16,12 +16,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
@@ -36,21 +33,16 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.EmptyState
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlSelectField
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
-import ar.com.ingenieriaalimentacion.core.design_system.components.segmented.AlSegmentedControl
+import ar.com.ingenieriaalimentacion.core.design_system.components.sheet.AlBottomSheet
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodStockItem
 import ar.com.ingenieriaalimentacion.domain.model.food.StockSortOrder
-import ar.com.ingenieriaalimentacion.presentation.common.dayLabel
-import ar.com.ingenieriaalimentacion.presentation.common.dayOf
-import ar.com.ingenieriaalimentacion.presentation.common.formatQuantity
-import ar.com.ingenieriaalimentacion.presentation.common.today
+import ar.com.ingenieriaalimentacion.presentation.common.formatQuantityWithUnit
 import com.komoui.components.Spinner
 import ingenieria_alimentacion.composeapp.generated.resources.Res
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_check_line
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
 import org.jetbrains.compose.resources.vectorResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -107,7 +99,6 @@ fun FoodStockScreen(
                 )
 
                 FilterBar(
-                    onlyAvailable = state.filters.onlyAvailable,
                     categoryLabel = state.selectedCategoryName ?: "Todas",
                     sortLabel = state.filters.sortOrder.label,
                     categoriesEnabled = state.categories.isNotEmpty(),
@@ -179,7 +170,6 @@ fun FoodStockScreen(
 
 @Composable
 private fun FilterBar(
-    onlyAvailable: Boolean,
     categoryLabel: String,
     sortLabel: String,
     categoriesEnabled: Boolean,
@@ -191,13 +181,6 @@ private fun FilterBar(
             .padding(horizontal = AlTheme.spacing.lg, vertical = AlTheme.spacing.sm),
         verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
     ) {
-        // Two segments, not a switch: the control names both states, so "Disponibles" can never be
-        // read as the double negative an unlabelled toggle next to "Solo disponibles" invites.
-        AlSegmentedControl(
-            segments = listOf("Disponibles", "Todos"),
-            selectedIndex = if (onlyAvailable) 0 else 1,
-            onSelect = { index -> onAction(FoodStockAction.OnlyAvailableChanged(index == 0)) },
-        )
         Row(horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
             AlSelectField(
                 modifier = Modifier.weight(1f),
@@ -223,12 +206,6 @@ private fun StockBody(
 ) {
     val listState = rememberLazyListState()
     val currentState by rememberUpdatedState(state)
-    // Resolved once per body composition rather than once per row: today(zone) is a tz-database
-    // lookup plus a civil-time conversion. NOT remembered — a remembered "today" would still say
-    // "hoy" after midnight on a screen left open.
-    val zone = remember { TimeZone.currentSystemDefault() }
-    val today = today(zone)
-
     LaunchedEffect(listState) {
         // The last visible index, not a nearEnd boolean: after a failed extra page the boolean is
         // already true, so distinctUntilChanged would swallow every later emission and the retry
@@ -281,7 +258,7 @@ private fun StockBody(
                 // breaks ties on id); the client must merely survive a repeat.
                 key = { index, item -> "$index-${item.foodId}" },
                 contentType = { _, _ -> "stock-row" },
-            ) { _, item -> StockRow(item, zone, today) }
+            ) { _, item -> StockRow(item) }
             if (state.isLoadingMore) {
                 item {
                     Spinner(modifier = Modifier.fillMaxWidth().padding(16.dp), size = 24.dp)
@@ -292,36 +269,24 @@ private fun StockBody(
 }
 
 @Composable
-internal fun StockRow(
-    item: FoodStockItem,
-    zone: TimeZone = remember { TimeZone.currentSystemDefault() },
-    today: LocalDate = today(zone),
-) {
+internal fun StockRow(item: FoodStockItem) {
     AlListRow(
         title = item.foodName,
-        // "Cereales · kg" — category and unit are both row-level facts and neither deserves a line.
-        subtitle = "${item.categoryName} · ${item.unit.shortLabel}",
+        subtitle = item.categoryName,
         // No onClick: there is no stock-detail screen in this story, and the chevron would promise
         // one. (`/stock/{food_id}/movements` exists on the backend but is out of scope.)
+        // 6/10, not a flat 8/8: Work Sans's ascent makes even padding read top-heavy here. The
+        // 16dp total is unchanged, so row height and list rhythm stay put. See AlListRow's KDoc.
+        topPadding = 6.dp,
+        bottomPadding = 10.dp,
         trailing = {
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    // formatQuantity: "10.000" -> "10", "0.750" -> "0,75". String-in/string-out,
-                    // never through Double. Mono face because this is read as data.
-                    text = formatQuantity(item.quantity),
-                    style = AlTheme.typography.data,
-                    color = if (item.isDepleted) AlTheme.colors.textMuted else AlTheme.colors.textBase,
-                )
-                item.updatedAtMillis?.let { millis ->
-                    Text(
-                        // "Actualizado", never "última carga": this is the WRITE timestamp, and a
-                        // backdated intake stamps it with today. Research §9.4.2.
-                        text = "Actualizado ${dayLabel(dayOf(millis, zone), today).lowercase()}",
-                        style = AlTheme.typography.caption,
-                        color = AlTheme.colors.textMuted,
-                    )
-                }
-            }
+            Text(
+                // formatQuantityWithUnit: "10.000" -> "10 kg", "0.750" -> "0,75 kg".
+                // String-in/string-out, never through Double. Mono face: this is read as data.
+                text = formatQuantityWithUnit(item.quantity, item.unit),
+                style = AlTheme.typography.dataSmall,
+                color = if (item.isDepleted) AlTheme.colors.textMuted else AlTheme.colors.textBase,
+            )
         },
     )
 }
@@ -372,16 +337,9 @@ private fun StockErrorState(
 
 /** CA4's empty state, filter-aware: a category with no rows here is a real and expected case. */
 private fun FoodStockState.emptyCopy(): Pair<String, String> = when {
-    filters.categoryId != null && filters.onlyAvailable ->
-        "Sin stock en esta categoría" to
-            "Probá con otra categoría, o mostrá también los alimentos agotados."
-
     filters.categoryId != null -> "Sin stock en esta categoría" to "Probá con otra categoría."
 
-    filters.onlyAvailable -> "Sin alimentos disponibles" to
-        "Mostrá «Todos» para ver también los alimentos que llegaron a cero."
-
-    else -> "Todavía no hay stock" to
+    else -> "Sin alimentos disponibles" to
         "Cuando registres ingresos de alimentos, el stock aparecerá acá."
 }
 
@@ -408,7 +366,7 @@ private fun PickerSheet(
     onDismiss: () -> Unit,
     content: @Composable () -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState()) {
+    AlBottomSheet(onDismissRequest = onDismiss) {
         Column(modifier = Modifier.navigationBarsPadding()) {
             Text(
                 text = title,

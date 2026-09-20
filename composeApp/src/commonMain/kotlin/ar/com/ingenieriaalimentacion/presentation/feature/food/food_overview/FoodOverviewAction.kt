@@ -12,7 +12,6 @@ sealed interface FoodOverviewAction {
     data object RetryStock : FoodOverviewAction
     data object RetryMovements : FoodOverviewAction
     data object LoadMoreStock : FoodOverviewAction
-    data class OnlyAvailableChanged(val value: Boolean) : FoodOverviewAction
     data class CategorySelected(val categoryId: String?) : FoodOverviewAction
     data class SortSelected(val sortOrder: StockSortOrder) : FoodOverviewAction
     data object CategorySheetOpen : FoodOverviewAction

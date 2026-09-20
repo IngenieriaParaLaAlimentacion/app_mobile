@@ -36,6 +36,13 @@ interface ProfileRepository {
 
     suspend fun requestEstablishmentAccess(ids: List<String>): Result<List<EstablishmentWithStatus>>
 
+    /**
+     * Withdraws the caller's own access to an establishment. Only relations currently
+     * approved or pending can be withdrawn; a withdrawn establishment can later be
+     * re-requested through [requestEstablishmentAccess].
+     */
+    suspend fun withdrawFromEstablishment(establishmentId: String): Result<Unit>
+
     /** Notifies an admin that an establishment is missing from the catalog. */
     suspend fun notifyEstablishmentAbsence(notice: EstablishmentAbsenceNotice): Result<Unit>
 }

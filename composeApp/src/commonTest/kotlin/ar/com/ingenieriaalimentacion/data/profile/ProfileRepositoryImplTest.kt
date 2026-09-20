@@ -6,6 +6,8 @@ import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentAbsenceEr
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentAbsenceNotice
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentRequestError
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
+import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
+import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithdrawalError
 import ar.com.ingenieriaalimentacion.domain.model.profile.ProfileError
 import ar.com.ingenieriaalimentacion.domain.model.profile.UpdateProfile
 import io.ktor.client.HttpClient
@@ -33,6 +35,7 @@ import kotlin.test.assertTrue
 class ProfileRepositoryImplTest {
 
     private fun repository(
+        local: FakeEstablishmentLocalStore = FakeEstablishmentLocalStore(),
         handler: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData,
     ): ProfileRepositoryImpl {
         val client = HttpClient(MockEngine(handler)) {
@@ -42,7 +45,7 @@ class ProfileRepositoryImplTest {
             }
             defaultRequest { url("https://api.example.com/") }
         }
-        return ProfileRepositoryImpl(ProfileApi(client), FakeEstablishmentLocalStore(), FakeCurrentEstablishmentLocalStore())
+        return ProfileRepositoryImpl(ProfileApi(client), local, FakeCurrentEstablishmentLocalStore())
     }
 
     private fun respondJson(scope: MockRequestHandleScope, body: String, status: HttpStatusCode = HttpStatusCode.OK) =
@@ -217,6 +220,65 @@ class ProfileRepositoryImplTest {
 
         assertTrue(failure is EstablishmentRequestFailure)
         assertEquals(EstablishmentRequestError.EstablishmentNotFound, failure.error)
+    }
+
+    // --- withdraw from establishment ---
+
+    @Test
+    fun `withdrawFromEstablishment sends the id and evicts it from the cache`() = runTest {
+        val cached = listOf(
+            EstablishmentWithStatus("e1", "Norte", "Calle 1", 0.0, 0.0, "p1", "C", "P", EstablishmentStatus.Approved),
+            EstablishmentWithStatus("e2", "Sur", "Calle 2", 0.0, 0.0, "p2", "C", "P", EstablishmentStatus.Pending),
+        )
+        val local = FakeEstablishmentLocalStore(cached)
+        var capturedPath: String? = null
+        var capturedBody: String? = null
+        val repo = repository(local) { request ->
+            capturedPath = request.url.encodedPath
+            capturedBody = (request.body as? TextContent)?.text
+            respondJson(this, "[$establishmentJson]")
+        }
+
+        repo.withdrawFromEstablishment("e1").getOrThrow()
+
+        assertEquals("/api/v1/users/me/establishments/withdraw", capturedPath)
+        assertEquals("""{"establishment_ids":["e1"]}""", capturedBody)
+        assertEquals(listOf("e2"), local.rows.map { it.id })
+    }
+
+    @Test
+    fun `withdrawFromEstablishment maps 404 to EstablishmentNotFound and leaves the cache untouched`() = runTest {
+        val cached = listOf(
+            EstablishmentWithStatus("e1", "Norte", "Calle 1", 0.0, 0.0, "p1", "C", "P", EstablishmentStatus.Approved),
+        )
+        val local = FakeEstablishmentLocalStore(cached)
+        val repo = repository(local) { respond("missing", HttpStatusCode.NotFound) }
+
+        val failure = repo.withdrawFromEstablishment("e1").exceptionOrNull()
+
+        assertTrue(failure is EstablishmentWithdrawalFailure)
+        assertEquals(EstablishmentWithdrawalError.EstablishmentNotFound, failure.error)
+        assertEquals(listOf("e1"), local.rows.map { it.id })
+    }
+
+    @Test
+    fun `withdrawFromEstablishment maps 409 to NotWithdrawable`() = runTest {
+        val repo = repository { respond("conflict", HttpStatusCode.Conflict) }
+
+        val failure = repo.withdrawFromEstablishment("e1").exceptionOrNull()
+
+        assertTrue(failure is EstablishmentWithdrawalFailure)
+        assertEquals(EstablishmentWithdrawalError.NotWithdrawable, failure.error)
+    }
+
+    @Test
+    fun `withdrawFromEstablishment maps 401 to Unauthorized`() = runTest {
+        val repo = repository { respond("no token", HttpStatusCode.Unauthorized) }
+
+        val failure = repo.withdrawFromEstablishment("e1").exceptionOrNull()
+
+        assertTrue(failure is EstablishmentWithdrawalFailure)
+        assertEquals(EstablishmentWithdrawalError.Unauthorized, failure.error)
     }
 
     // --- notify establishment absence ---

@@ -292,7 +292,11 @@ private fun StockBody(
 }
 
 @Composable
-private fun StockRow(item: FoodStockItem, zone: TimeZone, today: LocalDate) {
+internal fun StockRow(
+    item: FoodStockItem,
+    zone: TimeZone = remember { TimeZone.currentSystemDefault() },
+    today: LocalDate = today(zone),
+) {
     AlListRow(
         title = item.foodName,
         // "Cereales · kg" — category and unit are both row-level facts and neither deserves a line.

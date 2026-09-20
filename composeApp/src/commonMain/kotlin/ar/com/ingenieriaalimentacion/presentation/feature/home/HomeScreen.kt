@@ -44,12 +44,10 @@ import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import ingenieria_alimentacion.composeapp.generated.resources.Res
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_alert_line
-import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_bowl_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_check_circle
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_doc_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_document_2_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_down_line
-import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_exit_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_location_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_package_2_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_package_line
@@ -246,7 +244,7 @@ private fun SyncStatusCard(sync: SyncStatusUi, onAction: (HomeAction) -> Unit) {
     }
 }
 
-private class QuickAction(
+internal class QuickAction(
     val icon: DrawableResource,
     val label: String,
     val action: HomeAction,
@@ -254,17 +252,13 @@ private class QuickAction(
 
 // Labels are deliberately single words: the grid is 3-wide (see QuickActions), which leaves roughly
 // a third of a small phone per tile. A two-word label would wrap.
-// ic_mingcute_wardrobe_line (a despensa/cupboard) is used for Stock rather than package_*: those
-// two are already the intake/outflow history-row icons, and a "what is stored" affordance must not
-// look like a "what moved" row.
-private val QUICK_ACTIONS = listOf(
+// ic_mingcute_wardrobe_line (a despensa/cupboard) represents the unified food area; package_*
+// remain reserved for intake/outflow history rows so the entry point cannot look like a movement.
+internal val QUICK_ACTIONS = listOf(
     QuickAction(Res.drawable.ic_mingcute_ruler_line, "Medición", HomeAction.NewMeasurementClick),
     QuickAction(Res.drawable.ic_mingcute_user_3_line, "Sujeto", HomeAction.NewSubjectClick),
     QuickAction(Res.drawable.ic_mingcute_doc_line, "Encuesta", HomeAction.RespondSurveyClick),
-    QuickAction(Res.drawable.ic_mingcute_bowl_line, "Ingreso", HomeAction.NewFoodIntakeClick),
-    QuickAction(Res.drawable.ic_mingcute_exit_line, "Egreso", HomeAction.NewFoodOutflowClick),
-    QuickAction(Res.drawable.ic_mingcute_wardrobe_line, "Stock", HomeAction.FoodStockClick),
-    QuickAction(Res.drawable.ic_mingcute_time, "Movimientos", HomeAction.FoodMovementHistoryClick),
+    QuickAction(Res.drawable.ic_mingcute_wardrobe_line, "Alimentos", HomeAction.FoodOverviewClick),
 )
 
 /** Three columns keep the actions readable and preserve equal tile widths on incomplete rows. */
@@ -405,8 +399,7 @@ private fun RecentActivityUi.Kind.icon(): DrawableResource = when (this) {
     RecentActivityUi.Kind.Subject -> Res.drawable.ic_mingcute_user_3_line
     RecentActivityUi.Kind.Measurement -> Res.drawable.ic_mingcute_ruler_line
     RecentActivityUi.Kind.SurveyResponse -> Res.drawable.ic_mingcute_document_2_line
-    // ic_mingcute_bowl_line is already the "Alimentos" quick action below — a history row must not
-    // look like the button that creates one.
+    // Movement rows use package directions, distinct from the cupboard used by the food entry point.
     RecentActivityUi.Kind.FoodIntake -> Res.drawable.ic_mingcute_package_2_line
     RecentActivityUi.Kind.FoodOutflow -> Res.drawable.ic_mingcute_package_line
 }

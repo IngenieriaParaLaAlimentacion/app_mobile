@@ -171,7 +171,9 @@ private fun MovementBody(
             itemsIndexed(
                 items = state.items,
                 key = { index, item -> "$index-${item.direction.wireValue}:${item.id}" },
-            ) { _, item -> MovementRow(item, onAction) }
+            ) { _, item -> MovementRow(item) {
+                onAction(EstablishmentFoodMovementHistoryAction.MovementClick(item.id))
+            } }
             if (state.isLoadingMore) {
                 item { Spinner(Modifier.fillMaxWidth().padding(16.dp), size = 24.dp) }
             }
@@ -180,9 +182,9 @@ private fun MovementBody(
 }
 
 @Composable
-private fun MovementRow(
+internal fun MovementRow(
     item: EstablishmentFoodMovementSummary,
-    onAction: (EstablishmentFoodMovementHistoryAction) -> Unit,
+    onClick: () -> Unit,
 ) {
     AlListRow(
         title = if (item.direction == EstablishmentFoodMovementDirection.In) "Ingreso" else "Egreso",
@@ -194,7 +196,7 @@ private fun MovementRow(
             Res.drawable.ic_mingcute_package_2_line
         },
         leadingIconTint = AlTheme.colors.accent,
-        onClick = { onAction(EstablishmentFoodMovementHistoryAction.MovementClick(item.id)) },
+        onClick = onClick,
     )
 }
 

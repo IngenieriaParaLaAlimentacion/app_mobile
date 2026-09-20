@@ -48,13 +48,11 @@ data class FoodSearchState(
 
 data class CreateFoodIntakeState(
     val destination: CreateFoodIntakeDestination? = null,
-    /** Client-generated idempotency key, stable across retries and re-minted after a save. */
+    /** Client-generated idempotency key, stable across retries until the screen exits on success. */
     val intakeId: String = "",
     val isLoadingProfile: Boolean = true,
     val profileError: String? = null,
-    val establishmentOptions: List<EstablishmentWithStatus> = emptyList(),
     val selectedEstablishment: EstablishmentWithStatus? = null,
-    val showEstablishmentPicker: Boolean = false,
     /** Raw `DDMMYYYY` digit buffer behind `DateVisualTransformation`, pre-filled with today. */
     val receivedAt: TextFieldState = TextFieldState(),
     val comments: TextFieldState = TextFieldState(),
@@ -63,7 +61,6 @@ data class CreateFoodIntakeState(
     val isOnline: Boolean = true,
     val isSubmitting: Boolean = false,
     val submitError: String? = null,
-    val successMessage: String? = null,
 ) {
     val commentsCount: String get() = "${comments.value.length}/$MAX_COMMENTS"
 

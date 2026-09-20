@@ -14,11 +14,10 @@ import ar.com.ingenieriaalimentacion.domain.model.food.FoodIntakeFailure
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodUnit
 import ar.com.ingenieriaalimentacion.domain.model.food.NewFoodIntake
 import ar.com.ingenieriaalimentacion.domain.model.food.NewFoodIntakeLine
-import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
+import ar.com.ingenieriaalimentacion.domain.model.profile.CurrentEstablishmentResult
 import ar.com.ingenieriaalimentacion.domain.usecase.food.CreateFoodIntakeUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.SearchFoodsUseCase
-import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
-import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.ResolveCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.util.IdGenerator
 import ar.com.ingenieriaalimentacion.domain.util.MAX_INTEGER_QUANTITY
 import ar.com.ingenieriaalimentacion.domain.util.MAX_QUANTITY
@@ -44,8 +43,7 @@ import kotlin.time.Clock
 class CreateFoodIntakeViewModel(
     private val searchFoods: SearchFoodsUseCase,
     private val createFoodIntake: CreateFoodIntakeUseCase,
-    private val getMyEstablishments: GetMyEstablishmentsUseCase,
-    private val getCurrentEstablishment: GetCurrentEstablishmentUseCase,
+    private val resolveCurrentEstablishment: ResolveCurrentEstablishmentUseCase,
     private val connectivity: ConnectivityObserver,
     private val idGenerator: IdGenerator,
 ) : ViewModel() {
@@ -79,31 +77,15 @@ class CreateFoodIntakeViewModel(
             // stall the first frame on iOS.
             connectivity.isOnline.collect { online -> _state.update { it.copy(isOnline = online) } }
         }
-        loadEstablishments()
+        loadEstablishment()
     }
 
     fun onAction(action: CreateFoodIntakeAction) {
         when (action) {
-            CreateFoodIntakeAction.EstablishmentPickerOpen ->
-                _state.update { it.copy(showEstablishmentPicker = true) }
-
-            CreateFoodIntakeAction.EstablishmentPickerDismiss ->
-                _state.update { it.copy(showEstablishmentPicker = false) }
-
-            is CreateFoodIntakeAction.EstablishmentSelected ->
-                _state.update {
-                    it.copy(
-                        selectedEstablishment = action.establishment,
-                        showEstablishmentPicker = false,
-                        successMessage = null,
-                    )
-                }
-
             is CreateFoodIntakeAction.ReceivedAtChanged ->
                 _state.update {
                     it.copy(
                         receivedAt = it.receivedAt.onChange(dateDigits(action.value), receivedAtValidator),
-                        successMessage = null,
                     )
                 }
 
@@ -114,7 +96,6 @@ class CreateFoodIntakeViewModel(
                 _state.update {
                     it.copy(
                         comments = it.comments.onChange(action.value, commentsValidator),
-                        successMessage = null,
                     )
                 }
 
@@ -140,7 +121,6 @@ class CreateFoodIntakeViewModel(
                     current.copy(
                         lines = if (alreadyThere) current.lines else current.lines + FoodIntakeLine(action.food),
                         search = current.search.cleared(),
-                        successMessage = null,
                     )
                 }
                 query.value = ""
@@ -163,8 +143,7 @@ class CreateFoodIntakeViewModel(
                 _state.update { it.copy(lines = it.lines.filterNot { line -> line.food.id == action.foodId }) }
 
             CreateFoodIntakeAction.Submit -> submit()
-            CreateFoodIntakeAction.DismissSuccess -> _state.update { it.copy(successMessage = null) }
-            CreateFoodIntakeAction.RetryProfile -> loadEstablishments()
+            CreateFoodIntakeAction.RetryProfile -> loadEstablishment()
             CreateFoodIntakeAction.BackClick ->
                 _state.update { it.copy(destination = CreateFoodIntakeDestination.Back) }
         }
@@ -178,7 +157,6 @@ class CreateFoodIntakeViewModel(
         _state.update { current ->
             current.copy(
                 lines = current.lines.map { if (it.food.id == foodId) transform(it) else it },
-                successMessage = null,
             )
         }
     }
@@ -211,32 +189,36 @@ class CreateFoodIntakeViewModel(
         )
     }
 
-    private fun loadEstablishments() {
+    private fun loadEstablishment() {
         _state.update { it.copy(isLoadingProfile = true, profileError = null) }
         viewModelScope.launch {
-            getMyEstablishments().fold(
-                onSuccess = { establishments ->
-                    val approved = establishments.filter { it.status == EstablishmentStatus.Approved }
-                    val current = getCurrentEstablishment(approved)
+            when (val result = resolveCurrentEstablishment()) {
+                is CurrentEstablishmentResult.Selected ->
                     _state.update {
                         it.copy(
                             isLoadingProfile = false,
-                            establishmentOptions = approved,
-                            // Home's default wins over auto-select-when-single; a manual pick
-                            // already in state (e.g. after RetryProfile) is left untouched.
-                            selectedEstablishment = current ?: approved.singleOrNull() ?: it.selectedEstablishment,
+                            selectedEstablishment = result.establishment,
+                            profileError = null,
                         )
                     }
-                },
-                onFailure = {
+                is CurrentEstablishmentResult.NoneSelected,
+                is CurrentEstablishmentResult.StaleSelection ->
                     _state.update {
                         it.copy(
                             isLoadingProfile = false,
-                            profileError = "No se pudieron cargar los establecimientos. Intentá nuevamente.",
+                            selectedEstablishment = null,
+                            profileError = "Elegí un establecimiento en Inicio para cargar un ingreso.",
                         )
                     }
-                },
-            )
+                is CurrentEstablishmentResult.LoadFailed ->
+                    _state.update {
+                        it.copy(
+                            isLoadingProfile = false,
+                            selectedEstablishment = null,
+                            profileError = "No se pudo cargar el establecimiento. Intentá nuevamente.",
+                        )
+                    }
+            }
         }
     }
 
@@ -255,24 +237,17 @@ class CreateFoodIntakeViewModel(
             return
         }
 
-        _state.update { validated.copy(isSubmitting = true, submitError = null, successMessage = null) }
+        _state.update { validated.copy(isSubmitting = true, submitError = null) }
         viewModelScope.launch {
             createFoodIntake(intake).fold(
                 onSuccess = {
                     _state.update {
-                        // Mint a NEW idempotency id — the previous one is spent server-side.
                         it.copy(
-                            intakeId = idGenerator.newId(),
-                            lines = emptyList(),
-                            comments = TextFieldState(),
-                            receivedAt = TextFieldState(value = todayDigits()),
-                            search = it.search.cleared(),
                             isSubmitting = false,
                             submitError = null,
-                            successMessage = "Ingreso registrado",
+                            destination = CreateFoodIntakeDestination.Saved,
                         )
                     }
-                    query.value = ""
                 },
                 onFailure = { throwable ->
                     if (throwable is CancellationException) throw throwable

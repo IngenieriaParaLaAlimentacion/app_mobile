@@ -13,7 +13,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -38,8 +37,10 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButt
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlCardIconButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.card.AlInfoCard
 import ar.com.ingenieriaalimentacion.core.design_system.components.header.AlScreenHeader
+import ar.com.ingenieriaalimentacion.core.design_system.components.header.AlSectionLabel
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
+import ar.com.ingenieriaalimentacion.core.design_system.components.sheet.AlBottomSheet
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import ingenieria_alimentacion.composeapp.generated.resources.Res
@@ -118,7 +119,7 @@ fun HomeScreen(
         }
 
         if (state.showEstablishmentPicker) {
-            ModalBottomSheet(
+            AlBottomSheet(
                 onDismissRequest = { onAction(HomeAction.EstablishmentPickerDismiss) },
                 sheetState = sheetState,
             ) {
@@ -294,7 +295,7 @@ private fun QuickActions(state: HomeState, onAction: (HomeAction) -> Unit) {
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
-            SectionLabel("HOY")
+            AlSectionLabel("Hoy")
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -347,19 +348,10 @@ private fun StatCell(value: String, label: String, modifier: Modifier = Modifier
 @Composable
 private fun RecentActivity(recent: List<RecentActivityUi>, onAction: (HomeAction) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            SectionLabel("ACTIVIDAD RECIENTE")
-            Text(
-                text = "Ver todo",
-                style = AlTheme.typography.caption.copy(fontWeight = FontWeight.Medium),
-                color = AlTheme.colors.textBase,
-                modifier = Modifier.clickable { onAction(HomeAction.SeeAllActivityClick) },
-            )
-        }
+        AlSectionLabel(
+            text = "Actividad reciente",
+            onSeeAll = { onAction(HomeAction.SeeAllActivityClick) },
+        )
         if (recent.isEmpty()) {
             EmptyState(
                 title = "Sin actividad",
@@ -367,32 +359,31 @@ private fun RecentActivity(recent: List<RecentActivityUi>, onAction: (HomeAction
                 modifier = Modifier.padding(vertical = AlTheme.spacing.lg),
             )
         } else {
-            recent.forEach { item ->
-                AlListRow(
-                    title = item.title,
-                    subtitle = item.subtitle,
-                    value = item.value,
-                    leadingIcon = item.kind.icon(),
-                    leadingIconTint = item.badgeTone.color(),
-                    onClick = { onAction(HomeAction.SeeAllActivityClick) },
-                    showChevron = false,
-                    horizontalPadding = 0.dp,
-                    trailing = {
-                        item.badgeText?.let { AlStatusBadge(text = it, tone = item.badgeTone) }
-                    },
-                )
+            // An inner Column with no arrangement: the section's `sm` spacing is meant to
+            // separate the header from the list, not the rows from each other. Applied between
+            // rows it stacks on top of the divider each AlListRow already draws underneath
+            // itself, leaving the row's text sitting high between two hairlines.
+            Column {
+                recent.forEach { item ->
+                    AlListRow(
+                        title = item.title,
+                        subtitle = item.subtitle,
+                        value = item.value,
+                        leadingIcon = item.kind.icon(),
+                        leadingIconTint = item.badgeTone.color(),
+                        onClick = { onAction(HomeAction.SeeAllActivityClick) },
+                        showChevron = false,
+                        horizontalPadding = 0.dp,
+                        trailing = {
+                            item.badgeText?.let {
+                                AlStatusBadge(text = it, tone = item.badgeTone)
+                            }
+                        },
+                    )
+                }
             }
         }
     }
-}
-
-@Composable
-private fun SectionLabel(text: String) {
-    Text(
-        text = text,
-        style = AlTheme.typography.caption.copy(fontWeight = FontWeight.Medium),
-        color = AlTheme.colors.textMuted,
-    )
 }
 
 private fun RecentActivityUi.Kind.icon(): DrawableResource = when (this) {
@@ -400,8 +391,10 @@ private fun RecentActivityUi.Kind.icon(): DrawableResource = when (this) {
     RecentActivityUi.Kind.Measurement -> Res.drawable.ic_mingcute_ruler_line
     RecentActivityUi.Kind.SurveyResponse -> Res.drawable.ic_mingcute_document_2_line
     // Movement rows use package directions, distinct from the cupboard used by the food entry point.
-    RecentActivityUi.Kind.FoodIntake -> Res.drawable.ic_mingcute_package_2_line
-    RecentActivityUi.Kind.FoodOutflow -> Res.drawable.ic_mingcute_package_line
+    // Same mapping as MovementRow in the Alimentos history: the open carton is what arrives, the
+    // sealed parcel is what leaves. A movement must not change icon depending on where it is read.
+    RecentActivityUi.Kind.FoodIntake -> Res.drawable.ic_mingcute_package_line
+    RecentActivityUi.Kind.FoodOutflow -> Res.drawable.ic_mingcute_package_2_line
 }
 
 @Composable

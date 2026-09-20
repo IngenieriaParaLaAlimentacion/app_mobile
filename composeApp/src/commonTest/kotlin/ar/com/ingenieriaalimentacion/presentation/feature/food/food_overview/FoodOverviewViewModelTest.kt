@@ -94,6 +94,7 @@ class FoodOverviewViewModelTest {
         assertEquals("e1", fixture.stockRepo.requests.single().first)
         assertEquals("e1", fixture.movementRepo.pageRequests.single().establishmentId)
         assertEquals(5, fixture.movementRepo.pageRequests.single().pageSize)
+        assertEquals(5, fixture.stockRepo.requestedPageSizes.single())
         assertEquals(listOf("s1"), fixture.viewModel.state.value.stock.items.map { it.foodId })
         assertEquals(listOf("m1"), fixture.viewModel.state.value.movements.items.map { it.id })
     }
@@ -196,21 +197,20 @@ class FoodOverviewViewModelTest {
     }
 
     @Test
-    fun `load more appends and a double tap starts one request`() = runTest(dispatcher) {
+    fun `stock preview stays bounded and full stock opens without loading more`() = runTest(dispatcher) {
         val fixture = fixture(
             stockResults = listOf(
-                Result.success(FoodStockPage(listOf(stock("s1")), true)),
-                Result.success(FoodStockPage(listOf(stock("s2")), false)),
+                Result.success(FoodStockPage((1..8).map { stock("s$it") }, true)),
             ),
         )
         advanceUntilIdle()
 
-        fixture.viewModel.onAction(FoodOverviewAction.LoadMoreStock)
-        fixture.viewModel.onAction(FoodOverviewAction.LoadMoreStock)
+        assertEquals((1..5).map { "s$it" }, fixture.viewModel.state.value.stock.items.map { it.foodId })
+        fixture.viewModel.onAction(FoodOverviewAction.SeeAllStockClick)
         advanceUntilIdle()
 
-        assertEquals(listOf(1, 2), fixture.stockRepo.requests.map { it.third })
-        assertEquals(listOf("s1", "s2"), fixture.viewModel.state.value.stock.items.map { it.foodId })
+        assertEquals(FoodOverviewDestination.Stock, fixture.viewModel.state.value.destination)
+        assertEquals(1, fixture.stockRepo.requests.size)
         assertEquals(1, fixture.movementRepo.pageRequests.size)
     }
 

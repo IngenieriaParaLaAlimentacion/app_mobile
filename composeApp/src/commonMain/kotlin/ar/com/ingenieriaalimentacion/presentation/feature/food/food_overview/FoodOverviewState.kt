@@ -10,17 +10,13 @@ data class FoodOverviewStockState(
     val items: List<FoodStockItem> = emptyList(),
     val categories: List<FoodCategory> = emptyList(),
     val filters: FoodStockFilters = FoodStockFilters(),
-    val page: Int = 1,
-    val hasMore: Boolean = false,
     val isLoading: Boolean = false,
-    val isLoadingMore: Boolean = false,
     val error: FoodOverviewSectionError? = null,
     val showCategorySheet: Boolean = false,
     val showSortSheet: Boolean = false,
 ) {
     val selectedCategoryName: String?
         get() = filters.categoryId?.let { id -> categories.firstOrNull { it.id == id }?.name }
-    val canLoadMore: Boolean get() = hasMore && !isLoading && !isLoadingMore && error == null
 }
 
 data class FoodOverviewMovementsState(
@@ -41,3 +37,5 @@ data class FoodOverviewState(
 
 enum class EstablishmentProblem { NoneSelected, StaleSelection, LoadFailed }
 enum class FoodOverviewSectionError { Retryable, AccessDenied, EstablishmentNotFound, Terminal }
+
+internal const val STOCK_PREVIEW_SIZE = 5

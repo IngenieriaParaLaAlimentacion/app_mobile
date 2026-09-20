@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ar.com.ingenieriaalimentacion.core.design_system.components.banner.AlBannerVariant
+import ar.com.ingenieriaalimentacion.core.design_system.components.banner.AlInlineBanner
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlIconButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.card.AlInfoCard
@@ -31,6 +32,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.A
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
+import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithdrawalError
 import ar.com.ingenieriaalimentacion.presentation.navigation.ESTABLISHMENT_REQUESTED_RESULT
 import ar.com.ingenieriaalimentacion.presentation.navigation.RefreshOnNavResult
 import com.komoui.components.Spinner
@@ -103,14 +105,15 @@ fun MyEstablishmentsScreen(
 
                     else -> MyEstablishmentsContent(
                         establishments = state.establishments,
+                        withdrawError = state.withdrawError,
                         onRequestAccess = { onAction(MyEstablishmentsAction.RequestAccessClick) },
                         onWithdrawClick = { id -> onAction(MyEstablishmentsAction.WithdrawClick(id)) },
+                        onDismissError = { onAction(MyEstablishmentsAction.ToastDismissed) },
                     )
                 }
 
                 AlToast(
-                    message = state.successMessage ?: state.withdrawError?.toUserMessage(),
-                    variant = if (state.successMessage != null) AlBannerVariant.Success else AlBannerVariant.Danger,
+                    message = state.successMessage,
                     onDismiss = { onAction(MyEstablishmentsAction.ToastDismissed) },
                 )
             }
@@ -132,8 +135,10 @@ fun MyEstablishmentsScreen(
 @Composable
 private fun MyEstablishmentsContent(
     establishments: List<EstablishmentWithStatus>,
+    withdrawError: EstablishmentWithdrawalError?,
     onRequestAccess: () -> Unit,
     onWithdrawClick: (String) -> Unit,
+    onDismissError: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -142,6 +147,14 @@ private fun MyEstablishmentsContent(
             .padding(horizontal = AlTheme.spacing.lg, vertical = AlTheme.spacing.lg),
         verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg),
     ) {
+        if (withdrawError != null) {
+            AlInlineBanner(
+                message = withdrawError.toUserMessage(),
+                variant = AlBannerVariant.Danger,
+                onDismiss = onDismissError,
+            )
+        }
+
         if (establishments.isEmpty()) {
             Text(
                 text = "Todavía no tenés establecimientos aceptados.",

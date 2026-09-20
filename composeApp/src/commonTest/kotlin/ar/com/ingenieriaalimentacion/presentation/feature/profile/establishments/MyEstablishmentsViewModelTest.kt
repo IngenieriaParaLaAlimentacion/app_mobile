@@ -2,9 +2,12 @@ package ar.com.ingenieriaalimentacion.presentation.feature.profile.establishment
 
 import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
+import ar.com.ingenieriaalimentacion.data.profile.EstablishmentWithdrawalFailure
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
+import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithdrawalError
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.WithdrawFromEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.fake.FakeProfileRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -16,6 +19,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -41,7 +45,10 @@ class MyEstablishmentsViewModelTest {
     }
 
     private fun viewModel(repo: FakeProfileRepository) =
-        MyEstablishmentsViewModel(getMyEstablishments = GetMyEstablishmentsUseCase(repo))
+        MyEstablishmentsViewModel(
+            getMyEstablishments = GetMyEstablishmentsUseCase(repo),
+            withdrawFromEstablishment = WithdrawFromEstablishmentUseCase(repo),
+        )
 
     private suspend fun ReceiveTurbine<MyEstablishmentsState>.awaitState(
         predicate: (MyEstablishmentsState) -> Boolean,
@@ -130,6 +137,169 @@ class MyEstablishmentsViewModelTest {
             vm.onAction(MyEstablishmentsAction.BackClick)
             val state = awaitState { it.destination != null }
             assertEquals(MyEstablishmentsDestination.Back, state.destination)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `WithdrawClick opens the confirm dialog for the matching establishment`() = runTest(dispatcher) {
+        val repo = FakeProfileRepository().apply {
+            myEstablishmentsResult = Result.success(
+                listOf(establishment("1", "Norte", EstablishmentStatus.Approved)),
+            )
+        }
+        val vm = viewModel(repo)
+
+        vm.state.test {
+            awaitState { !it.isLoading }
+            vm.onAction(MyEstablishmentsAction.WithdrawClick("1"))
+            val state = awaitState { it.pendingWithdraw != null }
+            assertEquals("Norte", state.pendingWithdraw?.name)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `WithdrawClick with an unknown id is a no-op`() = runTest(dispatcher) {
+        val repo = FakeProfileRepository().apply { myEstablishmentsResult = Result.success(emptyList()) }
+        val vm = viewModel(repo)
+
+        vm.state.test {
+            val loaded = awaitState { !it.isLoading }
+            assertEquals(null, loaded.pendingWithdraw)
+            vm.onAction(MyEstablishmentsAction.WithdrawClick("missing"))
+            cancelAndIgnoreRemainingEvents()
+        }
+        assertEquals(null, vm.state.value.pendingWithdraw)
+    }
+
+    @Test
+    fun `DismissWithdrawConfirm closes the dialog without withdrawing`() = runTest(dispatcher) {
+        val repo = FakeProfileRepository().apply {
+            myEstablishmentsResult = Result.success(
+                listOf(establishment("1", "Norte", EstablishmentStatus.Approved)),
+            )
+        }
+        val vm = viewModel(repo)
+
+        vm.state.test {
+            awaitState { !it.isLoading }
+            vm.onAction(MyEstablishmentsAction.WithdrawClick("1"))
+            awaitState { it.pendingWithdraw != null }
+            vm.onAction(MyEstablishmentsAction.DismissWithdrawConfirm)
+            val state = awaitState { it.pendingWithdraw == null }
+            assertEquals(0, repo.withdrawCount)
+            assertEquals(1, state.establishments.size)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `ConfirmWithdraw success removes the establishment and shows a confirmation toast`() =
+        runTest(dispatcher) {
+            val repo = FakeProfileRepository().apply {
+                myEstablishmentsResult = Result.success(
+                    listOf(
+                        establishment("1", "Norte", EstablishmentStatus.Approved),
+                        establishment("2", "Sur", EstablishmentStatus.Pending),
+                    ),
+                )
+                withdrawResult = Result.success(Unit)
+            }
+            val vm = viewModel(repo)
+
+            vm.state.test {
+                awaitState { !it.isLoading }
+                vm.onAction(MyEstablishmentsAction.WithdrawClick("1"))
+                awaitState { it.pendingWithdraw != null }
+                vm.onAction(MyEstablishmentsAction.ConfirmWithdraw)
+                val state = awaitState { it.successMessage != null }
+
+                assertEquals("1", repo.lastWithdrawnId)
+                assertEquals(listOf("2"), state.establishments.map { it.id })
+                assertEquals(null, state.pendingWithdraw)
+                assertEquals(false, state.isWithdrawing)
+                assertTrue(state.successMessage!!.contains("Norte"))
+                assertNull(state.withdrawError)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `ConfirmWithdraw network failure keeps the establishment and shows an error toast`() =
+        runTest(dispatcher) {
+            val repo = FakeProfileRepository().apply {
+                myEstablishmentsResult = Result.success(
+                    listOf(establishment("1", "Norte", EstablishmentStatus.Approved)),
+                )
+                withdrawResult = Result.failure(
+                    EstablishmentWithdrawalFailure(EstablishmentWithdrawalError.Network, null),
+                )
+            }
+            val vm = viewModel(repo)
+
+            vm.state.test {
+                awaitState { !it.isLoading }
+                vm.onAction(MyEstablishmentsAction.WithdrawClick("1"))
+                awaitState { it.pendingWithdraw != null }
+                vm.onAction(MyEstablishmentsAction.ConfirmWithdraw)
+                val state = awaitState { it.withdrawError != null }
+
+                assertEquals(EstablishmentWithdrawalError.Network, state.withdrawError)
+                assertEquals(listOf("1"), state.establishments.map { it.id })
+                assertEquals(null, state.pendingWithdraw)
+                assertEquals(false, state.isWithdrawing)
+                assertNull(state.successMessage)
+                assertEquals(1, repo.getMyEstablishmentsCount)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `ConfirmWithdraw conflict failure resyncs the list from the server`() = runTest(dispatcher) {
+        val repo = FakeProfileRepository().apply {
+            myEstablishmentsResult = Result.success(
+                listOf(establishment("1", "Norte", EstablishmentStatus.Approved)),
+            )
+            withdrawResult = Result.failure(
+                EstablishmentWithdrawalFailure(EstablishmentWithdrawalError.NotWithdrawable, null),
+            )
+        }
+        val vm = viewModel(repo)
+
+        vm.state.test {
+            awaitState { !it.isLoading }
+            vm.onAction(MyEstablishmentsAction.WithdrawClick("1"))
+            awaitState { it.pendingWithdraw != null }
+            vm.onAction(MyEstablishmentsAction.ConfirmWithdraw)
+            awaitState { it.withdrawError != null }
+            // The failure re-triggers load(), which re-fetches from the (still-successful) repo.
+            val reloaded = awaitState { !it.isLoading && it.withdrawError != null }
+            assertEquals(2, repo.getMyEstablishmentsCount)
+            assertEquals(listOf("1"), reloaded.establishments.map { it.id })
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `ToastDismissed clears both success and error messages`() = runTest(dispatcher) {
+        val repo = FakeProfileRepository().apply {
+            myEstablishmentsResult = Result.success(
+                listOf(establishment("1", "Norte", EstablishmentStatus.Approved)),
+            )
+            withdrawResult = Result.success(Unit)
+        }
+        val vm = viewModel(repo)
+
+        vm.state.test {
+            awaitState { !it.isLoading }
+            vm.onAction(MyEstablishmentsAction.WithdrawClick("1"))
+            awaitState { it.pendingWithdraw != null }
+            vm.onAction(MyEstablishmentsAction.ConfirmWithdraw)
+            awaitState { it.successMessage != null }
+            vm.onAction(MyEstablishmentsAction.ToastDismissed)
+            val state = awaitState { it.successMessage == null }
+            assertNull(state.withdrawError)
             cancelAndIgnoreRemainingEvents()
         }
     }

@@ -58,7 +58,7 @@ class FoodOverviewViewModel(
             FoodOverviewAction.RetryAll -> resolveAndLoad()
             FoodOverviewAction.RetryStock -> refreshStock()
             FoodOverviewAction.RetryMovements -> refreshMovements()
-            FoodOverviewAction.LoadMoreStock -> loadMoreStock()
+            FoodOverviewAction.SeeAllStockClick -> emit(FoodOverviewDestination.Stock)
             is FoodOverviewAction.CategorySelected -> {
                 updateStock { it.copy(showCategorySheet = false) }
                 updateFilters { it.copy(categoryId = action.categoryId) }
@@ -119,7 +119,6 @@ class FoodOverviewViewModel(
                 stock = it.stock.copy(
                     items = emptyList(),
                     isLoading = false,
-                    isLoadingMore = false,
                     error = null,
                 ),
                 movements = it.movements.copy(
@@ -146,21 +145,16 @@ class FoodOverviewViewModel(
         updateStock {
             it.copy(
                 items = emptyList(),
-                page = 1,
-                hasMore = false,
                 isLoading = true,
-                isLoadingMore = false,
                 error = null,
             )
         }
         stockJob = viewModelScope.launch {
-            getStockPage(establishmentId, filters, 1, STOCK_PAGE_SIZE).fold(
+            getStockPage(establishmentId, filters, 1, STOCK_PREVIEW_SIZE).fold(
                 onSuccess = { page ->
                     updateStockIfCurrent(establishmentId, filters, requestId) {
                         it.copy(
-                            items = page.items,
-                            page = 1,
-                            hasMore = page.hasMore,
+                            items = page.items.take(STOCK_PREVIEW_SIZE),
                             isLoading = false,
                             error = null,
                         )
@@ -169,40 +163,6 @@ class FoodOverviewViewModel(
                 onFailure = { error ->
                     updateStockIfCurrent(establishmentId, filters, requestId) {
                         it.copy(isLoading = false, error = error.toStockSectionError())
-                    }
-                },
-            )
-        }
-    }
-
-    private fun loadMoreStock() {
-        val current = _state.value
-        val establishmentId = current.establishment?.id ?: return
-        if (!current.stock.canLoadMore) return
-        val filters = current.stock.filters
-        val nextPage = current.stock.page + 1
-        val requestId = ++stockRequestId
-        updateStock { it.copy(isLoadingMore = true) }
-        stockJob = viewModelScope.launch {
-            getStockPage(establishmentId, filters, nextPage, STOCK_PAGE_SIZE).fold(
-                onSuccess = { page ->
-                    updateStockIfCurrent(
-                        establishmentId,
-                        filters,
-                        requestId,
-                        expectedPage = nextPage - 1,
-                    ) {
-                        it.copy(
-                            items = it.items + page.items,
-                            page = nextPage,
-                            hasMore = page.hasMore,
-                            isLoadingMore = false,
-                        )
-                    }
-                },
-                onFailure = {
-                    updateStockIfCurrent(establishmentId, filters, requestId) {
-                        it.copy(isLoadingMore = false)
                     }
                 },
             )
@@ -272,15 +232,13 @@ class FoodOverviewViewModel(
         establishmentId: String,
         filters: FoodStockFilters,
         requestId: Long,
-        expectedPage: Int? = null,
         change: (FoodOverviewStockState) -> FoodOverviewStockState,
     ) {
         _state.update { current ->
             if (
                 current.establishment?.id == establishmentId &&
                 current.stock.filters == filters &&
-                stockRequestId == requestId &&
-                (expectedPage == null || current.stock.page == expectedPage)
+                stockRequestId == requestId
             ) {
                 current.copy(stock = change(current.stock))
             } else {
@@ -307,7 +265,6 @@ class FoodOverviewViewModel(
         }
 
     private companion object {
-        const val STOCK_PAGE_SIZE = 20
         const val MOVEMENT_PREVIEW_SIZE = 5
     }
 }

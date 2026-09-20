@@ -284,7 +284,7 @@ internal fun StockRow(item: FoodStockItem) {
                 // formatQuantityWithUnit: "10.000" -> "10 kg", "0.750" -> "0,75 kg".
                 // String-in/string-out, never through Double. Mono face: this is read as data.
                 text = formatQuantityWithUnit(item.quantity, item.unit),
-                style = AlTheme.typography.dataSmall,
+                style = AlTheme.typography.data,
                 color = if (item.isDepleted) AlTheme.colors.textMuted else AlTheme.colors.textBase,
             )
         },

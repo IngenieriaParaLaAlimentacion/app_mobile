@@ -8,10 +8,12 @@ import ar.com.ingenieriaalimentacion.domain.model.profile.Profile
 import ar.com.ingenieriaalimentacion.domain.model.profile.UpdateProfile
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetAvailableEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyProfileUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.RequestEstablishmentAccessUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.SetCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.UpdateMyProfileUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.WithdrawFromEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.fake.FakeProfileRepository
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -88,6 +90,25 @@ class ProfileUseCasesTest {
     )
 
     @Test
+    fun `GetMyEstablishments filters out withdrawn and revoked relations`() = runTest {
+        val repo = FakeProfileRepository().apply {
+            myEstablishmentsResult = Result.success(
+                listOf(
+                    establishment("e1", EstablishmentStatus.Approved),
+                    establishment("e2", EstablishmentStatus.Pending),
+                    establishment("e3", EstablishmentStatus.Rejected),
+                    establishment("e4", EstablishmentStatus.Withdrawn),
+                    establishment("e5", EstablishmentStatus.Revoked),
+                ),
+            )
+        }
+
+        val result = GetMyEstablishmentsUseCase(repo)()
+
+        assertEquals(listOf("e1", "e2", "e3"), result.getOrNull()?.map { it.id })
+    }
+
+    @Test
     fun `GetCurrentEstablishment returns null when nothing is stored`() = runTest {
         val repo = FakeProfileRepository().apply { currentEstablishmentId = null }
 
@@ -129,5 +150,16 @@ class ProfileUseCasesTest {
 
         assertEquals("e1", repo.currentEstablishmentId)
         assertEquals(1, repo.setCurrentEstablishmentIdCount)
+    }
+
+    @Test
+    fun `WithdrawFromEstablishment forwards the id and returns the repository result`() = runTest {
+        val repo = FakeProfileRepository().apply { withdrawResult = Result.success(Unit) }
+
+        val result = WithdrawFromEstablishmentUseCase(repo)("e1")
+
+        assertEquals("e1", repo.lastWithdrawnId)
+        assertEquals(1, repo.withdrawCount)
+        assertTrue(result.isSuccess)
     }
 }

@@ -82,6 +82,16 @@ class FakeProfileRepository : ProfileRepository {
         return requestResult
     }
 
+    var withdrawResult: Result<Unit> = Result.success(Unit)
+    var lastWithdrawnId: String? = null
+    var withdrawCount: Int = 0
+
+    override suspend fun withdrawFromEstablishment(establishmentId: String): Result<Unit> {
+        withdrawCount++
+        lastWithdrawnId = establishmentId
+        return withdrawResult
+    }
+
     var notifyAbsenceResult: Result<Unit> = Result.success(Unit)
     var lastAbsenceNotice: EstablishmentAbsenceNotice? = null
     var notifyAbsenceCount: Int = 0

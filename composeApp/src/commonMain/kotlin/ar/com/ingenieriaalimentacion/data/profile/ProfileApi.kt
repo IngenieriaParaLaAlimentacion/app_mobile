@@ -6,6 +6,7 @@ import ar.com.ingenieriaalimentacion.data.profile.dto.PaginatedAvailableResponse
 import ar.com.ingenieriaalimentacion.data.profile.dto.ProfileResponse
 import ar.com.ingenieriaalimentacion.data.profile.dto.RequestEstablishmentsRequest
 import ar.com.ingenieriaalimentacion.data.profile.dto.UpdateProfileRequest
+import ar.com.ingenieriaalimentacion.data.profile.dto.WithdrawEstablishmentsRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -50,6 +51,14 @@ class ProfileApi(private val client: HttpClient) {
         body: RequestEstablishmentsRequest,
     ): List<EstablishmentWithStatusResponse> =
         client.post("api/v1/users/me/establishments") {
+            contentType(ContentType.Application.Json)
+            setBody(body)
+        }.body()
+
+    suspend fun withdrawEstablishmentAccess(
+        body: WithdrawEstablishmentsRequest,
+    ): List<EstablishmentWithStatusResponse> =
+        client.patch("api/v1/users/me/establishments/withdraw") {
             contentType(ContentType.Application.Json)
             setBody(body)
         }.body()

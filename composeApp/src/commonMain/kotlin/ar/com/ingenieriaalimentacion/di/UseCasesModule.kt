@@ -37,6 +37,7 @@ import ar.com.ingenieriaalimentacion.domain.usecase.profile.RequestEstablishment
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.ResolveCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.SetCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.UpdateMyProfileUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.WithdrawFromEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.registration.RegisterFieldWorkerUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.CreateSubjectUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.DeleteSubjectUploadUseCase
@@ -94,6 +95,7 @@ val useCasesModule = module {
     factory { UpdateMyProfileUseCase(get()) }
     factory { GetAvailableEstablishmentsUseCase(get()) }
     factory { RequestEstablishmentAccessUseCase(get()) }
+    factory { WithdrawFromEstablishmentUseCase(get()) }
     factory { NotifyEstablishmentAbsenceUseCase(get()) }
     factory { WarmActivityCacheUseCase(get(), get(), get(), get()) }
     factory { GetAvailableSurveysUseCase(get()) }

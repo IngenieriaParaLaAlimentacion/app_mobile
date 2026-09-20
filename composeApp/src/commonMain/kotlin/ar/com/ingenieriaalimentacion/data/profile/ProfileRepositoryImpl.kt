@@ -3,6 +3,7 @@ package ar.com.ingenieriaalimentacion.data.profile
 import ar.com.ingenieriaalimentacion.data.profile.dto.EstablishmentAbsenceRequest
 import ar.com.ingenieriaalimentacion.data.profile.dto.RequestEstablishmentsRequest
 import ar.com.ingenieriaalimentacion.data.profile.dto.UpdateProfileRequest
+import ar.com.ingenieriaalimentacion.data.profile.dto.WithdrawEstablishmentsRequest
 import ar.com.ingenieriaalimentacion.data.profile.local.CurrentEstablishmentLocalStore
 import ar.com.ingenieriaalimentacion.data.profile.local.EstablishmentLocalStore
 import ar.com.ingenieriaalimentacion.data.profile.mapper.toDomain
@@ -10,6 +11,7 @@ import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentAbsenceEr
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentAbsenceNotice
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentRequestError
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
+import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithdrawalError
 import ar.com.ingenieriaalimentacion.domain.model.profile.PagedEstablishments
 import ar.com.ingenieriaalimentacion.domain.model.profile.Profile
 import ar.com.ingenieriaalimentacion.domain.model.profile.ProfileError
@@ -89,6 +91,15 @@ class ProfileRepositoryImpl(
             api.requestEstablishmentAccess(RequestEstablishmentsRequest(ids)).map { it.toDomain() }
         }.recoverCatching { throw EstablishmentRequestFailure(mapRequestError(it), it) }
 
+    override suspend fun withdrawFromEstablishment(establishmentId: String): Result<Unit> =
+        runCatching {
+            api.withdrawEstablishmentAccess(WithdrawEstablishmentsRequest(listOf(establishmentId)))
+        }.recoverCatching { throw EstablishmentWithdrawalFailure(mapWithdrawalError(it), it) }
+            .onSuccess {
+                local.replaceAll(local.getAll().filterNot { cached -> cached.id == establishmentId })
+            }
+            .map { }
+
     override suspend fun notifyEstablishmentAbsence(
         notice: EstablishmentAbsenceNotice,
     ): Result<Unit> =
@@ -125,6 +136,18 @@ class ProfileRepositoryImpl(
         else -> EstablishmentRequestError.Unknown(t)
     }
 
+    private fun mapWithdrawalError(t: Throwable): EstablishmentWithdrawalError = when (t) {
+        is ClientRequestException -> when (t.response.status) {
+            HttpStatusCode.Unauthorized -> EstablishmentWithdrawalError.Unauthorized
+            HttpStatusCode.Forbidden -> EstablishmentWithdrawalError.Forbidden
+            HttpStatusCode.NotFound -> EstablishmentWithdrawalError.EstablishmentNotFound
+            HttpStatusCode.Conflict -> EstablishmentWithdrawalError.NotWithdrawable
+            else -> EstablishmentWithdrawalError.Network
+        }
+        is ResponseException -> EstablishmentWithdrawalError.Network
+        else -> EstablishmentWithdrawalError.Unknown(t)
+    }
+
     private fun mapAbsenceError(t: Throwable): EstablishmentAbsenceError = when (t) {
         is ClientRequestException -> when (t.response.status) {
             HttpStatusCode.Unauthorized -> EstablishmentAbsenceError.Unauthorized
@@ -147,4 +170,7 @@ class EstablishmentRequestFailure(val error: EstablishmentRequestError, cause: T
     Exception(error.toString(), cause)
 
 class EstablishmentAbsenceFailure(val error: EstablishmentAbsenceError, cause: Throwable?) :
+    Exception(error.toString(), cause)
+
+class EstablishmentWithdrawalFailure(val error: EstablishmentWithdrawalError, cause: Throwable?) :
     Exception(error.toString(), cause)

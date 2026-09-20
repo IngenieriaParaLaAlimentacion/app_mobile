@@ -62,7 +62,9 @@ internal object AlKomoStyles : KomoStyles by LightStyles {
 
 /**
  * Material 3 fallback scheme, for the Material widgets that slip through
- * without an explicit color (progress indicators, ripples, text selection).
+ * without an explicit color (progress indicators, ripples, text selection,
+ * and the `surfaceContainer*` ramp that Material components such as
+ * `ModalBottomSheet` default their container to).
  */
 internal val AlMaterialColorScheme: ColorScheme = lightColorScheme(
     primary = AlPalette.Mustard,
@@ -81,6 +83,16 @@ internal val AlMaterialColorScheme: ColorScheme = lightColorScheme(
     onSurface = AlPalette.Ink,
     surfaceVariant = AlPalette.PaperSunken,
     onSurfaceVariant = AlPalette.InkSoft,
+    // Material hands this ramp to sheets, menus and search bars. Left undefined it
+    // falls back to M3's lavender-grey, which is how ModalBottomSheet escaped the palette.
+    surfaceContainerLowest = AlPalette.PaperRaised,
+    surfaceContainerLow = AlPalette.PaperRaised,
+    surfaceContainer = AlPalette.Paper,
+    surfaceContainerHigh = AlPalette.PaperSunken,
+    surfaceContainerHighest = AlPalette.PaperSunken,
+    surfaceBright = AlPalette.PaperRaised,
+    surfaceDim = AlPalette.PaperSunken,
+    surfaceTint = AlPalette.Mustard,
     error = AlPalette.Brick,
     onError = AlPalette.Paper,
     errorContainer = AlPalette.BrickPale,

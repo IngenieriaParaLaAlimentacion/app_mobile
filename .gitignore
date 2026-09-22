@@ -16,11 +16,9 @@ keystore.properties
 *.jks
 *.keystore
 # Firebase App Distribution config (contains project identifiers)
-google-services.json
-composeApp/google-services.json
 firebase.properties
 
-# Environment-specific Firebase client configuration (provision out-of-band)
-composeApp/src/tst/google-services.json
-composeApp/src/prod/google-services.json
+# Per-flavor google-services.json under composeApp/src/{tst,prod}/ are committed;
+# a module-level copy is never read (flavor files take precedence), so keep it out.
+composeApp/google-services.json
 iosApp/**/GoogleService-Info.plist

@@ -3,8 +3,12 @@ package ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_respons
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
+import ar.com.ingenieriaalimentacion.domain.model.auth.ADMIN_ROLES
 import ar.com.ingenieriaalimentacion.domain.model.auth.canRespondToSurveys
+import ar.com.ingenieriaalimentacion.domain.model.auth.requiresApprovedEstablishment
+import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseTarget
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyProfileUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.GetSurveyDetailUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.GetSurveyResponseDetailUseCase
@@ -26,6 +30,7 @@ class SurveyResponseDetailViewModel(
     private val getSurveyResponseDetail: GetSurveyResponseDetailUseCase,
     private val getSurveyDetail: GetSurveyDetailUseCase,
     private val getMyProfile: GetMyProfileUseCase,
+    private val getMyEstablishments: GetMyEstablishmentsUseCase,
     observeEditStatus: ObserveSurveyResponseEditStatusUseCase,
     private val retryEditUpload: RetrySurveyResponseEditUploadUseCase,
     private val syncCoordinator: SyncCoordinator,
@@ -111,6 +116,7 @@ class SurveyResponseDetailViewModel(
 
             val profile = getMyProfile().getOrNull()
             val canEdit = profile != null && canRespondToSurveys(profile.role) &&
+                (!requiresApprovedEstablishment(profile.role) || hasApprovedEstablishment()) &&
                 (detail.submittedById == null || detail.submittedById == profile.id || profile.role in ADMIN_ROLES)
 
             _state.update {
@@ -135,6 +141,10 @@ class SurveyResponseDetailViewModel(
         }
     }
 
+    /** Admins/analysts respond as field workers only while linked to an approved establishment. */
+    private suspend fun hasApprovedEstablishment(): Boolean =
+        getMyEstablishments().getOrNull().orEmpty().any { it.status == EstablishmentStatus.Approved }
+
     private fun formatEventAt(epochMs: Long): String = runCatching {
         val ldt = Instant.fromEpochMilliseconds(epochMs).toLocalDateTime(TimeZone.currentSystemDefault())
         val dd = ldt.dayOfMonth.toString().padStart(2, '0')
@@ -143,8 +153,4 @@ class SurveyResponseDetailViewModel(
         val min = ldt.minute.toString().padStart(2, '0')
         "$dd/$mm/${ldt.year} $hh:$min"
     }.getOrDefault("")
-
-    private companion object {
-        val ADMIN_ROLES = setOf("admin", "superadmin")
-    }
 }

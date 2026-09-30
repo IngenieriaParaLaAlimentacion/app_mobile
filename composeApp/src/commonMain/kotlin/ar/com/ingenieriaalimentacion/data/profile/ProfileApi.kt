@@ -63,6 +63,25 @@ class ProfileApi(private val client: HttpClient) {
             setBody(body)
         }.body()
 
+    // TODO(backend#151): assumed contract — admin direct subscription. Same body as the access
+    //  request; returns the new links already approved. 409 when already subscribed.
+    suspend fun subscribeToEstablishments(
+        body: RequestEstablishmentsRequest,
+    ): List<EstablishmentWithStatusResponse> =
+        client.post("api/v1/users/me/establishments/subscribe") {
+            contentType(ContentType.Application.Json)
+            setBody(body)
+        }.body()
+
+    // TODO(backend#151): assumed contract — admin unsubscription. Same body as withdraw; the
+    //  backend deletes the user_establishment row instead of marking it withdrawn.
+    suspend fun unsubscribeFromEstablishments(body: WithdrawEstablishmentsRequest) {
+        client.patch("api/v1/users/me/establishments/unsubscribe") {
+            contentType(ContentType.Application.Json)
+            setBody(body)
+        }
+    }
+
     /** 201 on success; the created request's body is irrelevant to the app. */
     suspend fun notifyEstablishmentAbsence(body: EstablishmentAbsenceRequest) {
         client.post("api/v1/establishments/requests") {

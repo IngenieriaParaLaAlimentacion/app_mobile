@@ -3,24 +3,27 @@ package ar.com.ingenieriaalimentacion.presentation.feature.profile.establishment
 import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import ar.com.ingenieriaalimentacion.data.profile.EstablishmentWithdrawalFailure
+import ar.com.ingenieriaalimentacion.domain.model.auth.EstablishmentLinkMode
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithdrawalError
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.WithdrawFromEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.fake.FakeProfileRepository
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MyEstablishmentsViewModelTest {
@@ -44,8 +47,12 @@ class MyEstablishmentsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun viewModel(repo: FakeProfileRepository) =
+    private fun viewModel(
+        repo: FakeProfileRepository,
+        mode: EstablishmentLinkMode = EstablishmentLinkMode.RequestAccess,
+    ) =
         MyEstablishmentsViewModel(
+            mode = mode,
             getMyEstablishments = GetMyEstablishmentsUseCase(repo),
             withdrawFromEstablishment = WithdrawFromEstablishmentUseCase(repo),
         )
@@ -302,5 +309,47 @@ class MyEstablishmentsViewModelTest {
             assertNull(state.withdrawError)
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun `Subscribe mode unsubscribes, flags the change and uses the unsubscribe copy`() =
+        runTest(dispatcher) {
+            val repo = FakeProfileRepository().apply {
+                myEstablishmentsResult = Result.success(
+                    listOf(establishment("1", "Norte", EstablishmentStatus.Approved)),
+                )
+            }
+            val vm = viewModel(repo, mode = EstablishmentLinkMode.Subscribe)
+
+            vm.state.test {
+                val loaded = awaitState { !it.isLoading }
+                assertEquals(EstablishmentLinkMode.Subscribe, loaded.mode)
+                assertFalse(loaded.establishmentsChanged)
+                vm.onAction(MyEstablishmentsAction.WithdrawClick("1"))
+                awaitState { it.pendingWithdraw != null }
+                vm.onAction(MyEstablishmentsAction.ConfirmWithdraw)
+                val state = awaitState { it.successMessage != null }
+
+                assertEquals("1", repo.lastUnsubscribedId)
+                assertEquals(0, repo.withdrawCount)
+                assertEquals("Te desuscribiste de Norte.", state.successMessage)
+                assertTrue(state.establishments.isEmpty())
+                assertTrue(state.establishmentsChanged)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `onEstablishmentsRequested reloads and flags the change`() = runTest(dispatcher) {
+        val repo = FakeProfileRepository()
+        val vm = viewModel(repo)
+        advanceUntilIdle()
+
+        vm.onEstablishmentsRequested()
+        advanceUntilIdle()
+
+        assertEquals(2, repo.getMyEstablishmentsCount)
+        assertTrue(vm.state.value.establishmentsChanged)
+        assertFalse(vm.state.value.isLoading)
     }
 }

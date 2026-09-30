@@ -116,7 +116,7 @@ sealed class Route {
 
     @Serializable
     @SerialName("request_establishment")
-    data object RequestEstablishment : Route()
+    data class RequestEstablishment(val role: String) : Route()
 
     @Serializable
     @SerialName("notify_establishment")
@@ -124,7 +124,7 @@ sealed class Route {
 
     @Serializable
     @SerialName("my_establishments")
-    data object MyEstablishments : Route()
+    data class MyEstablishments(val role: String) : Route()
 
     @Serializable
     @SerialName("authed_shell")

@@ -141,7 +141,7 @@ class ProfileViewModelTest {
             awaitState { it.profile != null }
             vm.onAction(ProfileAction.MyEstablishmentsClick)
             val state = awaitState { it.destination != null }
-            assertEquals(ProfileDestination.MyEstablishments, state.destination)
+            assertEquals(ProfileDestination.MyEstablishments(managerProfile.role), state.destination)
             cancelAndIgnoreRemainingEvents()
         }
     }

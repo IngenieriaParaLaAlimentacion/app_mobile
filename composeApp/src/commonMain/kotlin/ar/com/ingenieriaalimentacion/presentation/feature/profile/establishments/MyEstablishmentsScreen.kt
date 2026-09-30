@@ -30,24 +30,33 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlSc
 import ar.com.ingenieriaalimentacion.core.design_system.components.toast.AlToast
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
+import ar.com.ingenieriaalimentacion.domain.model.auth.EstablishmentLinkMode
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithdrawalError
 import ar.com.ingenieriaalimentacion.presentation.navigation.ESTABLISHMENT_REQUESTED_RESULT
 import ar.com.ingenieriaalimentacion.presentation.navigation.RefreshOnNavResult
+import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 import com.komoui.components.Spinner
 import ingenieria_alimentacion.composeapp.generated.resources.Res
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_add_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_exit_door_line
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @Composable
 fun MyEstablishmentsScreenRoot(
+    route: Route.MyEstablishments,
     savedStateHandle: SavedStateHandle?,
-    viewModel: MyEstablishmentsViewModel = koinViewModel(),
+    viewModel: MyEstablishmentsViewModel = koinViewModel { parametersOf(route) },
     navigate: (MyEstablishmentsDestination) -> Unit,
+    onEstablishmentsChanged: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(state.establishmentsChanged) {
+        if (state.establishmentsChanged) onEstablishmentsChanged()
+    }
 
     LaunchedEffect(state.destination) {
         state.destination?.let {
@@ -63,7 +72,7 @@ fun MyEstablishmentsScreenRoot(
         savedStateHandle = savedStateHandle,
         key = ESTABLISHMENT_REQUESTED_RESULT,
     ) {
-        viewModel.refresh()
+        viewModel.onEstablishmentsRequested()
     }
 
     MyEstablishmentsScreen(state = state, onAction = viewModel::onAction)
@@ -104,6 +113,7 @@ fun MyEstablishmentsScreen(
                     }
 
                     else -> MyEstablishmentsContent(
+                        mode = state.mode,
                         establishments = state.establishments,
                         withdrawError = state.withdrawError,
                         onRequestAccess = { onAction(MyEstablishmentsAction.RequestAccessClick) },
@@ -119,12 +129,13 @@ fun MyEstablishmentsScreen(
             }
         }
 
+        val copy = state.mode.linkCopy()
         AlConfirmDialog(
             open = state.pendingWithdraw != null,
-            title = "Darse de baja",
-            description = "¿Seguro que querés darte de baja de " +
+            title = copy.withdrawTitle,
+            description = "¿Seguro que querés ${copy.withdrawVerb} de " +
                 "${state.pendingWithdraw?.name.orEmpty()}? Vas a perder el acceso a sus datos.",
-            confirmText = "Darme de baja",
+            confirmText = copy.withdrawConfirm,
             loading = state.isWithdrawing,
             onConfirm = { onAction(MyEstablishmentsAction.ConfirmWithdraw) },
             onDismiss = { onAction(MyEstablishmentsAction.DismissWithdrawConfirm) },
@@ -134,6 +145,7 @@ fun MyEstablishmentsScreen(
 
 @Composable
 private fun MyEstablishmentsContent(
+    mode: EstablishmentLinkMode,
     establishments: List<EstablishmentWithStatus>,
     withdrawError: EstablishmentWithdrawalError?,
     onRequestAccess: () -> Unit,
@@ -155,9 +167,10 @@ private fun MyEstablishmentsContent(
             )
         }
 
+        val copy = mode.linkCopy()
         if (establishments.isEmpty()) {
             Text(
-                text = "Todavía no tenés establecimientos aceptados.",
+                text = copy.emptyText,
                 style = AlTheme.typography.body,
                 color = AlTheme.colors.textMuted,
             )
@@ -173,6 +186,7 @@ private fun MyEstablishmentsContent(
                         trailing = {
                             EstablishmentRowTrailing(
                                 status = establishment.status,
+                                withdrawLabel = copy.withdrawTitle,
                                 onWithdrawClick = { onWithdrawClick(establishment.id) },
                             )
                         },
@@ -182,7 +196,7 @@ private fun MyEstablishmentsContent(
         }
 
         AlInfoCard(
-            title = "Solicitar acceso",
+            title = copy.linkCta,
             leadingIcon = Res.drawable.ic_mingcute_add_line,
             onClick = onRequestAccess,
         )
@@ -194,6 +208,7 @@ private fun MyEstablishmentsContent(
 @Composable
 private fun EstablishmentRowTrailing(
     status: EstablishmentStatus,
+    withdrawLabel: String,
     onWithdrawClick: () -> Unit,
 ) {
     Row(
@@ -204,7 +219,7 @@ private fun EstablishmentRowTrailing(
         if (status == EstablishmentStatus.Approved || status == EstablishmentStatus.Pending) {
             AlIconButton(
                 icon = Res.drawable.ic_mingcute_exit_door_line,
-                contentDescription = "Darse de baja",
+                contentDescription = withdrawLabel,
                 tint = AlTheme.colors.danger,
                 onClick = onWithdrawClick,
             )
@@ -233,3 +248,30 @@ private fun EstablishmentStatusPill(status: EstablishmentStatus) {
  *  embedded newlines/indentation; returns null when blank so the card hides it. */
 private fun String.normalizeAddress(): String? =
     replace(Regex("\\s+"), " ").trim().takeIf { it.isNotBlank() }
+
+/** Role-dependent wording: an admin subscribes/unsubscribes, everyone else requests
+ *  access and "se da de baja". */
+private data class LinkCopy(
+    val linkCta: String,
+    val emptyText: String,
+    val withdrawTitle: String,
+    val withdrawVerb: String,
+    val withdrawConfirm: String,
+)
+
+private fun EstablishmentLinkMode.linkCopy(): LinkCopy = when (this) {
+    EstablishmentLinkMode.Subscribe -> LinkCopy(
+        linkCta = "Suscribirme a un establecimiento",
+        emptyText = "Todavía no estás suscripto a ningún establecimiento.",
+        withdrawTitle = "Desuscribirme",
+        withdrawVerb = "desuscribirte",
+        withdrawConfirm = "Desuscribirme",
+    )
+    EstablishmentLinkMode.RequestAccess -> LinkCopy(
+        linkCta = "Solicitar acceso",
+        emptyText = "Todavía no tenés establecimientos aceptados.",
+        withdrawTitle = "Darse de baja",
+        withdrawVerb = "darte de baja",
+        withdrawConfirm = "Darme de baja",
+    )
+}

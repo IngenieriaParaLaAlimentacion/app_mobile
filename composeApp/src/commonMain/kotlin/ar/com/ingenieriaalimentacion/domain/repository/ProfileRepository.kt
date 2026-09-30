@@ -37,11 +37,23 @@ interface ProfileRepository {
     suspend fun requestEstablishmentAccess(ids: List<String>): Result<List<EstablishmentWithStatus>>
 
     /**
+     * Admin-only: subscribes directly to the given establishments. The links are approved
+     * immediately (no pending request). Fails with `AlreadySubscribed` on a duplicate.
+     */
+    suspend fun subscribeToEstablishments(ids: List<String>): Result<List<EstablishmentWithStatus>>
+
+    /**
      * Withdraws the caller's own access to an establishment. Only relations currently
      * approved or pending can be withdrawn; a withdrawn establishment can later be
      * re-requested through [requestEstablishmentAccess].
      */
     suspend fun withdrawFromEstablishment(establishmentId: String): Result<Unit>
+
+    /**
+     * Admin-only: removes a direct subscription. The link is deleted server-side, so the
+     * establishment becomes available to subscribe again.
+     */
+    suspend fun unsubscribeFromEstablishment(establishmentId: String): Result<Unit>
 
     /** Notifies an admin that an establishment is missing from the catalog. */
     suspend fun notifyEstablishmentAbsence(notice: EstablishmentAbsenceNotice): Result<Unit>

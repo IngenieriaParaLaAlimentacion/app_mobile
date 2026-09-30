@@ -90,15 +90,43 @@ class ProfileRepositoryImpl(
         runCatching {
             api.requestEstablishmentAccess(RequestEstablishmentsRequest(ids)).map { it.toDomain() }
         }.recoverCatching { throw EstablishmentRequestFailure(mapRequestError(it), it) }
+            .onSuccess { created -> mergeIntoCache(created) }
+
+    override suspend fun subscribeToEstablishments(
+        ids: List<String>,
+    ): Result<List<EstablishmentWithStatus>> =
+        runCatching {
+            api.subscribeToEstablishments(RequestEstablishmentsRequest(ids)).map { it.toDomain() }
+        }.recoverCatching { throw EstablishmentRequestFailure(mapRequestError(it), it) }
+            .onSuccess { created -> mergeIntoCache(created) }
 
     override suspend fun withdrawFromEstablishment(establishmentId: String): Result<Unit> =
         runCatching {
             api.withdrawEstablishmentAccess(WithdrawEstablishmentsRequest(listOf(establishmentId)))
         }.recoverCatching { throw EstablishmentWithdrawalFailure(mapWithdrawalError(it), it) }
-            .onSuccess {
-                local.replaceAll(local.getAll().filterNot { cached -> cached.id == establishmentId })
-            }
+            .onSuccess { forgetEstablishment(establishmentId) }
             .map { }
+
+    override suspend fun unsubscribeFromEstablishment(establishmentId: String): Result<Unit> =
+        runCatching {
+            api.unsubscribeFromEstablishments(WithdrawEstablishmentsRequest(listOf(establishmentId)))
+        }.recoverCatching { throw EstablishmentWithdrawalFailure(mapWithdrawalError(it), it) }
+            .onSuccess { forgetEstablishment(establishmentId) }
+
+    /**
+     * Upserts freshly created links into the cache. [getMyEstablishments] is cache-first, so
+     * without this a new request or subscription would not show until the next refresh.
+     */
+    private suspend fun mergeIntoCache(created: List<EstablishmentWithStatus>) {
+        val createdIds = created.map { it.id }.toSet()
+        local.replaceAll(local.getAll().filterNot { it.id in createdIds } + created)
+    }
+
+    /** Drops a link the user left, and deselects it if it was the current establishment. */
+    private suspend fun forgetEstablishment(establishmentId: String) {
+        local.replaceAll(local.getAll().filterNot { cached -> cached.id == establishmentId })
+        if (currentEstablishment.get() == establishmentId) currentEstablishment.set(null)
+    }
 
     override suspend fun notifyEstablishmentAbsence(
         notice: EstablishmentAbsenceNotice,
@@ -130,6 +158,8 @@ class ProfileRepositoryImpl(
             HttpStatusCode.Unauthorized -> EstablishmentRequestError.Unauthorized
             HttpStatusCode.Forbidden -> EstablishmentRequestError.Forbidden
             HttpStatusCode.NotFound -> EstablishmentRequestError.EstablishmentNotFound
+            // TODO(backend#151): assumed status for "admin already subscribed".
+            HttpStatusCode.Conflict -> EstablishmentRequestError.AlreadySubscribed
             else -> EstablishmentRequestError.Network
         }
         is ResponseException -> EstablishmentRequestError.Network

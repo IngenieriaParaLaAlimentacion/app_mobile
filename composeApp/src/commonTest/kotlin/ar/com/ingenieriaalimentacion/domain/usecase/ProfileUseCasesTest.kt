@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.domain.usecase
 
+import ar.com.ingenieriaalimentacion.domain.model.auth.EstablishmentLinkMode
 import ar.com.ingenieriaalimentacion.domain.model.profile.AvailableEstablishment
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
@@ -12,13 +13,14 @@ import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsU
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyProfileUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.RequestEstablishmentAccessUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.SetCurrentEstablishmentUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.SubscribeToEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.UpdateMyProfileUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.WithdrawFromEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.fake.FakeProfileRepository
-import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlinx.coroutines.test.runTest
 
 class ProfileUseCasesTest {
 
@@ -160,6 +162,28 @@ class ProfileUseCasesTest {
 
         assertEquals("e1", repo.lastWithdrawnId)
         assertEquals(1, repo.withdrawCount)
+        assertEquals(0, repo.unsubscribeCount)
+        assertTrue(result.isSuccess)
+    }
+
+    @Test
+    fun `WithdrawFromEstablishment in Subscribe mode unsubscribes instead of withdrawing`() = runTest {
+        val repo = FakeProfileRepository()
+
+        val result = WithdrawFromEstablishmentUseCase(repo)("e1", EstablishmentLinkMode.Subscribe)
+
+        assertEquals("e1", repo.lastUnsubscribedId)
+        assertEquals(0, repo.withdrawCount)
+        assertTrue(result.isSuccess)
+    }
+
+    @Test
+    fun `SubscribeToEstablishments forwards the ids`() = runTest {
+        val repo = FakeProfileRepository()
+
+        val result = SubscribeToEstablishmentsUseCase(repo)(listOf("e1", "e2"))
+
+        assertEquals(listOf("e1", "e2"), repo.lastSubscribedIds)
         assertTrue(result.isSuccess)
     }
 }

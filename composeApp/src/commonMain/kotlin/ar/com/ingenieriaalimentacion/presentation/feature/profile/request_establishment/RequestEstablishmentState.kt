@@ -1,9 +1,11 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.profile.request_establishment
 
+import ar.com.ingenieriaalimentacion.domain.model.auth.EstablishmentLinkMode
 import ar.com.ingenieriaalimentacion.domain.model.profile.AvailableEstablishment
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentRequestError
 
 data class RequestEstablishmentState(
+    val mode: EstablishmentLinkMode = EstablishmentLinkMode.RequestAccess,
     val destination: RequestEstablishmentDestination? = null,
     val query: String = "",
     val results: List<AvailableEstablishment> = emptyList(),
@@ -20,5 +22,8 @@ data class RequestEstablishmentState(
     val canLoadMore: Boolean get() = page < totalPages && !isLoadingMore && !isLoading
     val selectedCount: Int get() = selectedIds.size
     val canSubmit: Boolean get() = selectedIds.isNotEmpty() && !isSubmitting
+
+    /** The "missing establishment" notice is a field-worker flow; an admin subscribing skips it. */
+    val canNotifyAbsence: Boolean get() = mode == EstablishmentLinkMode.RequestAccess
     fun isSelected(id: String): Boolean = id in selectedIds
 }

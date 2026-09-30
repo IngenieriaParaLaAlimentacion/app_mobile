@@ -50,6 +50,7 @@ class HomeViewModel(
                     it.copy(
                         greetingName = profile.name,
                         roleLabel = roleLabel(profile),
+                        role = profile.role,
                     )
                 }
             }
@@ -77,12 +78,19 @@ class HomeViewModel(
                         currentEstablishment = it.currentEstablishment,
                         establishmentOptions = it.establishmentOptions,
                         showEstablishmentPicker = it.showEstablishmentPicker,
+                        role = it.role,
                     )
                 }
             }
         }
         loadEstablishments()
     }
+
+    /**
+     * Re-reads the (cached) establishment links after the user subscribed, requested or left
+     * one in "Mis establecimientos", so the selector drops an establishment they just left.
+     */
+    fun reloadEstablishments() = loadEstablishments()
 
     private fun loadEstablishments() {
         viewModelScope.launch {

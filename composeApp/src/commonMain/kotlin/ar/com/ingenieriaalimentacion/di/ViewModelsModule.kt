@@ -1,10 +1,11 @@
 package ar.com.ingenieriaalimentacion.di
 
 import ar.com.ingenieriaalimentacion.app.AppViewModel
-import ar.com.ingenieriaalimentacion.presentation.feature.establishment.select_establishment.SelectEstablishmentViewModel
+import ar.com.ingenieriaalimentacion.domain.model.auth.establishmentLinkMode
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.forgot_password.ForgotPasswordViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.login.LoginViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.reset_password.ResetPasswordViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.establishment.select_establishment.SelectEstablishmentViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_intake.CreateFoodIntakeViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_outflow.CreateFoodOutflowViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_food_movement_detail.EstablishmentFoodMovementDetailViewModel
@@ -68,9 +69,23 @@ val viewModelsModule = module {
     viewModelOf(::SubjectUploadsViewModel)
     viewModelOf(::ForgotPasswordViewModel)
     viewModelOf(::ProfileViewModel)
-    viewModelOf(::RequestEstablishmentViewModel)
+    viewModel { (route: Route.RequestEstablishment) ->
+        RequestEstablishmentViewModel(
+            mode = establishmentLinkMode(route.role),
+            getAvailable = get(),
+            requestAccess = get(),
+            subscribe = get(),
+            refreshMyEstablishments = get(),
+        )
+    }
     viewModelOf(::NotifyEstablishmentViewModel)
-    viewModelOf(::MyEstablishmentsViewModel)
+    viewModel { (route: Route.MyEstablishments) ->
+        MyEstablishmentsViewModel(
+            mode = establishmentLinkMode(route.role),
+            getMyEstablishments = get(),
+            withdrawFromEstablishment = get(),
+        )
+    }
     viewModel { (route: Route.SelectEstablishment) ->
         SelectEstablishmentViewModel(route = route, getEstablishments = get())
     }
@@ -109,6 +124,7 @@ val viewModelsModule = module {
             getSurveyResponseDetail = get(),
             getSurveyDetail = get(),
             getMyProfile = get(),
+            getMyEstablishments = get(),
             observeEditStatus = get(),
             retryEditUpload = get(),
             syncCoordinator = get(),

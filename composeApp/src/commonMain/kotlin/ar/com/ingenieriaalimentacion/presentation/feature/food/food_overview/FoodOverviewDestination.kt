@@ -4,6 +4,7 @@ sealed interface FoodOverviewDestination {
     data object Stock : FoodOverviewDestination
     data object Back : FoodOverviewDestination
     data object CreateIntake : FoodOverviewDestination
+    data object ReceiptIntake : FoodOverviewDestination
     data object CreateOutflow : FoodOverviewDestination
     data object MovementHistory : FoodOverviewDestination
     data class MovementDetail(

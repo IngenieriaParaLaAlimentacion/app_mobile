@@ -5,6 +5,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.composable
 import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_intake.navigateToCreateFoodIntake
+import ar.com.ingenieriaalimentacion.presentation.feature.food.receipt_food_intake.navigateToReceiptFoodIntake
 import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_outflow.navigateToCreateFoodOutflow
 import ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_food_movement_history.navigateToEstablishmentFoodMovementHistory
 import ar.com.ingenieriaalimentacion.presentation.feature.food.food_stock.navigateToFoodStock
@@ -27,6 +28,7 @@ internal fun navigate(destination: FoodOverviewDestination, navController: NavCo
         FoodOverviewDestination.Stock -> navController.navigateToFoodStock()
         FoodOverviewDestination.Back -> navController.popBackStack()
         FoodOverviewDestination.CreateIntake -> navController.navigateToCreateFoodIntake()
+        FoodOverviewDestination.ReceiptIntake -> navController.navigateToReceiptFoodIntake()
         FoodOverviewDestination.CreateOutflow -> navController.navigateToCreateFoodOutflow()
         FoodOverviewDestination.MovementHistory ->
             navController.navigateToEstablishmentFoodMovementHistory()

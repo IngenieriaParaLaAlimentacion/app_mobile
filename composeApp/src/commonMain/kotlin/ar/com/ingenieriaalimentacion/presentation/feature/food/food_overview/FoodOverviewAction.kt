@@ -5,6 +5,7 @@ import ar.com.ingenieriaalimentacion.domain.model.food.StockSortOrder
 sealed interface FoodOverviewAction {
     data object BackClick : FoodOverviewAction
     data object IntakeClick : FoodOverviewAction
+    data object ReceiptIntakeClick : FoodOverviewAction
     data object OutflowClick : FoodOverviewAction
     data object SeeAllMovementsClick : FoodOverviewAction
     data class MovementClick(val movementId: String) : FoodOverviewAction

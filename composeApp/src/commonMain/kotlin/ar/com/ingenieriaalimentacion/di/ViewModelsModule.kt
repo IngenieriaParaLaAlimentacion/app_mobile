@@ -6,6 +6,7 @@ import ar.com.ingenieriaalimentacion.presentation.feature.auth.forgot_password.F
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.login.LoginViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.reset_password.ResetPasswordViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_intake.CreateFoodIntakeViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.food.receipt_food_intake.ReceiptFoodIntakeViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_outflow.CreateFoodOutflowViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_food_movement_detail.EstablishmentFoodMovementDetailViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_food_movement_history.EstablishmentFoodMovementHistoryViewModel
@@ -62,6 +63,7 @@ val viewModelsModule = module {
     }
     viewModelOf(::MeasurementViewModel)
     viewModelOf(::CreateFoodIntakeViewModel)
+    viewModelOf(::ReceiptFoodIntakeViewModel)
     viewModelOf(::CreateFoodOutflowViewModel)
     viewModelOf(::MeasurementUploadsViewModel)
     viewModelOf(::SelectSubjectViewModel)

@@ -50,6 +50,7 @@ class FoodOverviewViewModel(
         when (action) {
             FoodOverviewAction.BackClick -> emit(FoodOverviewDestination.Back)
             FoodOverviewAction.IntakeClick -> emit(FoodOverviewDestination.CreateIntake)
+            FoodOverviewAction.ReceiptIntakeClick -> emit(FoodOverviewDestination.ReceiptIntake)
             FoodOverviewAction.OutflowClick -> emit(FoodOverviewDestination.CreateOutflow)
             FoodOverviewAction.SeeAllMovementsClick -> emit(FoodOverviewDestination.MovementHistory)
             is FoodOverviewAction.MovementClick -> _state.value.establishment?.let {

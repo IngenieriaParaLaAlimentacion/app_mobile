@@ -326,12 +326,16 @@ private fun OverviewActions(onAction: (FoodOverviewAction) -> Unit) {
         if (stack) {
             Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
                 IntakeButton(Modifier.fillMaxWidth(), onAction)
+                ReceiptIntakeButton(Modifier.fillMaxWidth(), onAction)
                 OutflowButton(Modifier.fillMaxWidth(), onAction)
             }
         } else {
-            Row(horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
-                IntakeButton(Modifier.weight(1f), onAction)
-                OutflowButton(Modifier.weight(1f), onAction)
+            Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+                    IntakeButton(Modifier.weight(1f), onAction)
+                    OutflowButton(Modifier.weight(1f), onAction)
+                }
+                ReceiptIntakeButton(Modifier.fillMaxWidth(), onAction)
             }
         }
     }
@@ -343,6 +347,13 @@ private fun IntakeButton(modifier: Modifier, onAction: (FoodOverviewAction) -> U
         modifier = modifier.heightIn(min = 48.dp),
         onClick = { onAction(FoodOverviewAction.IntakeClick) },
     ) { Text("Registrar ingreso") }
+}
+
+@Composable
+private fun ReceiptIntakeButton(modifier: Modifier, onAction: (FoodOverviewAction) -> Unit) {
+    AlButton(modifier = modifier.heightIn(min = 48.dp),
+        onClick = { onAction(FoodOverviewAction.ReceiptIntakeClick) },
+        variant = AlButtonVariant.Outline) { Text("Registrar con recibo") }
 }
 
 @Composable

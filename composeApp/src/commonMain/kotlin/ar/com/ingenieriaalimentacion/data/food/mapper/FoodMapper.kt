@@ -1,6 +1,7 @@
 package ar.com.ingenieriaalimentacion.data.food.mapper
 
 import ar.com.ingenieriaalimentacion.data.food.dto.FoodIntakeRequest
+import ar.com.ingenieriaalimentacion.data.food.dto.FoodDetailDto
 import ar.com.ingenieriaalimentacion.data.food.dto.FoodLineRequest
 import ar.com.ingenieriaalimentacion.data.food.dto.FoodListItemDto
 import ar.com.ingenieriaalimentacion.data.food.dto.PaginatedFoodsResponse
@@ -14,6 +15,19 @@ internal fun FoodListItemDto.toDomain(): Food = Food(
     code = code,
     name = name,
     unit = baseUnit.toFoodUnit(),
+    categoryName = category.name,
+)
+
+internal fun FoodDetailDto.toDomain(): Food = Food(
+    id = id,
+    code = code,
+    name = name,
+    unit = when (baseUnit) {
+        "unidades" -> FoodUnit.Unidades
+        "kilogramos" -> FoodUnit.Kilogramos
+        "litros" -> FoodUnit.Litros
+        else -> error("Unknown receipt food base unit: $baseUnit")
+    },
     categoryName = category.name,
 )
 

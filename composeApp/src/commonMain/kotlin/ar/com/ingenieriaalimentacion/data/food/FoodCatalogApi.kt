@@ -1,6 +1,7 @@
 package ar.com.ingenieriaalimentacion.data.food
 
 import ar.com.ingenieriaalimentacion.data.food.dto.IdentifierRefDto
+import ar.com.ingenieriaalimentacion.data.food.dto.FoodDetailDto
 import ar.com.ingenieriaalimentacion.data.food.dto.PaginatedFoodsResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -16,6 +17,12 @@ import io.ktor.http.isSuccess
  * and asks for a narrower query instead of a "load more".
  */
 class FoodCatalogApi(private val client: HttpClient) {
+
+    suspend fun getFood(id: String): FoodDetailDto {
+        val response = client.get("api/v1/food-catalog/foods/$id")
+        if (!response.status.isSuccess()) error("food detail failed: ${response.status.value}")
+        return response.body()
+    }
 
     suspend fun searchFoods(search: String?, pageSize: Int): PaginatedFoodsResponse {
         val response = client.get("api/v1/food-catalog/foods") {

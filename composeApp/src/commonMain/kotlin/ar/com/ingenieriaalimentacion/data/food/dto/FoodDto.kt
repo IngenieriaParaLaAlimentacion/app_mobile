@@ -26,6 +26,15 @@ data class FoodListItemDto(
 )
 
 @Serializable
+data class FoodDetailDto(
+    val id: String,
+    val code: String,
+    val name: String,
+    @SerialName("base_unit") val baseUnit: String,
+    val category: IdentifierRefDto,
+)
+
+@Serializable
 data class PaginatedFoodsResponse(
     val items: List<FoodListItemDto>,
     val total: Int,

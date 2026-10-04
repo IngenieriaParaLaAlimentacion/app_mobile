@@ -32,6 +32,7 @@ data class FoodOverviewState(
     val isOnline: Boolean = true,
     val stock: FoodOverviewStockState = FoodOverviewStockState(),
     val movements: FoodOverviewMovementsState = FoodOverviewMovementsState(),
+    val showReceiptSourceSheet: Boolean = false,
     val destination: FoodOverviewDestination? = null,
 )
 

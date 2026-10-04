@@ -11,15 +11,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,33 +34,49 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlInput
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlSuggestion
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.DateVisualTransformation
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
-import ar.com.ingenieriaalimentacion.core.design_system.components.sheet.AlBottomSheet
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.food.ReceiptError
 import ar.com.ingenieriaalimentacion.domain.model.food.ReceiptPhoto
 import com.komoui.components.Spinner
-import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun ReceiptFoodIntakeScreenRoot(
+    initialSource: ReceiptCaptureSource?,
     navigate: (ReceiptFoodIntakeDestination) -> Unit,
     viewModel: ReceiptFoodIntakeViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val picker = rememberReceiptImagePicker { viewModel.onAction(ReceiptFoodIntakeAction.PhotoPicked(it)) }
+    var initialCapturePending by remember(initialSource) { mutableStateOf(initialSource != null) }
+    val picker = rememberReceiptImagePicker { result ->
+        val wasInitialCapture = initialCapturePending
+        initialCapturePending = false
+        if (wasInitialCapture && result == null) {
+            viewModel.onAction(ReceiptFoodIntakeAction.BackClick)
+        } else {
+            viewModel.onAction(ReceiptFoodIntakeAction.PhotoPicked(result))
+        }
+    }
+    LaunchedEffect(initialSource) {
+        when (initialSource) {
+            ReceiptCaptureSource.Camera -> picker.launchCamera()
+            ReceiptCaptureSource.Gallery -> picker.launchGallery()
+            null -> Unit
+        }
+    }
     LaunchedEffect(state.destination) { state.destination?.let { navigate(it); viewModel.clearDestination() } }
-    ReceiptFoodIntakeScreen(state, viewModel.previewPhoto()) { action ->
-        when (action) {
-            ReceiptFoodIntakeAction.CameraClick -> picker.launchCamera()
-            ReceiptFoodIntakeAction.GalleryClick -> picker.launchGallery()
-            else -> viewModel.onAction(action)
+    if (!initialCapturePending) {
+        ReceiptFoodIntakeScreen(state, viewModel.previewPhoto()) { action ->
+            when (action) {
+                ReceiptFoodIntakeAction.CameraClick -> picker.launchCamera()
+                ReceiptFoodIntakeAction.GalleryClick -> picker.launchGallery()
+                else -> viewModel.onAction(action)
+            }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReceiptFoodIntakeScreen(
     state: ReceiptFoodIntakeState,
@@ -71,38 +85,42 @@ fun ReceiptFoodIntakeScreen(
 ) {
     val scroll = rememberScrollState()
     var showSourceSheet by remember { mutableStateOf(false) }
-    val sourceSheetState = rememberModalBottomSheetState()
-    val scope = rememberCoroutineScope()
     AlScaffold {
         Column(Modifier.fillMaxSize().imePadding()) {
             AlBackTopAppBar(title = "Ingreso desde recibo", onBackClick = {
                 onAction(ReceiptFoodIntakeAction.BackClick)
             }, enabled = !state.isSubmitting)
-            Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(AlTheme.spacing.lg),
-                verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.md)) {
+            Column(Modifier.weight(1f).verticalScroll(scroll).padding(AlTheme.spacing.lg),
+                verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg)) {
                 if (state.isLoadingProfile) {
                     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { Spinner() }
                 } else if (state.profileError != null) {
                     AlInlineBanner(state.profileError, variant = AlBannerVariant.Danger)
                     AlButton(onClick = { onAction(ReceiptFoodIntakeAction.RetryProfile) }) { Text("Reintentar") }
                 } else {
-                    Text(state.selectedEstablishment?.name.orEmpty(), style = AlTheme.typography.subtitle,
-                        color = AlTheme.colors.textBase)
+                    Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
+                        Text("Establecimiento", style = AlTheme.typography.label,
+                            color = AlTheme.colors.textMuted)
+                        Text(state.selectedEstablishment?.name.orEmpty(), style = AlTheme.typography.body,
+                            color = AlTheme.colors.textBase)
+                    }
                 }
                 if (!state.isOnline) AlInlineBanner("Necesitás conexión para procesar y guardar el recibo.",
                     variant = AlBannerVariant.Danger)
                 state.error?.let { AlInlineBanner(it, variant = AlBannerVariant.Danger) }
                 when (state.step) {
-                    ReceiptStep.Choose -> SourceChoices { showSourceSheet = true }
-                    ReceiptStep.Preview -> {
-                        if (photo != null) ReceiptPhotoPreview(photo, state.photoToken) {
-                            onAction(ReceiptFoodIntakeAction.RemovePhoto)
-                        }
+                    ReceiptStep.Choose -> {
+                        ReceiptPhotoHeading()
                         SourceChoices { showSourceSheet = true }
-                        AlButton(onClick = { onAction(ReceiptFoodIntakeAction.Analyze) },
-                            enabled = state.isOnline && state.selectedEstablishment != null) { Text("Procesar recibo") }
-                        AlButton(onClick = { onAction(ReceiptFoodIntakeAction.ManualFallback) },
-                            variant = AlButtonVariant.Outline) { Text("Cargar manualmente con esta foto") }
+                    }
+                    ReceiptStep.Preview -> {
+                        ReceiptPhotoHeading()
+                        if (photo != null) ReceiptPhotoPreview(
+                            photo = photo,
+                            token = state.photoToken,
+                            onRemove = { onAction(ReceiptFoodIntakeAction.RemovePhoto) },
+                            onChange = { showSourceSheet = true },
+                        )
                     }
                     ReceiptStep.Processing -> {
                         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { Spinner() }
@@ -114,42 +132,70 @@ fun ReceiptFoodIntakeScreen(
                     ReceiptStep.Review -> ReviewForm(state, photo, onAction)
                 }
             }
+            if (state.step == ReceiptStep.Preview) {
+                HorizontalDivider(color = AlTheme.colors.border)
+                Column(Modifier.fillMaxWidth().padding(horizontal = AlTheme.spacing.lg)
+                    .padding(top = AlTheme.spacing.md, bottom = AlTheme.spacing.lg),
+                    verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+                    AlButton(onClick = { onAction(ReceiptFoodIntakeAction.Analyze) },
+                        modifier = Modifier.fillMaxWidth(), fullWidth = true,
+                        enabled = state.isOnline && state.selectedEstablishment != null) {
+                        Text("Procesar recibo")
+                    }
+                    AlButton(onClick = { onAction(ReceiptFoodIntakeAction.ManualFallback) },
+                        modifier = Modifier.fillMaxWidth(), fullWidth = true,
+                        variant = AlButtonVariant.Outline) {
+                        Text("Cargar manualmente con esta foto")
+                    }
+                }
+            }
         }
     }
     AlConfirmDialog(open = state.showDiscardDialog, title = "Descartar recibo",
         description = "Se perderán la foto y los alimentos cargados.", confirmText = "Descartar",
         onConfirm = { onAction(ReceiptFoodIntakeAction.ConfirmDiscard) },
         onDismiss = { onAction(ReceiptFoodIntakeAction.CancelDiscard) })
-    if (showSourceSheet) AlBottomSheet(onDismissRequest = { showSourceSheet = false },
-        sheetState = sourceSheetState) {
-        Column(Modifier.fillMaxWidth().padding(AlTheme.spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.md)) {
-            Text("Elegir foto del recibo", style = AlTheme.typography.subtitle,
-                color = AlTheme.colors.textBase)
-            AlButton(onClick = { scope.launch { sourceSheetState.hide(); showSourceSheet = false
-                onAction(ReceiptFoodIntakeAction.CameraClick) } },
-                modifier = Modifier.fillMaxWidth()) { Text("Tomar foto") }
-            AlButton(onClick = { scope.launch { sourceSheetState.hide(); showSourceSheet = false
-                onAction(ReceiptFoodIntakeAction.GalleryClick) } },
-                modifier = Modifier.fillMaxWidth(), variant = AlButtonVariant.Outline) {
-                Text("Elegir de galería")
+    if (showSourceSheet) ReceiptPhotoSourceSheet(
+        onDismiss = { showSourceSheet = false },
+        onSourceSelected = { source ->
+            showSourceSheet = false
+            onAction(when (source) {
+                ReceiptCaptureSource.Camera -> ReceiptFoodIntakeAction.CameraClick
+                ReceiptCaptureSource.Gallery -> ReceiptFoodIntakeAction.GalleryClick
+            })
+        },
+    )
+}
+
+@Composable
+private fun SourceChoices(open: () -> Unit) {
+    AlCard(Modifier.fillMaxWidth(), contentPadding = AlTheme.spacing.lg) {
+        Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.md)) {
+            Text("Todavía no hay una foto seleccionada", style = AlTheme.typography.body,
+                color = AlTheme.colors.textMuted)
+            AlButton(onClick = open, modifier = Modifier.fillMaxWidth(), fullWidth = true) {
+                Text("Elegir foto")
             }
         }
     }
 }
 
 @Composable
-private fun SourceChoices(open: () -> Unit) {
-    AlButton(onClick = open, variant = AlButtonVariant.Outline) { Text("Elegir foto") }
+private fun ReceiptPhotoHeading() {
+    Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+        Text("Foto del recibo", style = AlTheme.typography.subtitle,
+            color = AlTheme.colors.textBase)
+        Text("Revisá que el recibo esté completo y que el texto se pueda leer.",
+            style = AlTheme.typography.body, color = AlTheme.colors.textMuted)
+    }
 }
 
 @Composable
 private fun ReviewForm(state: ReceiptFoodIntakeState, photo: ReceiptPhoto?,
     onAction: (ReceiptFoodIntakeAction) -> Unit) {
     val editable = !state.submissionLocked && !state.isSubmitting
-    if (photo != null) ReceiptPhotoPreview(photo, state.photoToken) {
-        onAction(ReceiptFoodIntakeAction.RemovePhoto)
-    }
+    if (photo != null) ReceiptPhotoPreview(photo, state.photoToken,
+        onRemove = { onAction(ReceiptFoodIntakeAction.RemovePhoto) })
     if (state.lines.isEmpty()) {
         Text(state.proposalMessage ?: "No encontramos alimentos. Agregalos manualmente con esta foto.",
             style = AlTheme.typography.body, color = AlTheme.colors.textMuted)

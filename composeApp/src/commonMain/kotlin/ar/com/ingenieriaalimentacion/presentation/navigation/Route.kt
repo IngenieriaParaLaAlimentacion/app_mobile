@@ -43,7 +43,7 @@ sealed class Route {
 
     @Serializable
     @SerialName("receipt_food_intake")
-    data object ReceiptFoodIntake : Route()
+    data class ReceiptFoodIntake(val source: String) : Route()
 
     @Serializable
     @SerialName("create_food_outflow")

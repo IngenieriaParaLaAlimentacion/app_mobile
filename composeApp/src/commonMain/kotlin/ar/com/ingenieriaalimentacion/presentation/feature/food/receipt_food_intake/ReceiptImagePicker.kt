@@ -10,6 +10,8 @@ interface ReceiptImagePicker {
     fun launchGallery()
 }
 
+enum class ReceiptCaptureSource { Camera, Gallery }
+
 @Composable
 expect fun rememberReceiptImagePicker(onResult: (Result<ReceiptPhoto>?) -> Unit): ReceiptImagePicker
 

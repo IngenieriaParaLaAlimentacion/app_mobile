@@ -14,6 +14,7 @@ import ar.com.ingenieriaalimentacion.domain.usecase.food.GetEstablishmentFoodMov
 import ar.com.ingenieriaalimentacion.domain.usecase.food.GetFoodCategoriesUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.GetFoodStockPageUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.ResolveCurrentEstablishmentUseCase
+import ar.com.ingenieriaalimentacion.presentation.feature.food.receipt_food_intake.ReceiptCaptureSource
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -50,7 +51,12 @@ class FoodOverviewViewModel(
         when (action) {
             FoodOverviewAction.BackClick -> emit(FoodOverviewDestination.Back)
             FoodOverviewAction.IntakeClick -> emit(FoodOverviewDestination.CreateIntake)
-            FoodOverviewAction.ReceiptIntakeClick -> emit(FoodOverviewDestination.ReceiptIntake)
+            FoodOverviewAction.ReceiptIntakeClick ->
+                _state.update { it.copy(showReceiptSourceSheet = true) }
+            FoodOverviewAction.ReceiptSourceSheetDismiss ->
+                _state.update { it.copy(showReceiptSourceSheet = false) }
+            FoodOverviewAction.ReceiptCameraClick -> selectReceiptSource(ReceiptCaptureSource.Camera)
+            FoodOverviewAction.ReceiptGalleryClick -> selectReceiptSource(ReceiptCaptureSource.Gallery)
             FoodOverviewAction.OutflowClick -> emit(FoodOverviewDestination.CreateOutflow)
             FoodOverviewAction.SeeAllMovementsClick -> emit(FoodOverviewDestination.MovementHistory)
             is FoodOverviewAction.MovementClick -> _state.value.establishment?.let {
@@ -225,6 +231,12 @@ class FoodOverviewViewModel(
 
     private fun emit(destination: FoodOverviewDestination) =
         _state.update { it.copy(destination = destination) }
+
+    private fun selectReceiptSource(source: ReceiptCaptureSource) =
+        _state.update {
+            it.copy(showReceiptSourceSheet = false,
+                destination = FoodOverviewDestination.ReceiptIntake(source))
+        }
 
     private fun updateStock(change: (FoodOverviewStockState) -> FoodOverviewStockState) =
         _state.update { it.copy(stock = change(it.stock)) }

@@ -46,6 +46,8 @@ import ar.com.ingenieriaalimentacion.presentation.feature.food.components.FoodSt
 import ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_food_movement_history.MovementRow
 import ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_food_movement_history.toDayGroups
 import ar.com.ingenieriaalimentacion.presentation.feature.food.food_stock.StockRow
+import ar.com.ingenieriaalimentacion.presentation.feature.food.receipt_food_intake.ReceiptCaptureSource
+import ar.com.ingenieriaalimentacion.presentation.feature.food.receipt_food_intake.ReceiptPhotoSourceSheet
 import ar.com.ingenieriaalimentacion.presentation.navigation.FOOD_MOVEMENT_CREATED_RESULT
 import ar.com.ingenieriaalimentacion.presentation.navigation.RefreshOnNavResult
 import com.komoui.components.Spinner
@@ -94,6 +96,13 @@ fun FoodOverviewScreen(
         }
         if (state.stock.showCategorySheet) CategorySheet(state, onAction)
         if (state.stock.showSortSheet) SortSheet(state, onAction)
+        if (state.showReceiptSourceSheet) ReceiptPhotoSourceSheet(
+            onDismiss = { onAction(FoodOverviewAction.ReceiptSourceSheetDismiss) },
+            onSourceSelected = { source -> onAction(when (source) {
+                ReceiptCaptureSource.Camera -> FoodOverviewAction.ReceiptCameraClick
+                ReceiptCaptureSource.Gallery -> FoodOverviewAction.ReceiptGalleryClick
+            }) },
+        )
     }
 }
 

@@ -6,6 +6,9 @@ sealed interface FoodOverviewAction {
     data object BackClick : FoodOverviewAction
     data object IntakeClick : FoodOverviewAction
     data object ReceiptIntakeClick : FoodOverviewAction
+    data object ReceiptSourceSheetDismiss : FoodOverviewAction
+    data object ReceiptCameraClick : FoodOverviewAction
+    data object ReceiptGalleryClick : FoodOverviewAction
     data object OutflowClick : FoodOverviewAction
     data object SeeAllMovementsClick : FoodOverviewAction
     data class MovementClick(val movementId: String) : FoodOverviewAction

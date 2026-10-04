@@ -28,7 +28,8 @@ internal fun navigate(destination: FoodOverviewDestination, navController: NavCo
         FoodOverviewDestination.Stock -> navController.navigateToFoodStock()
         FoodOverviewDestination.Back -> navController.popBackStack()
         FoodOverviewDestination.CreateIntake -> navController.navigateToCreateFoodIntake()
-        FoodOverviewDestination.ReceiptIntake -> navController.navigateToReceiptFoodIntake()
+        is FoodOverviewDestination.ReceiptIntake ->
+            navController.navigateToReceiptFoodIntake(destination.source)
         FoodOverviewDestination.CreateOutflow -> navController.navigateToCreateFoodOutflow()
         FoodOverviewDestination.MovementHistory ->
             navController.navigateToEstablishmentFoodMovementHistory()

@@ -8,26 +8,28 @@ import kotlin.test.assertTrue
 class UserRoleTest {
 
     @Test
-    fun `only admins subscribe directly`() {
+    fun `only admins and superadmins subscribe directly`() {
         assertEquals(EstablishmentLinkMode.Subscribe, establishmentLinkMode("admin"))
+        assertEquals(EstablishmentLinkMode.Subscribe, establishmentLinkMode("superadmin"))
         assertEquals(EstablishmentLinkMode.RequestAccess, establishmentLinkMode("analyst"))
         assertEquals(EstablishmentLinkMode.RequestAccess, establishmentLinkMode("field_worker"))
     }
 
     @Test
-    fun `field workers, admins and analysts can link establishments`() {
+    fun `field workers, admins, superadmins and analysts can link establishments`() {
         assertTrue(canLinkEstablishments("field_worker"))
         assertTrue(canLinkEstablishments("admin"))
         assertTrue(canLinkEstablishments("analyst"))
-        assertFalse(canLinkEstablishments("superadmin"))
+        assertTrue(canLinkEstablishments("superadmin"))
+        assertFalse(canLinkEstablishments("unknown"))
     }
 
     @Test
-    fun `only admins and analysts need an approved establishment for field-worker actions`() {
+    fun `admins, superadmins and analysts need an approved establishment for field-worker actions`() {
         assertTrue(requiresApprovedEstablishment("admin"))
         assertTrue(requiresApprovedEstablishment("analyst"))
         assertFalse(requiresApprovedEstablishment("field_worker"))
-        assertFalse(requiresApprovedEstablishment("superadmin"))
+        assertTrue(requiresApprovedEstablishment("superadmin"))
     }
 
     @Test

@@ -8,7 +8,7 @@ private val SURVEY_RESPONSE_ROLES = setOf(
 )
 
 /**
- * Roles that may submit or edit survey responses. Admins and analysts only do so as
+ * Roles that may submit or edit survey responses. Admins, superadmins and analysts only do so as
  * field workers of an establishment they are approved in; the backend validates that link
  * per response, and callers gate on [requiresApprovedEstablishment].
  */

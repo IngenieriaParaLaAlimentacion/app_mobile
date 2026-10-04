@@ -9,6 +9,7 @@ import ar.com.ingenieriaalimentacion.data.profile.dto.UpdateProfileRequest
 import ar.com.ingenieriaalimentacion.data.profile.dto.WithdrawEstablishmentsRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.patch
@@ -63,22 +64,22 @@ class ProfileApi(private val client: HttpClient) {
             setBody(body)
         }.body()
 
-    // TODO(backend#151): assumed contract — admin direct subscription. Same body as the access
-    //  request; returns the new links already approved. 409 when already subscribed.
+    /**
+     * Admin-only (admin/superadmin). 201 with the links in request order, all approved.
+     * Idempotent (already-subscribed ids are skipped) and all-or-nothing (404 if any id is unknown).
+     */
     suspend fun subscribeToEstablishments(
         body: RequestEstablishmentsRequest,
     ): List<EstablishmentWithStatusResponse> =
-        client.post("api/v1/users/me/establishments/subscribe") {
+        client.post("api/v1/users/me/establishments/subscriptions") {
             contentType(ContentType.Application.Json)
             setBody(body)
         }.body()
 
-    // TODO(backend#151): assumed contract — admin unsubscription. Same body as withdraw; the
-    //  backend deletes the user_establishment row instead of marking it withdrawn.
-    suspend fun unsubscribeFromEstablishments(body: WithdrawEstablishmentsRequest) {
-        client.patch("api/v1/users/me/establishments/unsubscribe") {
-            contentType(ContentType.Application.Json)
-            setBody(body)
+    /** Admin-only. 204; the links are deleted (not marked withdrawn). Unlinked ids are skipped. */
+    suspend fun unsubscribeFromEstablishments(establishmentIds: List<String>) {
+        client.delete("api/v1/users/me/establishments/subscriptions") {
+            establishmentIds.forEach { parameter("establishment_ids", it) }
         }
     }
 

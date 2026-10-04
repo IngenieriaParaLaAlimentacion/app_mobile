@@ -10,7 +10,6 @@ import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.PagedEstablishments
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetAvailableEstablishmentsUseCase
-import ar.com.ingenieriaalimentacion.domain.usecase.profile.RefreshMyEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.RequestEstablishmentAccessUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.SubscribeToEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.fake.FakeProfileRepository
@@ -75,7 +74,6 @@ class RequestEstablishmentViewModelTest {
         getAvailable = GetAvailableEstablishmentsUseCase(repo),
         requestAccess = RequestEstablishmentAccessUseCase(repo),
         subscribe = SubscribeToEstablishmentsUseCase(repo),
-        refreshMyEstablishments = RefreshMyEstablishmentsUseCase(repo),
     )
 
     private suspend fun ReceiveTurbine<RequestEstablishmentState>.awaitState(
@@ -238,10 +236,10 @@ class RequestEstablishmentViewModelTest {
     }
 
     @Test
-    fun `AlreadySubscribed shows the error and resyncs both lists`() = runTest(dispatcher) {
+    fun `a 404 on subscribe shows the error, drops the selection and reloads the catalog`() = runTest(dispatcher) {
         val repo = pagedRepo().apply {
             subscribeResult = Result.failure(
-                EstablishmentRequestFailure(EstablishmentRequestError.AlreadySubscribed, null),
+                EstablishmentRequestFailure(EstablishmentRequestError.EstablishmentNotFound, null),
             )
         }
         val vm = viewModel(repo, mode = EstablishmentLinkMode.Subscribe)
@@ -253,11 +251,31 @@ class RequestEstablishmentViewModelTest {
         advanceUntilIdle()
 
         val state = vm.state.value
-        assertEquals(EstablishmentRequestError.AlreadySubscribed, state.submitError)
+        assertEquals(EstablishmentRequestError.EstablishmentNotFound, state.submitError)
         assertTrue(state.selectedIds.isEmpty())
         assertFalse(state.isSubmitting)
-        assertEquals(1, repo.refreshCount)
         assertEquals(catalogCallsBefore + 1, repo.availableCalls.size)
+    }
+
+    @Test
+    fun `a network error on subscribe keeps the selection for a retry`() = runTest(dispatcher) {
+        val repo = pagedRepo().apply {
+            subscribeResult = Result.failure(
+                EstablishmentRequestFailure(EstablishmentRequestError.Network, null),
+            )
+        }
+        val vm = viewModel(repo, mode = EstablishmentLinkMode.Subscribe)
+
+        advanceUntilIdle()
+        val catalogCallsBefore = repo.availableCalls.size
+        vm.onAction(RequestEstablishmentAction.EstablishmentToggled("a"))
+        vm.onAction(RequestEstablishmentAction.SubmitClick)
+        advanceUntilIdle()
+
+        val state = vm.state.value
+        assertEquals(EstablishmentRequestError.Network, state.submitError)
+        assertEquals(setOf("a"), state.selectedIds)
+        assertEquals(catalogCallsBefore, repo.availableCalls.size)
     }
 
     @Test

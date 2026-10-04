@@ -103,12 +103,12 @@ class FakeProfileRepository : ProfileRepository {
     }
 
     var unsubscribeResult: Result<Unit> = Result.success(Unit)
-    var lastUnsubscribedId: String? = null
+    var lastUnsubscribedIds: List<String>? = null
     var unsubscribeCount: Int = 0
 
-    override suspend fun unsubscribeFromEstablishment(establishmentId: String): Result<Unit> {
+    override suspend fun unsubscribeFromEstablishments(ids: List<String>): Result<Unit> {
         unsubscribeCount++
-        lastUnsubscribedId = establishmentId
+        lastUnsubscribedIds = ids
         return unsubscribeResult
     }
 

@@ -6,7 +6,6 @@ import ar.com.ingenieriaalimentacion.data.profile.EstablishmentRequestFailure
 import ar.com.ingenieriaalimentacion.domain.model.auth.EstablishmentLinkMode
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentRequestError
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetAvailableEstablishmentsUseCase
-import ar.com.ingenieriaalimentacion.domain.usecase.profile.RefreshMyEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.RequestEstablishmentAccessUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.SubscribeToEstablishmentsUseCase
 import kotlinx.coroutines.CancellationException
@@ -25,7 +24,6 @@ class RequestEstablishmentViewModel(
     private val getAvailable: GetAvailableEstablishmentsUseCase,
     private val requestAccess: RequestEstablishmentAccessUseCase,
     private val subscribe: SubscribeToEstablishmentsUseCase,
-    private val refreshMyEstablishments: RefreshMyEstablishmentsUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(RequestEstablishmentState(mode = mode))
@@ -151,20 +149,18 @@ class RequestEstablishmentViewModel(
                     val error = (throwable as? EstablishmentRequestFailure)?.error
                         ?: EstablishmentRequestError.Unknown(throwable)
                     _state.update { it.copy(isSubmitting = false, submitError = error) }
-                    if (error is EstablishmentRequestError.AlreadySubscribed) resync()
+                    if (error is EstablishmentRequestError.EstablishmentNotFound) resync()
                 },
             )
         }
     }
 
     /**
-     * The server already has some of the selected links, so both lists are stale: refresh
-     * the cached "mis establecimientos" and reload the available catalog, dropping a
-     * selection that may now point at establishments no longer offered.
+     * A selected establishment no longer exists (the call is all-or-nothing, so nothing was
+     * linked): drop the selection and reload the catalog so the user picks again.
      */
     private suspend fun resync() {
         _state.update { it.copy(selectedIds = emptySet()) }
-        refreshMyEstablishments()
         reload(_state.value.query)
     }
 

@@ -75,7 +75,6 @@ val viewModelsModule = module {
             getAvailable = get(),
             requestAccess = get(),
             subscribe = get(),
-            refreshMyEstablishments = get(),
         )
     }
     viewModelOf(::NotifyEstablishmentViewModel)

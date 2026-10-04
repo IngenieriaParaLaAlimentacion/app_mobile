@@ -12,7 +12,7 @@ class WithdrawFromEstablishmentUseCase(private val repository: ProfileRepository
         establishmentId: String,
         mode: EstablishmentLinkMode = EstablishmentLinkMode.RequestAccess,
     ): Result<Unit> = when (mode) {
-        EstablishmentLinkMode.Subscribe -> repository.unsubscribeFromEstablishment(establishmentId)
+        EstablishmentLinkMode.Subscribe -> repository.unsubscribeFromEstablishments(listOf(establishmentId))
         EstablishmentLinkMode.RequestAccess -> repository.withdrawFromEstablishment(establishmentId)
     }
 }

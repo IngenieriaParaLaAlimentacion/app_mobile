@@ -172,7 +172,7 @@ class ProfileUseCasesTest {
 
         val result = WithdrawFromEstablishmentUseCase(repo)("e1", EstablishmentLinkMode.Subscribe)
 
-        assertEquals("e1", repo.lastUnsubscribedId)
+        assertEquals(listOf("e1"), repo.lastUnsubscribedIds)
         assertEquals(0, repo.withdrawCount)
         assertTrue(result.isSuccess)
     }

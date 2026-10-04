@@ -241,57 +241,83 @@ class ProfileRepositoryImplTest {
         assertEquals(EstablishmentStatus.Pending, local.rows.first { it.id == "e1" }.status)
     }
 
-    // --- admin subscription (TODO(backend#151): assumed contract) ---
+    // --- admin subscription (backend #151) ---
 
     @Test
-    fun `subscribeToEstablishments posts the ids and caches the approved relations`() = runTest {
+    fun `subscribeToEstablishments posts all ids in one call and caches the approved relations`() = runTest {
         val local = FakeEstablishmentLocalStore()
-        var capturedPath: String? = null
+        val calls = mutableListOf<String>()
         var capturedBody: String? = null
         val repo = repository(local) { request ->
-            capturedPath = request.url.encodedPath
+            calls += "${request.method.value} ${request.url.encodedPath}"
             capturedBody = (request.body as? TextContent)?.text
-            respondJson(this, "[$establishmentJson]", HttpStatusCode.Created)
+            respondJson(
+                this,
+                "[$establishmentJson, ${establishmentJson.replace("\"e1\"", "\"e2\"")}]",
+                HttpStatusCode.Created,
+            )
         }
 
-        val relations = repo.subscribeToEstablishments(listOf("e1")).getOrThrow()
+        val relations = repo.subscribeToEstablishments(listOf("e1", "e2")).getOrThrow()
 
-        assertEquals("/api/v1/users/me/establishments/subscribe", capturedPath)
-        assertEquals("""{"establishment_ids":["e1"]}""", capturedBody)
-        assertEquals(EstablishmentStatus.Approved, relations.single().status)
-        assertEquals(listOf("e1"), local.rows.map { it.id })
+        assertEquals(listOf("POST /api/v1/users/me/establishments/subscriptions"), calls)
+        assertEquals("""{"establishment_ids":["e1","e2"]}""", capturedBody)
+        assertTrue(relations.all { it.status == EstablishmentStatus.Approved })
+        assertEquals(listOf("e1", "e2"), local.rows.map { it.id })
     }
 
     @Test
-    fun `subscribeToEstablishments maps 409 to AlreadySubscribed`() = runTest {
-        val repo = repository { respond("already", HttpStatusCode.Conflict) }
+    fun `subscribeToEstablishments maps 404 to EstablishmentNotFound and caches nothing`() = runTest {
+        val local = FakeEstablishmentLocalStore()
+        val repo = repository(local) { respond("missing", HttpStatusCode.NotFound) }
 
-        val failure = repo.subscribeToEstablishments(listOf("e1")).exceptionOrNull()
+        val failure = repo.subscribeToEstablishments(listOf("e1", "e2")).exceptionOrNull()
 
         assertTrue(failure is EstablishmentRequestFailure)
-        assertEquals(EstablishmentRequestError.AlreadySubscribed, failure.error)
+        assertEquals(EstablishmentRequestError.EstablishmentNotFound, failure.error)
+        assertTrue(local.rows.isEmpty())
     }
 
     @Test
-    fun `unsubscribeFromEstablishment evicts the id and clears it as current establishment`() = runTest {
+    fun `unsubscribeFromEstablishments deletes with repeated query ids, evicts them and clears the current one`() = runTest {
         val local = FakeEstablishmentLocalStore(
             listOf(
                 EstablishmentWithStatus("e1", "Norte", "Calle 1", 0.0, 0.0, "p1", "C", "P", EstablishmentStatus.Approved),
                 EstablishmentWithStatus("e2", "Sur", "Calle 2", 0.0, 0.0, "p2", "C", "P", EstablishmentStatus.Approved),
+                EstablishmentWithStatus("e3", "Este", "Calle 3", 0.0, 0.0, "p3", "C", "P", EstablishmentStatus.Approved),
             ),
         )
-        val current = FakeCurrentEstablishmentLocalStore(initial = "e1")
-        var capturedPath: String? = null
+        val current = FakeCurrentEstablishmentLocalStore(initial = "e2")
+        var captured: String? = null
+        var capturedIds: List<String>? = null
         val repo = repository(local, current) { request ->
-            capturedPath = request.url.encodedPath
+            captured = "${request.method.value} ${request.url.encodedPath}"
+            capturedIds = request.url.parameters.getAll("establishment_ids")
             respond("", HttpStatusCode.NoContent)
         }
 
-        repo.unsubscribeFromEstablishment("e1").getOrThrow()
+        repo.unsubscribeFromEstablishments(listOf("e1", "e2")).getOrThrow()
 
-        assertEquals("/api/v1/users/me/establishments/unsubscribe", capturedPath)
-        assertEquals(listOf("e2"), local.rows.map { it.id })
+        assertEquals("DELETE /api/v1/users/me/establishments/subscriptions", captured)
+        assertEquals(listOf("e1", "e2"), capturedIds)
+        assertEquals(listOf("e3"), local.rows.map { it.id })
         assertNull(current.value)
+    }
+
+    @Test
+    fun `unsubscribeFromEstablishments maps 403 to Forbidden and keeps the cache`() = runTest {
+        val local = FakeEstablishmentLocalStore(
+            listOf(
+                EstablishmentWithStatus("e1", "Norte", "Calle 1", 0.0, 0.0, "p1", "C", "P", EstablishmentStatus.Approved),
+            ),
+        )
+        val repo = repository(local) { respond("nope", HttpStatusCode.Forbidden) }
+
+        val failure = repo.unsubscribeFromEstablishments(listOf("e1")).exceptionOrNull()
+
+        assertTrue(failure is EstablishmentWithdrawalFailure)
+        assertEquals(EstablishmentWithdrawalError.Forbidden, failure.error)
+        assertEquals(listOf("e1"), local.rows.map { it.id })
     }
 
     // --- withdraw from establishment ---

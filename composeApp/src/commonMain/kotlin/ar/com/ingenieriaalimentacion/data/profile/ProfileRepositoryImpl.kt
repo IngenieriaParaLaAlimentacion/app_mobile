@@ -98,7 +98,7 @@ class ProfileRepositoryImpl(
         runCatching {
             api.subscribeToEstablishments(RequestEstablishmentsRequest(ids)).map { it.toDomain() }
         }.recoverCatching { throw EstablishmentRequestFailure(mapRequestError(it), it) }
-            .onSuccess { created -> mergeIntoCache(created) }
+            .onSuccess { subscribed -> mergeIntoCache(subscribed) }
 
     override suspend fun withdrawFromEstablishment(establishmentId: String): Result<Unit> =
         runCatching {
@@ -107,11 +107,10 @@ class ProfileRepositoryImpl(
             .onSuccess { forgetEstablishment(establishmentId) }
             .map { }
 
-    override suspend fun unsubscribeFromEstablishment(establishmentId: String): Result<Unit> =
-        runCatching {
-            api.unsubscribeFromEstablishments(WithdrawEstablishmentsRequest(listOf(establishmentId)))
-        }.recoverCatching { throw EstablishmentWithdrawalFailure(mapWithdrawalError(it), it) }
-            .onSuccess { forgetEstablishment(establishmentId) }
+    override suspend fun unsubscribeFromEstablishments(ids: List<String>): Result<Unit> =
+        runCatching { api.unsubscribeFromEstablishments(ids) }
+            .recoverCatching { throw EstablishmentWithdrawalFailure(mapWithdrawalError(it), it) }
+            .onSuccess { ids.forEach { id -> forgetEstablishment(id) } }
 
     /**
      * Upserts freshly created links into the cache. [getMyEstablishments] is cache-first, so
@@ -158,8 +157,6 @@ class ProfileRepositoryImpl(
             HttpStatusCode.Unauthorized -> EstablishmentRequestError.Unauthorized
             HttpStatusCode.Forbidden -> EstablishmentRequestError.Forbidden
             HttpStatusCode.NotFound -> EstablishmentRequestError.EstablishmentNotFound
-            // TODO(backend#151): assumed status for "admin already subscribed".
-            HttpStatusCode.Conflict -> EstablishmentRequestError.AlreadySubscribed
             else -> EstablishmentRequestError.Network
         }
         is ResponseException -> EstablishmentRequestError.Network

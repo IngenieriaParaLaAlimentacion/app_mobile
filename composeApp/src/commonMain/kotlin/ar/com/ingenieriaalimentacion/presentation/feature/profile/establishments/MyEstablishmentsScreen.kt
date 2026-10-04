@@ -261,7 +261,7 @@ private data class LinkCopy(
 
 private fun EstablishmentLinkMode.linkCopy(): LinkCopy = when (this) {
     EstablishmentLinkMode.Subscribe -> LinkCopy(
-        linkCta = "Suscribirme a un establecimiento",
+        linkCta = "Suscribirme",
         emptyText = "Todavía no estás suscripto a ningún establecimiento.",
         withdrawTitle = "Desuscribirme",
         withdrawVerb = "desuscribirte",

@@ -330,7 +330,7 @@ class MyEstablishmentsViewModelTest {
                 vm.onAction(MyEstablishmentsAction.ConfirmWithdraw)
                 val state = awaitState { it.successMessage != null }
 
-                assertEquals("1", repo.lastUnsubscribedId)
+                assertEquals(listOf("1"), repo.lastUnsubscribedIds)
                 assertEquals(0, repo.withdrawCount)
                 assertEquals("Te desuscribiste de Norte.", state.successMessage)
                 assertTrue(state.establishments.isEmpty())

@@ -5,10 +5,8 @@ import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentRequestEr
 internal fun EstablishmentRequestError.toUserMessage(): String = when (this) {
     EstablishmentRequestError.Unauthorized -> "Tu sesión expiró. Iniciá sesión nuevamente."
     EstablishmentRequestError.Forbidden -> "No tenés permisos para vincularte a establecimientos."
-    EstablishmentRequestError.AlreadySubscribed ->
-        "Ya estabas suscripto a alguno de estos establecimientos. Actualizamos la lista."
     EstablishmentRequestError.EstablishmentNotFound ->
-        "Alguno de los establecimientos ya no está disponible."
+        "Alguno de los establecimientos ya no existe. Actualizamos la lista, elegí de nuevo."
     EstablishmentRequestError.Network ->
         "No pudimos conectarnos. Verificá tu conexión e intentá nuevamente."
     is EstablishmentRequestError.Unknown -> "Ocurrió un error inesperado. Intentá nuevamente."

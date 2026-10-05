@@ -137,12 +137,27 @@ class ReceiptFoodIntakeViewModelTest {
         assertEquals(ReceiptSource.ManualFallback, f.vm.state.value.source)
         f.vm.onAction(ReceiptFoodIntakeAction.AddLine)
         val id = f.vm.state.value.lines.single().id
+        assertNull(f.vm.state.value.lines.single().description)
         f.vm.onAction(ReceiptFoodIntakeAction.FoodPicked(id, food)); advanceUntilIdle()
         f.vm.onAction(ReceiptFoodIntakeAction.QuantityChanged(id, "2"))
         f.vm.onAction(ReceiptFoodIntakeAction.LineConfirmed(id))
         f.vm.onAction(ReceiptFoodIntakeAction.Submit); advanceUntilIdle()
         assertEquals(ReceiptSource.ManualFallback, f.repo.confirms.single().second)
         assertSame(photo, f.repo.confirms.single().third)
+    }
+
+    @Test fun changingSearchFieldIgnoresBlurFromPreviousLine() = runTest(dispatcher) {
+        val f = fixture()
+        f.repo.proposal = Result.success(ReceiptProposal("e1", listOf(matchedLine(), matchedLine()), null))
+        advanceUntilIdle(); f.vm.pick(); f.vm.onAction(ReceiptFoodIntakeAction.Analyze); advanceUntilIdle()
+        val (first, second) = f.vm.state.value.lines
+        f.vm.onAction(ReceiptFoodIntakeAction.FoodSearchFocusChanged(first.id, true))
+        f.vm.onAction(ReceiptFoodIntakeAction.FoodSearchChanged(first.id, "arro"))
+        f.vm.onAction(ReceiptFoodIntakeAction.FoodSearchFocusChanged(second.id, true))
+        f.vm.onAction(ReceiptFoodIntakeAction.FoodSearchFocusChanged(first.id, false))
+        assertEquals(second.id, f.vm.state.value.searchLineId)
+        assertEquals("", f.vm.state.value.search.query)
+        assertTrue(f.vm.state.value.search.isFocused)
     }
 
     @Test fun cancelledProposalCannotReplacePreview() = runTest(dispatcher) {

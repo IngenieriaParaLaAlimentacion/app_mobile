@@ -11,7 +11,7 @@ enum class ReceiptStep { Choose, Preview, Processing, Review }
 
 data class ReceiptReviewLine(
     val id: Int,
-    val description: String,
+    val description: String?,
     val rawQuantity: String?,
     val rawUnitText: String?,
     val food: Food? = null,

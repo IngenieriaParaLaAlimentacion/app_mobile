@@ -251,8 +251,6 @@ internal class QuickAction(
     val action: HomeAction,
 )
 
-// Labels are deliberately single words: the grid is 3-wide (see QuickActions), which leaves roughly
-// a third of a small phone per tile. A two-word label would wrap.
 // ic_mingcute_wardrobe_line (a despensa/cupboard) represents the unified food area; package_*
 // remain reserved for intake/outflow history rows so the entry point cannot look like a movement.
 internal val QUICK_ACTIONS = listOf(
@@ -262,17 +260,12 @@ internal val QUICK_ACTIONS = listOf(
     QuickAction(Res.drawable.ic_mingcute_wardrobe_line, "Alimentos", HomeAction.FoodOverviewClick),
 )
 
-/** Three columns keep the actions readable and preserve equal tile widths on incomplete rows. */
-private const val QUICK_ACTION_COLUMNS = 3
+private const val QUICK_ACTION_COLUMNS = 2
 
 @Composable
 private fun QuickActions(state: HomeState, onAction: (HomeAction) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg)) {
-        // A fixed 3-column grid. The trailing Spacers keep incomplete rows evenly sized if another
-        // what keep every tile the same width — without them the last row's two tiles would stretch
-        // to half the screen each and read as a different, more important control. A 4-wide row is
-        // still ruled out (it squeezes every label past truncation on a small phone); 3 leaves room
-        // for the longest label at caption size.
+        // Spacers preserve equal tile widths if the action count becomes odd.
         Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
             QUICK_ACTIONS.chunked(QUICK_ACTION_COLUMNS).forEach { row ->
                 Row(

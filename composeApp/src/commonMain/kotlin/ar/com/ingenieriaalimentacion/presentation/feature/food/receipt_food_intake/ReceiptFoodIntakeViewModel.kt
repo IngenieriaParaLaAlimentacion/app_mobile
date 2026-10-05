@@ -109,17 +109,21 @@ class ReceiptFoodIntakeViewModel(
                     lines = emptyList(), proposalMessage = null, error = null) }
             }
             is ReceiptFoodIntakeAction.FoodSearchChanged -> if (editable()) {
-                _state.update { it.copy(search = it.search.copy(query = action.value)) }
+                activateSearchLine(action.lineId)
+                _state.update { it.copy(search = it.search.copy(query = action.value, isFocused = true)) }
                 query.value = action.value
             }
             is ReceiptFoodIntakeAction.FoodSearchFocusChanged -> if (editable()) {
-                _state.update { it.copy(search = it.search.copy(isFocused = action.focused)) }
+                if (action.focused) {
+                    activateSearchLine(action.lineId)
+                    _state.update { it.copy(search = it.search.copy(isFocused = true)) }
+                } else if (state.value.searchLineId == action.lineId) {
+                    _state.update { it.copy(searchLineId = null,
+                        search = it.search.cleared().copy(isFocused = false)) }
+                    query.value = ""
+                }
             }
             ReceiptFoodIntakeAction.SearchRetry -> if (editable()) viewModelScope.launch { search(state.value.search.query) }
-            is ReceiptFoodIntakeAction.SearchForLine -> if (editable()) {
-                _state.update { it.copy(searchLineId = action.lineId, search = it.search.cleared()) }
-                query.value = ""
-            }
             is ReceiptFoodIntakeAction.FoodPicked -> if (editable()) pickFood(action.lineId, action.food)
             is ReceiptFoodIntakeAction.QuantityChanged -> if (editable()) updateLine(action.lineId) { line ->
                 val food = line.food
@@ -146,7 +150,7 @@ class ReceiptFoodIntakeViewModel(
             }
             ReceiptFoodIntakeAction.AddLine -> if (editable()) {
                 val id = nextLineId++
-                _state.update { it.copy(lines = it.lines + ReceiptReviewLine(id, "Alimento agregado", null, null),
+                _state.update { it.copy(lines = it.lines + ReceiptReviewLine(id, null, null, null),
                     searchLineId = id, search = it.search.cleared()) }
             }
             is ReceiptFoodIntakeAction.DateChanged -> if (editable()) _state.update {
@@ -263,6 +267,12 @@ class ReceiptFoodIntakeViewModel(
 
     private fun updateLine(id: Int, transform: (ReceiptReviewLine) -> ReceiptReviewLine) {
         _state.update { current -> current.copy(lines = current.lines.map { if (it.id == id) transform(it) else it }) }
+    }
+
+    private fun activateSearchLine(lineId: Int) {
+        if (state.value.searchLineId == lineId) return
+        _state.update { it.copy(searchLineId = lineId, search = it.search.cleared()) }
+        query.value = ""
     }
 
     private suspend fun search(value: String) {

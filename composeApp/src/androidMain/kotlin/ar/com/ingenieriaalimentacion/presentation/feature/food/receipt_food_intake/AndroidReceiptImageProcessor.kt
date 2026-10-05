@@ -17,8 +17,12 @@ internal fun processReceiptUri(resolver: ContentResolver, uri: Uri): Result<Rece
         if (descriptor.length > MAX_SOURCE_BYTES) throw ReceiptFailure(ReceiptError.SourceTooLarge)
     }
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+    val boundsStream = resolver.openInputStream(uri)
         ?: throw ReceiptFailure(ReceiptError.InvalidImage)
+    // Bounds-only decoding returns null even for valid images.
+    boundsStream.use { BitmapFactory.decodeStream(it, null, bounds) }
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0)
+        throw ReceiptFailure(ReceiptError.InvalidImage)
     try { receiptTargetSize(bounds.outWidth, bounds.outHeight) }
     catch (_: IllegalArgumentException) { throw ReceiptFailure(ReceiptError.SourceTooLarge) }
 

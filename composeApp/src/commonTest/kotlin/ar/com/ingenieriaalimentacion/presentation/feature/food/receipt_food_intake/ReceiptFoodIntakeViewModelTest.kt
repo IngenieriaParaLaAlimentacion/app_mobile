@@ -40,8 +40,10 @@ import kotlin.test.assertTrue
 class ReceiptFoodIntakeViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val food = Food("f1", "A1", "Arroz", FoodUnit.Kilogramos, "Cereales")
-    private val photo = ReceiptPhoto(byteArrayOf(0xff.toByte(), 0xd8.toByte(), 0xff.toByte(), 42),
-        "image/jpeg", "recibo.jpg")
+    private val photo = processedReceiptPhoto(byteArrayOf(
+        'R'.code.toByte(), 'I'.code.toByte(), 'F'.code.toByte(), 'F'.code.toByte(),
+        0, 0, 0, 0, 'W'.code.toByte(), 'E'.code.toByte(), 'B'.code.toByte(), 'P'.code.toByte(),
+    ))
     private val establishment = EstablishmentWithStatus("e1", "Comedor", "Calle 1", 0.0, 0.0,
         "p1", "Ciudad", "Provincia", EstablishmentStatus.Approved)
 
@@ -53,7 +55,9 @@ class ReceiptFoodIntakeViewModelTest {
         var proposalWait: CompletableDeferred<Unit>? = null
         var confirmation: Result<Unit> = Result.success(Unit)
         val confirms = mutableListOf<Triple<NewFoodIntake, ReceiptSource, ReceiptPhoto>>()
+        val proposals = mutableListOf<ReceiptPhoto>()
         override suspend fun propose(establishmentId: String, photo: ReceiptPhoto): Result<ReceiptProposal> {
+            proposals += photo
             proposalWait?.await()
             return proposal
         }
@@ -102,6 +106,9 @@ class ReceiptFoodIntakeViewModelTest {
         f.vm.onAction(ReceiptFoodIntakeAction.Submit)
         advanceUntilIdle()
         assertEquals(1, f.repo.confirms.size)
+        assertSame(f.repo.proposals.single(), f.repo.confirms.single().third)
+        assertEquals("image/webp", f.repo.confirms.single().third.contentType)
+        assertEquals("recibo.webp", f.repo.confirms.single().third.fileName)
         assertEquals(ReceiptFoodIntakeDestination.Saved, f.vm.state.value.destination)
     }
 
@@ -119,6 +126,7 @@ class ReceiptFoodIntakeViewModelTest {
         f.vm.onAction(ReceiptFoodIntakeAction.RetrySubmit); advanceUntilIdle()
         assertEquals(2, f.repo.confirms.size)
         assertEquals(f.repo.confirms[0].first, f.repo.confirms[1].first)
+        assertSame(f.repo.proposals.single(), f.repo.confirms[0].third)
         assertSame(f.repo.confirms[0].third, f.repo.confirms[1].third)
         assertEquals(1, f.ids.count)
     }
@@ -189,5 +197,19 @@ class ReceiptFoodIntakeViewModelTest {
         advanceUntilIdle(); f.vm.pick(); f.vm.onAction(ReceiptFoodIntakeAction.ManualFallback)
         f.vm.onAction(ReceiptFoodIntakeAction.Submit); advanceUntilIdle()
         assertTrue(f.repo.confirms.isEmpty())
+    }
+
+    @Test fun processingFailureNeverSendsSourceBytes() = runTest(dispatcher) {
+        val f = fixture()
+        advanceUntilIdle()
+        f.vm.onAction(ReceiptFoodIntakeAction.PhotoPicked(
+            Result.failure(ReceiptFailure(ReceiptError.SourceTooLarge))))
+        f.vm.onAction(ReceiptFoodIntakeAction.Analyze)
+        advanceUntilIdle()
+        assertNull(f.vm.previewPhoto())
+        assertTrue(f.repo.proposals.isEmpty())
+        assertTrue(f.repo.confirms.isEmpty())
+        assertEquals("La imagen es demasiado grande para procesarla. Elegí otra foto.",
+            f.vm.state.value.error)
     }
 }

@@ -1,6 +1,5 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.food.receipt_food_intake
 
-import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -15,10 +14,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.FileProvider
-import ar.com.ingenieriaalimentacion.domain.model.food.ReceiptError
-import ar.com.ingenieriaalimentacion.domain.model.food.ReceiptFailure
 import ar.com.ingenieriaalimentacion.domain.model.food.ReceiptPhoto
-import java.io.ByteArrayOutputStream
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -33,7 +29,7 @@ actual fun rememberReceiptImagePicker(onResult: (Result<ReceiptPhoto>?) -> Unit)
     val gallery = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri == null) callback(null)
         else scope.launch { callback(withContext(Dispatchers.IO) {
-            readBoundedPhoto(context.contentResolver, uri)
+            processReceiptUri(context.contentResolver, uri)
         }) }
     }
     val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
@@ -46,7 +42,7 @@ actual fun rememberReceiptImagePicker(onResult: (Result<ReceiptPhoto>?) -> Unit)
         } else scope.launch {
             try {
                 callback(withContext(Dispatchers.IO) {
-                    readBoundedPhoto(context.contentResolver, uri)
+                    processReceiptUri(context.contentResolver, uri)
                 })
             } finally {
                 pending = null
@@ -77,20 +73,3 @@ actual fun rememberReceiptImagePicker(onResult: (Result<ReceiptPhoto>?) -> Unit)
 }
 
 private fun Context.receiptCameraFile() = File(cacheDir, "receipts/camera.jpg")
-
-private fun readBoundedPhoto(resolver: ContentResolver, uri: Uri): Result<ReceiptPhoto> = runCatching {
-    val bytes = resolver.openInputStream(uri)?.use { input ->
-        val output = ByteArrayOutputStream()
-        val buffer = ByteArray(8192)
-        while (true) {
-            val count = input.read(buffer)
-            if (count < 0) break
-            if (output.size() + count > MAX_RECEIPT_BYTES) throw ReceiptFailure(ReceiptError.TooLarge)
-            output.write(buffer, 0, count)
-        }
-        output.toByteArray()
-    } ?: throw ReceiptFailure(ReceiptError.InvalidImage)
-    val mime = sniffAcceptedMime(bytes) ?: throw ReceiptFailure(ReceiptError.InvalidImage)
-    val extension = when (mime) { "image/jpeg" -> "jpg"; "image/png" -> "png"; else -> "webp" }
-    ReceiptPhoto(bytes, mime, "recibo.$extension")
-}

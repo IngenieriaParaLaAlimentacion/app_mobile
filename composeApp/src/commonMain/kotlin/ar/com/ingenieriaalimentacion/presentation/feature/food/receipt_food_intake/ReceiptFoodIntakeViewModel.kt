@@ -381,8 +381,9 @@ class ReceiptFoodIntakeViewModel(
 }
 
 private fun Throwable.userMessage(): String = when ((this as? ReceiptFailure)?.kind) {
-    ReceiptError.InvalidImage, ReceiptError.MismatchedContent -> "Elegí una imagen JPG, PNG o WebP válida del recibo."
-    ReceiptError.TooLarge -> "La imagen supera 10 MB. Elegí una más liviana."
+    ReceiptError.InvalidImage, ReceiptError.MismatchedContent -> "Elegí una imagen válida del recibo."
+    ReceiptError.SourceTooLarge -> "La imagen es demasiado grande para procesarla. Elegí otra foto."
+    ReceiptError.TooLarge -> "La imagen procesada supera 10 MB. Elegí otra foto."
     ReceiptError.AccessDenied -> "Ya no tenés acceso a este establecimiento."
     ReceiptError.EstablishmentNotFound -> "El establecimiento seleccionado ya no existe."
     ReceiptError.FoodNotFound -> "Un alimento ya no está en el catálogo. Revisá las líneas."

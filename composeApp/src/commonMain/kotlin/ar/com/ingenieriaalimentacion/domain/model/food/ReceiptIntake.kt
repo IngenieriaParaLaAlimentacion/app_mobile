@@ -19,7 +19,7 @@ data class ReceiptLine(
 enum class ReceiptSource { Photo, ManualFallback }
 
 enum class ReceiptError {
-    InvalidImage, TooLarge, MismatchedContent, InvalidData, AccessDenied,
+    InvalidImage, SourceTooLarge, TooLarge, MismatchedContent, InvalidData, AccessDenied,
     EstablishmentNotFound, FoodNotFound, Unauthorized, Retryable,
 }
 

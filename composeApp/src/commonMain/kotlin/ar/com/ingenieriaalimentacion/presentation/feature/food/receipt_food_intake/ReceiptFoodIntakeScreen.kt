@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -21,12 +22,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ar.com.ingenieriaalimentacion.core.design_system.components.banner.AlBannerVariant
 import ar.com.ingenieriaalimentacion.core.design_system.components.banner.AlInlineBanner
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButtonVariant
+import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlIconButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.card.AlCard
 import ar.com.ingenieriaalimentacion.core.design_system.components.dialog.AlConfirmDialog
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlAutocompleteInput
@@ -39,6 +43,8 @@ import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.food.ReceiptError
 import ar.com.ingenieriaalimentacion.domain.model.food.ReceiptPhoto
 import com.komoui.components.Spinner
+import ingenieria_alimentacion.composeapp.generated.resources.Res
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_delete
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -194,13 +200,12 @@ private fun ReceiptPhotoHeading() {
 private fun ReviewForm(state: ReceiptFoodIntakeState, photo: ReceiptPhoto?,
     onAction: (ReceiptFoodIntakeAction) -> Unit) {
     val editable = !state.submissionLocked && !state.isSubmitting
+    val focusManager = LocalFocusManager.current
     if (photo != null) ReceiptPhotoPreview(photo, state.photoToken,
         onRemove = { onAction(ReceiptFoodIntakeAction.RemovePhoto) })
     if (state.lines.isEmpty()) {
-        Text(state.proposalMessage ?: "No encontramos alimentos. Agregalos manualmente con esta foto.",
+        Text(state.proposalMessage ?: "Agregá los alimentos del recibo.",
             style = AlTheme.typography.body, color = AlTheme.colors.textMuted)
-        AlButton(onClick = { onAction(ReceiptFoodIntakeAction.ManualFallback) },
-            variant = AlButtonVariant.Outline, enabled = editable) { Text("Cargar manualmente con esta foto") }
     }
     AlInput(label = "Fecha de recepción", value = state.date.value,
         onValueChange = { onAction(ReceiptFoodIntakeAction.DateChanged(it)) },
@@ -210,29 +215,39 @@ private fun ReviewForm(state: ReceiptFoodIntakeState, photo: ReceiptPhoto?,
         placeholder = "DD/MM/AAAA", error = state.date.displayError, enabled = editable)
     state.lines.forEach { line ->
         AlCard(Modifier.fillMaxWidth()) {
-            Text(line.description, style = AlTheme.typography.subtitle, color = AlTheme.colors.textBase)
+            val isSearching = state.searchLineId == line.id
+            line.description?.let { description ->
+                Text(description, style = AlTheme.typography.subtitle, color = AlTheme.colors.textBase)
+            }
             if (line.rawQuantity != null || line.rawUnitText != null) {
                 Text("En recibo: ${line.rawQuantity.orEmpty()} ${line.rawUnitText.orEmpty()}",
                     style = AlTheme.typography.caption, color = AlTheme.colors.textMuted)
             }
             line.resolutionError?.let { Text(it, color = AlTheme.colors.danger) }
-            Text(line.food?.let { "${it.name} · ${it.unit.shortLabel}" } ?: "Elegí un alimento del catálogo",
-                color = AlTheme.colors.textBase)
-            AlButton(onClick = { onAction(ReceiptFoodIntakeAction.SearchForLine(line.id)) },
-                variant = AlButtonVariant.Outline, enabled = editable) { Text("Buscar alimento") }
-            if (state.searchLineId == line.id) {
-                val suggestions = remember(state.search.results) { state.search.results.map {
+            val suggestions = remember(isSearching, state.search.results) {
+                if (isSearching) state.search.results.map {
                     AlSuggestion(it.id, it.name, it.categoryName, it.unit.shortLabel)
-                } }
-                AlAutocompleteInput(label = "Alimento", value = state.search.query,
-                    onValueChange = { onAction(ReceiptFoodIntakeAction.FoodSearchChanged(it)) },
-                    onFocusChange = { onAction(ReceiptFoodIntakeAction.FoodSearchFocusChanged(it)) },
-                    suggestions = suggestions, expanded = state.search.isExpanded,
-                    isLoading = state.search.isSearching, enabled = editable && state.isOnline,
-                    errorText = "No se pudo buscar en el catálogo.".takeIf { state.search.error },
-                    onRetry = { onAction(ReceiptFoodIntakeAction.SearchRetry) }, footer = state.search.footer,
+                } else emptyList()
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
+                verticalAlignment = Alignment.Top) {
+                AlAutocompleteInput(modifier = Modifier.weight(1f), label = "Alimento",
+                    value = if (isSearching) state.search.query else line.food?.name.orEmpty(),
+                    placeholder = "Buscá por nombre",
+                    onValueChange = { onAction(ReceiptFoodIntakeAction.FoodSearchChanged(line.id, it)) },
+                    onFocusChange = { onAction(ReceiptFoodIntakeAction.FoodSearchFocusChanged(line.id, it)) },
+                    suggestions = suggestions, expanded = isSearching && state.search.isExpanded,
+                    isLoading = isSearching && state.search.isSearching,
+                    enabled = editable && state.isOnline,
+                    errorText = "No se pudo buscar en el catálogo.".takeIf { isSearching && state.search.error },
+                    onRetry = { onAction(ReceiptFoodIntakeAction.SearchRetry) },
+                    footer = state.search.footer.takeIf { isSearching },
                     onSuggestionClick = { suggestion -> state.search.results.firstOrNull { it.id == suggestion.id }
-                        ?.let { onAction(ReceiptFoodIntakeAction.FoodPicked(line.id, it)) } })
+                        ?.let { onAction(ReceiptFoodIntakeAction.FoodPicked(line.id, it)); focusManager.clearFocus() } })
+                AlIconButton(icon = Res.drawable.ic_mingcute_delete, modifier = Modifier.size(48.dp),
+                    contentDescription = "Quitar ${line.food?.name ?: line.description ?: "alimento"}",
+                    onClick = { onAction(ReceiptFoodIntakeAction.LineRemoved(line.id)) },
+                    tint = AlTheme.colors.textMuted, enabled = editable)
             }
             AlInput(label = "Cantidad (${line.food?.unit?.shortLabel ?: "elegí alimento"})",
                 value = line.quantity.value,
@@ -245,8 +260,6 @@ private fun ReviewForm(state: ReceiptFoodIntakeState, photo: ReceiptPhoto?,
                 enabled = editable && line.food != null) {
                 Text(if (line.reviewed) "Revisado ✓" else "Marcar como revisado")
             }
-            AlButton(onClick = { onAction(ReceiptFoodIntakeAction.LineRemoved(line.id)) },
-                variant = AlButtonVariant.Outline, enabled = editable) { Text("Quitar línea") }
         }
     }
     AlButton(onClick = { onAction(ReceiptFoodIntakeAction.AddLine) },

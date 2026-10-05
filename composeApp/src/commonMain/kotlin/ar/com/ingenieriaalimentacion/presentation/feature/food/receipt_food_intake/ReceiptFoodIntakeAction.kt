@@ -11,10 +11,9 @@ sealed interface ReceiptFoodIntakeAction {
     data object Analyze : ReceiptFoodIntakeAction
     data object CancelAnalysis : ReceiptFoodIntakeAction
     data object ManualFallback : ReceiptFoodIntakeAction
-    data class FoodSearchChanged(val value: String) : ReceiptFoodIntakeAction
-    data class FoodSearchFocusChanged(val focused: Boolean) : ReceiptFoodIntakeAction
+    data class FoodSearchChanged(val lineId: Int, val value: String) : ReceiptFoodIntakeAction
+    data class FoodSearchFocusChanged(val lineId: Int, val focused: Boolean) : ReceiptFoodIntakeAction
     data object SearchRetry : ReceiptFoodIntakeAction
-    data class SearchForLine(val lineId: Int) : ReceiptFoodIntakeAction
     data class FoodPicked(val lineId: Int, val food: Food) : ReceiptFoodIntakeAction
     data class QuantityChanged(val lineId: Int, val value: String) : ReceiptFoodIntakeAction
     data class QuantityFocusChanged(val lineId: Int, val focused: Boolean) : ReceiptFoodIntakeAction

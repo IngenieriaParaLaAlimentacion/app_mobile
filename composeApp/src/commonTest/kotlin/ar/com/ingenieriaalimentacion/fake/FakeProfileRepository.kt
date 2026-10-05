@@ -92,6 +92,26 @@ class FakeProfileRepository : ProfileRepository {
         return withdrawResult
     }
 
+    var subscribeResult: Result<List<EstablishmentWithStatus>> = Result.success(emptyList())
+    var lastSubscribedIds: List<String>? = null
+    var subscribeCount: Int = 0
+
+    override suspend fun subscribeToEstablishments(ids: List<String>): Result<List<EstablishmentWithStatus>> {
+        subscribeCount++
+        lastSubscribedIds = ids
+        return subscribeResult
+    }
+
+    var unsubscribeResult: Result<Unit> = Result.success(Unit)
+    var lastUnsubscribedIds: List<String>? = null
+    var unsubscribeCount: Int = 0
+
+    override suspend fun unsubscribeFromEstablishments(ids: List<String>): Result<Unit> {
+        unsubscribeCount++
+        lastUnsubscribedIds = ids
+        return unsubscribeResult
+    }
+
     var notifyAbsenceResult: Result<Unit> = Result.success(Unit)
     var lastAbsenceNotice: EstablishmentAbsenceNotice? = null
     var notifyAbsenceCount: Int = 0

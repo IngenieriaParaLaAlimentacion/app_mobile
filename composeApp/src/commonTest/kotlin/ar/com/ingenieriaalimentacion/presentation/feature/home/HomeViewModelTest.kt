@@ -28,6 +28,13 @@ import ar.com.ingenieriaalimentacion.fake.FakeMeasurementHistoryRepository
 import ar.com.ingenieriaalimentacion.fake.FakeProfileRepository
 import ar.com.ingenieriaalimentacion.fake.FakeSubjectHistoryRepository
 import ar.com.ingenieriaalimentacion.fake.FakeSurveyResponseHistoryRepository
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -35,11 +42,6 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelTest {
@@ -293,5 +295,68 @@ class HomeViewModelTest {
             QUICK_ACTIONS.map { it.label },
         )
         assertEquals(HomeAction.FoodOverviewClick, QUICK_ACTIONS.last().action)
+    }
+
+    @Test
+    fun `admin and analyst quick actions wait for an approved current establishment`() =
+        runTest(dispatcher) {
+            listOf("admin", "analyst").forEach { role ->
+                val profileRepo = FakeProfileRepository().apply {
+                    meResult = Result.success(profile(role))
+                    myEstablishmentsResult = Result.success(listOf(establishment("a")))
+                }
+                val vm = viewModel(profileRepo = profileRepo)
+                advanceUntilIdle()
+
+                assertFalse(vm.state.value.quickActionsEnabled, role)
+                assertEquals(
+                    "Elegí un establecimiento aprobado para registrar datos.",
+                    vm.state.value.quickActionsHint,
+                )
+
+                vm.onAction(HomeAction.EstablishmentSelected(establishment("a")))
+                advanceUntilIdle()
+                assertTrue(vm.state.value.quickActionsEnabled, role)
+                assertNull(vm.state.value.quickActionsHint)
+            }
+        }
+
+    @Test
+    fun `admin without establishments is told to subscribe`() = runTest(dispatcher) {
+        val profileRepo = FakeProfileRepository().apply { meResult = Result.success(profile("admin")) }
+        val vm = viewModel(profileRepo = profileRepo)
+        advanceUntilIdle()
+
+        assertFalse(vm.state.value.quickActionsEnabled)
+        assertTrue(vm.state.value.quickActionsHint!!.startsWith("Suscribite"))
+    }
+
+    @Test
+    fun `field worker quick actions stay enabled without a current establishment`() = runTest(dispatcher) {
+        val profileRepo = FakeProfileRepository().apply { meResult = Result.success(profile("field_worker")) }
+        val vm = viewModel(profileRepo = profileRepo)
+        advanceUntilIdle()
+
+        assertNull(vm.state.value.currentEstablishment)
+        assertTrue(vm.state.value.quickActionsEnabled)
+    }
+
+    @Test
+    fun `reloadEstablishments drops a current establishment the user left`() = runTest(dispatcher) {
+        val profileRepo = FakeProfileRepository().apply {
+            myEstablishmentsResult = Result.success(listOf(establishment("a"), establishment("b")))
+            currentEstablishmentId = "a"
+        }
+        val vm = viewModel(profileRepo = profileRepo)
+        advanceUntilIdle()
+        assertEquals("a", vm.state.value.currentEstablishment?.id)
+
+        profileRepo.myEstablishmentsResult = Result.success(listOf(establishment("b")))
+        profileRepo.currentEstablishmentId = null
+        vm.reloadEstablishments()
+        advanceUntilIdle()
+
+        assertNull(vm.state.value.currentEstablishment)
+        assertEquals(listOf("b"), vm.state.value.establishmentOptions.map { it.id })
     }
 }

@@ -27,8 +27,8 @@ internal fun navigateProfile(
                 role = destination.role,
             )
 
-        ProfileDestination.MyEstablishments ->
-            outerNav.navigateToMyEstablishments()
+        is ProfileDestination.MyEstablishments ->
+            outerNav.navigateToMyEstablishments(role = destination.role)
 
         ProfileDestination.LoggedOut -> onSignOut()
     }

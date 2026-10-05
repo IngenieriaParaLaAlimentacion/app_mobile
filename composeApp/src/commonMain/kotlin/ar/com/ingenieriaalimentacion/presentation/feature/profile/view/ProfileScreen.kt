@@ -25,6 +25,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.header.AlSect
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
+import ar.com.ingenieriaalimentacion.domain.model.auth.canLinkEstablishments
 import ar.com.ingenieriaalimentacion.domain.model.profile.Profile
 import ar.com.ingenieriaalimentacion.presentation.navigation.PROFILE_UPDATED_RESULT
 import ar.com.ingenieriaalimentacion.presentation.navigation.RefreshOnNavResult
@@ -121,7 +122,9 @@ private fun ProfileContent(
         AccountSection(
             email = profile.email,
             onEdit = { onAction(ProfileAction.EditClick) },
-            onMyEstablishments = if (profile.establishments != null) {
+            // Admins and analysts may come back from /me without an establishments list;
+            // they still link to establishments (subscribe / request access) from here.
+            onMyEstablishments = if (profile.establishments != null || canLinkEstablishments(profile.role)) {
                 { onAction(ProfileAction.MyEstablishmentsClick) }
             } else {
                 null

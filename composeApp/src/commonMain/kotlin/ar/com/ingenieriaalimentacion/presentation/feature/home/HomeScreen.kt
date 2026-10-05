@@ -4,10 +4,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -15,7 +16,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,9 +29,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ar.com.ingenieriaalimentacion.app.LocalOuterNavController
 import ar.com.ingenieriaalimentacion.core.design_system.components.EmptyState
 import ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlBadgeTone
 import ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlStatusBadge
+import ar.com.ingenieriaalimentacion.core.design_system.components.banner.AlBannerVariant
+import ar.com.ingenieriaalimentacion.core.design_system.components.banner.AlInlineBanner
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButtonVariant
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlCardIconButton
@@ -43,6 +46,8 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlSc
 import ar.com.ingenieriaalimentacion.core.design_system.components.sheet.AlBottomSheet
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
+import ar.com.ingenieriaalimentacion.presentation.navigation.ESTABLISHMENTS_CHANGED_RESULT
+import ar.com.ingenieriaalimentacion.presentation.navigation.RefreshOnNavResult
 import ingenieria_alimentacion.composeapp.generated.resources.Res
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_alert_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_check_circle
@@ -67,6 +72,15 @@ fun HomeScreenRoot(
     navigate: (HomeDestination) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    // MyEstablishments lives on the outer nav, so its result lands on the AuthedShell entry,
+    // not on this tab's inner entry. See CLAUDE.md "Navigate-back-with-result".
+    RefreshOnNavResult(
+        savedStateHandle = LocalOuterNavController.current.currentBackStackEntry?.savedStateHandle,
+        key = ESTABLISHMENTS_CHANGED_RESULT,
+    ) {
+        viewModel.reloadEstablishments()
+    }
 
     LaunchedEffect(state.destination) {
         state.destination?.let {
@@ -285,6 +299,7 @@ private fun QuickActions(state: HomeState, onAction: (HomeAction) -> Unit) {
                             icon = quickAction.icon,
                             label = quickAction.label,
                             onClick = { onAction(quickAction.action) },
+                            enabled = state.quickActionsEnabled,
                         )
                     }
                     repeat(QUICK_ACTION_COLUMNS - row.size) {
@@ -292,6 +307,10 @@ private fun QuickActions(state: HomeState, onAction: (HomeAction) -> Unit) {
                     }
                 }
             }
+        }
+
+        state.quickActionsHint?.let { hint ->
+            AlInlineBanner(message = hint, variant = AlBannerVariant.Warning)
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {

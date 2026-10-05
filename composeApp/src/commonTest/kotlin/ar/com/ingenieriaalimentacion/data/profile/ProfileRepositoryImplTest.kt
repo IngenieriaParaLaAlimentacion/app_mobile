@@ -36,6 +36,7 @@ class ProfileRepositoryImplTest {
 
     private fun repository(
         local: FakeEstablishmentLocalStore = FakeEstablishmentLocalStore(),
+        current: FakeCurrentEstablishmentLocalStore = FakeCurrentEstablishmentLocalStore(),
         handler: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData,
     ): ProfileRepositoryImpl {
         val client = HttpClient(MockEngine(handler)) {
@@ -45,7 +46,7 @@ class ProfileRepositoryImplTest {
             }
             defaultRequest { url("https://api.example.com/") }
         }
-        return ProfileRepositoryImpl(ProfileApi(client), local, FakeCurrentEstablishmentLocalStore())
+        return ProfileRepositoryImpl(ProfileApi(client), local, current)
     }
 
     private fun respondJson(scope: MockRequestHandleScope, body: String, status: HttpStatusCode = HttpStatusCode.OK) =
@@ -222,7 +223,116 @@ class ProfileRepositoryImplTest {
         assertEquals(EstablishmentRequestError.EstablishmentNotFound, failure.error)
     }
 
+    @Test
+    fun `requestEstablishmentAccess merges the new relations into the cache`() = runTest {
+        val local = FakeEstablishmentLocalStore(
+            listOf(
+                EstablishmentWithStatus("e0", "Oeste", "Calle 0", 0.0, 0.0, "p0", "C", "P", EstablishmentStatus.Approved),
+                EstablishmentWithStatus("e1", "Norte", "Calle 1", 0.0, 0.0, "p1", "C", "P", EstablishmentStatus.Rejected),
+            ),
+        )
+        val repo = repository(local) {
+            respondJson(this, "[${establishmentJson.replace("approved", "pending")}]", HttpStatusCode.Created)
+        }
+
+        repo.requestEstablishmentAccess(listOf("e1")).getOrThrow()
+
+        assertEquals(listOf("e0", "e1"), local.rows.map { it.id })
+        assertEquals(EstablishmentStatus.Pending, local.rows.first { it.id == "e1" }.status)
+    }
+
+    // --- admin subscription (backend #151) ---
+
+    @Test
+    fun `subscribeToEstablishments posts all ids in one call and caches the approved relations`() = runTest {
+        val local = FakeEstablishmentLocalStore()
+        val calls = mutableListOf<String>()
+        var capturedBody: String? = null
+        val repo = repository(local) { request ->
+            calls += "${request.method.value} ${request.url.encodedPath}"
+            capturedBody = (request.body as? TextContent)?.text
+            respondJson(
+                this,
+                "[$establishmentJson, ${establishmentJson.replace("\"e1\"", "\"e2\"")}]",
+                HttpStatusCode.Created,
+            )
+        }
+
+        val relations = repo.subscribeToEstablishments(listOf("e1", "e2")).getOrThrow()
+
+        assertEquals(listOf("POST /api/v1/users/me/establishments/subscriptions"), calls)
+        assertEquals("""{"establishment_ids":["e1","e2"]}""", capturedBody)
+        assertTrue(relations.all { it.status == EstablishmentStatus.Approved })
+        assertEquals(listOf("e1", "e2"), local.rows.map { it.id })
+    }
+
+    @Test
+    fun `subscribeToEstablishments maps 404 to EstablishmentNotFound and caches nothing`() = runTest {
+        val local = FakeEstablishmentLocalStore()
+        val repo = repository(local) { respond("missing", HttpStatusCode.NotFound) }
+
+        val failure = repo.subscribeToEstablishments(listOf("e1", "e2")).exceptionOrNull()
+
+        assertTrue(failure is EstablishmentRequestFailure)
+        assertEquals(EstablishmentRequestError.EstablishmentNotFound, failure.error)
+        assertTrue(local.rows.isEmpty())
+    }
+
+    @Test
+    fun `unsubscribeFromEstablishments deletes with repeated query ids, evicts them and clears the current one`() = runTest {
+        val local = FakeEstablishmentLocalStore(
+            listOf(
+                EstablishmentWithStatus("e1", "Norte", "Calle 1", 0.0, 0.0, "p1", "C", "P", EstablishmentStatus.Approved),
+                EstablishmentWithStatus("e2", "Sur", "Calle 2", 0.0, 0.0, "p2", "C", "P", EstablishmentStatus.Approved),
+                EstablishmentWithStatus("e3", "Este", "Calle 3", 0.0, 0.0, "p3", "C", "P", EstablishmentStatus.Approved),
+            ),
+        )
+        val current = FakeCurrentEstablishmentLocalStore(initial = "e2")
+        var captured: String? = null
+        var capturedIds: List<String>? = null
+        val repo = repository(local, current) { request ->
+            captured = "${request.method.value} ${request.url.encodedPath}"
+            capturedIds = request.url.parameters.getAll("establishment_ids")
+            respond("", HttpStatusCode.NoContent)
+        }
+
+        repo.unsubscribeFromEstablishments(listOf("e1", "e2")).getOrThrow()
+
+        assertEquals("DELETE /api/v1/users/me/establishments/subscriptions", captured)
+        assertEquals(listOf("e1", "e2"), capturedIds)
+        assertEquals(listOf("e3"), local.rows.map { it.id })
+        assertNull(current.value)
+    }
+
+    @Test
+    fun `unsubscribeFromEstablishments maps 403 to Forbidden and keeps the cache`() = runTest {
+        val local = FakeEstablishmentLocalStore(
+            listOf(
+                EstablishmentWithStatus("e1", "Norte", "Calle 1", 0.0, 0.0, "p1", "C", "P", EstablishmentStatus.Approved),
+            ),
+        )
+        val repo = repository(local) { respond("nope", HttpStatusCode.Forbidden) }
+
+        val failure = repo.unsubscribeFromEstablishments(listOf("e1")).exceptionOrNull()
+
+        assertTrue(failure is EstablishmentWithdrawalFailure)
+        assertEquals(EstablishmentWithdrawalError.Forbidden, failure.error)
+        assertEquals(listOf("e1"), local.rows.map { it.id })
+    }
+
     // --- withdraw from establishment ---
+
+    @Test
+    fun `withdrawFromEstablishment clears the current establishment only when it is the withdrawn one`() = runTest {
+        val current = FakeCurrentEstablishmentLocalStore(initial = "e2")
+        val repo = repository(current = current) { respondJson(this, "[$establishmentJson]") }
+
+        repo.withdrawFromEstablishment("e1").getOrThrow()
+        assertEquals("e2", current.value)
+
+        repo.withdrawFromEstablishment("e2").getOrThrow()
+        assertNull(current.value)
+    }
 
     @Test
     fun `withdrawFromEstablishment sends the id and evicts it from the cache`() = runTest {

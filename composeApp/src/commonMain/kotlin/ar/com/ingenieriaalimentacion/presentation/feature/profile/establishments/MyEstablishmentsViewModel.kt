@@ -3,6 +3,7 @@ package ar.com.ingenieriaalimentacion.presentation.feature.profile.establishment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ar.com.ingenieriaalimentacion.data.profile.EstablishmentWithdrawalFailure
+import ar.com.ingenieriaalimentacion.domain.model.auth.EstablishmentLinkMode
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithdrawalError
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
@@ -14,11 +15,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class MyEstablishmentsViewModel(
+    mode: EstablishmentLinkMode,
     private val getMyEstablishments: GetMyEstablishmentsUseCase,
     private val withdrawFromEstablishment: WithdrawFromEstablishmentUseCase,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(MyEstablishmentsState())
+    private val _state = MutableStateFlow(MyEstablishmentsState(mode = mode))
     val state = _state.asStateFlow()
 
     init {
@@ -41,8 +43,11 @@ class MyEstablishmentsViewModel(
         }
     }
 
-    /** Re-fetches on resume so an approval granted elsewhere shows up immediately. */
-    fun refresh() = load()
+    /** Called when RequestEstablishment pops after a successful request/subscription. */
+    fun onEstablishmentsRequested() {
+        _state.update { it.copy(establishmentsChanged = true) }
+        load()
+    }
 
     /** Display order: approved first, then pending, then rejected, then unknown.
      *  Withdrawn/Revoked never reach this list (filtered upstream by
@@ -77,6 +82,11 @@ class MyEstablishmentsViewModel(
         }
     }
 
+    private fun withdrawSuccessMessage(name: String): String = when (_state.value.mode) {
+        EstablishmentLinkMode.Subscribe -> "Te desuscribiste de $name."
+        EstablishmentLinkMode.RequestAccess -> "Te diste de baja de $name."
+    }
+
     private fun showWithdrawConfirm(establishmentId: String) {
         val establishment = _state.value.establishments.firstOrNull { it.id == establishmentId } ?: return
         _state.update { it.copy(pendingWithdraw = establishment) }
@@ -92,14 +102,15 @@ class MyEstablishmentsViewModel(
         if (_state.value.isWithdrawing) return
         _state.update { it.copy(isWithdrawing = true) }
         viewModelScope.launch {
-            withdrawFromEstablishment(establishment.id).fold(
+            withdrawFromEstablishment(establishment.id, _state.value.mode).fold(
                 onSuccess = {
                     _state.update {
                         it.copy(
                             establishments = it.establishments.filterNot { e -> e.id == establishment.id },
                             isWithdrawing = false,
                             pendingWithdraw = null,
-                            successMessage = "Te diste de baja de ${establishment.name}.",
+                            successMessage = withdrawSuccessMessage(establishment.name),
+                            establishmentsChanged = true,
                         )
                     }
                 },

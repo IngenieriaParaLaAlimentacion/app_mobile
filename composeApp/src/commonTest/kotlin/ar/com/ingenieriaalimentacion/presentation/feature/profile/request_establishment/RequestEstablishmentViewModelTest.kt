@@ -2,20 +2,17 @@ package ar.com.ingenieriaalimentacion.presentation.feature.profile.request_estab
 
 import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
+import ar.com.ingenieriaalimentacion.data.profile.EstablishmentRequestFailure
+import ar.com.ingenieriaalimentacion.domain.model.auth.EstablishmentLinkMode
 import ar.com.ingenieriaalimentacion.domain.model.profile.AvailableEstablishment
+import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentRequestError
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.PagedEstablishments
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetAvailableEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.RequestEstablishmentAccessUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.SubscribeToEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.fake.FakeProfileRepository
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -23,6 +20,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RequestEstablishmentViewModelTest {
@@ -62,9 +66,14 @@ class RequestEstablishmentViewModelTest {
         }
     }
 
-    private fun viewModel(repo: FakeProfileRepository) = RequestEstablishmentViewModel(
+    private fun viewModel(
+        repo: FakeProfileRepository,
+        mode: EstablishmentLinkMode = EstablishmentLinkMode.RequestAccess,
+    ) = RequestEstablishmentViewModel(
+        mode = mode,
         getAvailable = GetAvailableEstablishmentsUseCase(repo),
         requestAccess = RequestEstablishmentAccessUseCase(repo),
+        subscribe = SubscribeToEstablishmentsUseCase(repo),
     )
 
     private suspend fun ReceiveTurbine<RequestEstablishmentState>.awaitState(
@@ -205,5 +214,82 @@ class RequestEstablishmentViewModelTest {
 
         vm.onAction(RequestEstablishmentAction.SuccessToastDismissed)
         assertNull(vm.state.value.successMessage)
+    }
+
+    @Test
+    fun `Subscribe mode subscribes instead of requesting access`() = runTest(dispatcher) {
+        val repo = pagedRepo()
+        val vm = viewModel(repo, mode = EstablishmentLinkMode.Subscribe)
+
+        advanceUntilIdle()
+        assertFalse(vm.state.value.canNotifyAbsence)
+        vm.onAction(RequestEstablishmentAction.EstablishmentToggled("a"))
+
+        vm.state.test {
+            vm.onAction(RequestEstablishmentAction.SubmitClick)
+            val state = awaitState { it.destination != null }
+            assertEquals(RequestEstablishmentDestination.Submitted, state.destination)
+            assertEquals(listOf("a"), repo.lastSubscribedIds)
+            assertNull(repo.lastRequestedIds)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `a 404 on subscribe shows the error, drops the selection and reloads the catalog`() = runTest(dispatcher) {
+        val repo = pagedRepo().apply {
+            subscribeResult = Result.failure(
+                EstablishmentRequestFailure(EstablishmentRequestError.EstablishmentNotFound, null),
+            )
+        }
+        val vm = viewModel(repo, mode = EstablishmentLinkMode.Subscribe)
+
+        advanceUntilIdle()
+        val catalogCallsBefore = repo.availableCalls.size
+        vm.onAction(RequestEstablishmentAction.EstablishmentToggled("a"))
+        vm.onAction(RequestEstablishmentAction.SubmitClick)
+        advanceUntilIdle()
+
+        val state = vm.state.value
+        assertEquals(EstablishmentRequestError.EstablishmentNotFound, state.submitError)
+        assertTrue(state.selectedIds.isEmpty())
+        assertFalse(state.isSubmitting)
+        assertEquals(catalogCallsBefore + 1, repo.availableCalls.size)
+    }
+
+    @Test
+    fun `a network error on subscribe keeps the selection for a retry`() = runTest(dispatcher) {
+        val repo = pagedRepo().apply {
+            subscribeResult = Result.failure(
+                EstablishmentRequestFailure(EstablishmentRequestError.Network, null),
+            )
+        }
+        val vm = viewModel(repo, mode = EstablishmentLinkMode.Subscribe)
+
+        advanceUntilIdle()
+        val catalogCallsBefore = repo.availableCalls.size
+        vm.onAction(RequestEstablishmentAction.EstablishmentToggled("a"))
+        vm.onAction(RequestEstablishmentAction.SubmitClick)
+        advanceUntilIdle()
+
+        val state = vm.state.value
+        assertEquals(EstablishmentRequestError.Network, state.submitError)
+        assertEquals(setOf("a"), state.selectedIds)
+        assertEquals(catalogCallsBefore, repo.availableCalls.size)
+    }
+
+    @Test
+    fun `RequestAccess mode (field worker or analyst) keeps the request flow`() = runTest(dispatcher) {
+        val repo = pagedRepo()
+        val vm = viewModel(repo)
+
+        advanceUntilIdle()
+        assertTrue(vm.state.value.canNotifyAbsence)
+        vm.onAction(RequestEstablishmentAction.EstablishmentToggled("a"))
+        vm.onAction(RequestEstablishmentAction.SubmitClick)
+        advanceUntilIdle()
+
+        assertEquals(listOf("a"), repo.lastRequestedIds)
+        assertEquals(0, repo.subscribeCount)
     }
 }

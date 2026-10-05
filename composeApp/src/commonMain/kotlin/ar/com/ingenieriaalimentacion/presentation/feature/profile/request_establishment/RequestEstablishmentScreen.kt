@@ -10,11 +10,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -28,12 +28,15 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlSc
 import ar.com.ingenieriaalimentacion.core.design_system.components.toast.AlToast
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
+import ar.com.ingenieriaalimentacion.domain.model.auth.EstablishmentLinkMode
 import ar.com.ingenieriaalimentacion.presentation.navigation.ESTABLISHMENT_ABSENCE_NOTIFIED_RESULT
 import ar.com.ingenieriaalimentacion.presentation.navigation.RefreshOnNavResult
+import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 import com.komoui.components.Spinner
 import ingenieria_alimentacion.composeapp.generated.resources.Res
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_add_line
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 private const val LOAD_MORE_THRESHOLD = 3
 private const val NOTIFY_ABSENCE_ITEM_KEY = "notify_absence_cta"
@@ -41,8 +44,9 @@ private const val NOTIFY_ABSENCE_CTA = "¿No encontrás tu comedor? Notificar"
 
 @Composable
 fun RequestEstablishmentScreenRoot(
+    route: Route.RequestEstablishment,
     savedStateHandle: SavedStateHandle?,
-    viewModel: RequestEstablishmentViewModel = koinViewModel(),
+    viewModel: RequestEstablishmentViewModel = koinViewModel { parametersOf(route) },
     navigate: (RequestEstablishmentDestination) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -85,7 +89,7 @@ fun RequestEstablishmentScreen(
         ) {
             AlBackTopAppBar(
                 onBackClick = { onAction(RequestEstablishmentAction.BackClick) },
-                title = "Solicitar acceso",
+                title = state.mode.submitLabel,
                 enabled = !state.isSubmitting,
             )
 
@@ -142,10 +146,12 @@ fun RequestEstablishmentScreen(
                                     style = AlTheme.typography.body,
                                     color = AlTheme.colors.textMuted,
                                 )
-                                AlButton(
-                                    onClick = { onAction(RequestEstablishmentAction.NotifyAbsenceClick) },
-                                ) {
-                                    Text(NOTIFY_ABSENCE_CTA)
+                                if (state.canNotifyAbsence) {
+                                    AlButton(
+                                        onClick = { onAction(RequestEstablishmentAction.NotifyAbsenceClick) },
+                                    ) {
+                                        Text(NOTIFY_ABSENCE_CTA)
+                                    }
                                 }
                             }
 
@@ -178,7 +184,7 @@ fun RequestEstablishmentScreen(
                                 }
                                 // Persistent secondary action: the searched-for establishment may
                                 // simply not be in the catalog even when there are results.
-                                item(key = NOTIFY_ABSENCE_ITEM_KEY) {
+                                if (state.canNotifyAbsence) item(key = NOTIFY_ABSENCE_ITEM_KEY) {
                                     AlListRow(
                                         horizontalPadding = 0.dp,
                                         // A lone row after a list of cards: its default divider
@@ -217,9 +223,9 @@ fun RequestEstablishmentScreen(
                     ) {
                         Text(
                             if (state.selectedCount > 0) {
-                                "Solicitar acceso (${state.selectedCount})"
+                                "${state.mode.submitLabel} (${state.selectedCount})"
                             } else {
-                                "Solicitar acceso"
+                                state.mode.submitLabel
                             },
                         )
                     }
@@ -233,3 +239,10 @@ fun RequestEstablishmentScreen(
         }
     }
 }
+
+/** "Suscribirme" for an admin (approved on the spot), "Solicitar acceso" for everyone else. */
+private val EstablishmentLinkMode.submitLabel: String
+    get() = when (this) {
+        EstablishmentLinkMode.Subscribe -> "Suscribirme"
+        EstablishmentLinkMode.RequestAccess -> "Solicitar acceso"
+    }

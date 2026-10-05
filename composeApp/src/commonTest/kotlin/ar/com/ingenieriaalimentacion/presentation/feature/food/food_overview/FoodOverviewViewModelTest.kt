@@ -24,6 +24,7 @@ import ar.com.ingenieriaalimentacion.fake.FakeEstablishmentFoodMovementRepositor
 import ar.com.ingenieriaalimentacion.fake.FakeFoodCatalogRepository
 import ar.com.ingenieriaalimentacion.fake.FakeFoodStockRepository
 import ar.com.ingenieriaalimentacion.fake.FakeProfileRepository
+import ar.com.ingenieriaalimentacion.presentation.feature.food.receipt_food_intake.ReceiptCaptureSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.CompletableDeferred
@@ -84,6 +85,32 @@ class FoodOverviewViewModelTest {
             connectivity = FakeConnectivityObserver(initial = true),
         )
         return Fixture(stockRepo, movementRepo, viewModel)
+    }
+
+    @Test
+    fun `receipt entry opens source sheet before navigation`() = runTest(dispatcher) {
+        val viewModel = fixture().viewModel
+        advanceUntilIdle()
+
+        viewModel.onAction(FoodOverviewAction.ReceiptIntakeClick)
+        assertTrue(viewModel.state.value.showReceiptSourceSheet)
+        assertNull(viewModel.state.value.destination)
+
+        viewModel.onAction(FoodOverviewAction.ReceiptSourceSheetDismiss)
+        assertTrue(!viewModel.state.value.showReceiptSourceSheet)
+        assertNull(viewModel.state.value.destination)
+
+        viewModel.onAction(FoodOverviewAction.ReceiptIntakeClick)
+        viewModel.onAction(FoodOverviewAction.ReceiptCameraClick)
+        assertEquals(FoodOverviewDestination.ReceiptIntake(ReceiptCaptureSource.Camera),
+            viewModel.state.value.destination)
+        assertTrue(!viewModel.state.value.showReceiptSourceSheet)
+
+        viewModel.clearDestination()
+        viewModel.onAction(FoodOverviewAction.ReceiptIntakeClick)
+        viewModel.onAction(FoodOverviewAction.ReceiptGalleryClick)
+        assertEquals(FoodOverviewDestination.ReceiptIntake(ReceiptCaptureSource.Gallery),
+            viewModel.state.value.destination)
     }
 
     @Test

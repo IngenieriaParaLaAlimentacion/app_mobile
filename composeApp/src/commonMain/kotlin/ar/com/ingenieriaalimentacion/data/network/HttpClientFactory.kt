@@ -12,6 +12,7 @@ import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
@@ -56,6 +57,7 @@ object HttpClientFactory {
         deviceIdProvider: DeviceIdProvider,
     ): HttpClient = HttpClient(engine) {
         install(ContentNegotiation) { json(json) }
+        install(HttpTimeout)
         install(Logging) {
             logger = object : Logger { override fun log(message: String) = println(message) }
             // Method/URL/status on tst, silent on prod. Deliberately INFO and not

@@ -9,6 +9,7 @@ import ar.com.ingenieriaalimentacion.data.establishment.EstablishmentRepositoryI
 import ar.com.ingenieriaalimentacion.data.food.FoodCatalogRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.food.EstablishmentFoodMovementRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.food.FoodIntakeRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.food.ReceiptIntakeRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.food.FoodOutflowRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.food.FoodMovementHistoryRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.food.FoodStockRepositoryImpl
@@ -43,6 +44,7 @@ import ar.com.ingenieriaalimentacion.domain.repository.EstablishmentRepository
 import ar.com.ingenieriaalimentacion.domain.repository.FoodCatalogRepository
 import ar.com.ingenieriaalimentacion.domain.repository.EstablishmentFoodMovementRepository
 import ar.com.ingenieriaalimentacion.domain.repository.FoodIntakeRepository
+import ar.com.ingenieriaalimentacion.domain.repository.ReceiptIntakeRepository
 import ar.com.ingenieriaalimentacion.domain.repository.FoodOutflowRepository
 import ar.com.ingenieriaalimentacion.domain.repository.FoodMovementHistoryRepository
 import ar.com.ingenieriaalimentacion.domain.repository.FoodStockRepository
@@ -162,6 +164,7 @@ val repositoriesModule = module {
     }
     single<FoodCatalogRepository> { FoodCatalogRepositoryImpl(api = get()) }
     single<FoodIntakeRepository> { FoodIntakeRepositoryImpl(api = get()) }
+    single<ReceiptIntakeRepository> { ReceiptIntakeRepositoryImpl(api = get()) }
     single<FoodOutflowRepository> { FoodOutflowRepositoryImpl(api = get()) }
     single<FoodStockRepository> { FoodStockRepositoryImpl(api = get()) }
     single<EstablishmentFoodMovementRepository> {

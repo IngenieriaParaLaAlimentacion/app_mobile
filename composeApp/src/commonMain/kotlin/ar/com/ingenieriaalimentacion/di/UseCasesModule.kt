@@ -8,6 +8,7 @@ import ar.com.ingenieriaalimentacion.domain.usecase.auth.RequestPasswordRecovery
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.ResetPasswordUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.SignInUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.SignOutUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.auth.VerifyEmailUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.establishment.GetEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.CreateMeasurementUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.DeleteMeasurementUploadUseCase
@@ -53,6 +54,7 @@ val useCasesModule = module {
     factory { ClearLocalDataUseCase(get()) }
     factory { ResetPasswordUseCase(get()) }
     factory { RequestPasswordRecoveryUseCase(get()) }
+    factory { VerifyEmailUseCase(get()) }
     factory { ObserveSessionStatusUseCase(get()) }
     factory { GetEstablishmentsUseCase(get()) }
     factory { RegisterFieldWorkerUseCase(get()) }

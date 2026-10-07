@@ -13,6 +13,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class VerifyEmailProblem(val type: String? = null)
 
-const val INVALID_VERIFICATION_TOKEN_TYPE = "/errors/auth/invalid-verification-token"
 const val VERIFICATION_TOKEN_USED_TYPE = "/errors/auth/verification-token-used"
 const val VERIFICATION_TOKEN_EXPIRED_TYPE = "/errors/auth/verification-token-expired"

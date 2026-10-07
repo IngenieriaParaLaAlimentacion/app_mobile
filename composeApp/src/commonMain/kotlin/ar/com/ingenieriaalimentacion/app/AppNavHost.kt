@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.forgot_password.forgotPasswordScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.login.loginScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.reset_password.resetPasswordScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.auth.verify_email.verifyEmailScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.establishment.select_establishment.selectEstablishmentScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_intake.createFoodIntakeScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.food.receipt_food_intake.receiptFoodIntakeScreen
@@ -61,6 +62,7 @@ fun AppNavHost(
             notifyEstablishmentScreen(navController)
             myEstablishmentsScreen(navController)
             resetPasswordScreen(navController)
+            verifyEmailScreen(navController)
             forgotPasswordScreen(navController)
             surveyListScreen(navController)
             surveyResponseFormScreen(navController)

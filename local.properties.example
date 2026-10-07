@@ -11,5 +11,14 @@
 api_url_tst=
 api_url_prod=
 
+# Backoffice web host of each environment: bare host, no scheme, no path
+# (e.g. backoffice.example.org). The email-verification link is
+# https://<this host>/verify-email?token=… and the app claims it as an Android App Link.
+# Must equal the host of the backend's BACKOFFICE_DEEPLINK_BASE for that environment.
+# Both keys are optional overrides: each environment falls back to its known host
+# (committed in composeApp/build.gradle.kts), so leave them empty unless the host changes.
+web_host_tst=
+web_host_prod=
+
 # Android SDK path (written automatically by Android Studio).
 sdk.dir=/Users/YOUR_USERNAME/Library/Android/sdk

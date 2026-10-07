@@ -97,6 +97,15 @@ sealed class Route {
     @SerialName("reset_password_success")
     data object ResetPasswordSuccess : Route()
 
+    /**
+     * Reached only through the emailed App Link `https://<backoffice host>/verify-email?token=…`.
+     * [token] defaults to empty so a link that lost its query still matches the deep link and
+     * lands on the "invalid link" state instead of silently opening the start screen.
+     */
+    @Serializable
+    @SerialName("verify_email")
+    data class VerifyEmail(val token: String = "") : Route()
+
     @Serializable
     @SerialName("forgot_password")
     data object ForgotPassword : Route()

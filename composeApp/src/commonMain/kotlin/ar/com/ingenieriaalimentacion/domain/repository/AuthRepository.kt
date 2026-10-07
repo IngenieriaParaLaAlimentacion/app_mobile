@@ -12,4 +12,7 @@ interface AuthRepository {
     suspend fun signOut()
     suspend fun resetPassword(token: String, newPassword: String): Result<Unit>
     suspend fun requestPasswordRecovery(email: String): Result<Unit>
+
+    /** Fails with `EmailVerificationFailure`. Never reads or changes the session. */
+    suspend fun verifyEmail(token: String): Result<Unit>
 }

@@ -85,6 +85,44 @@ if (apiUrl.isBlank()) {
     if (producesArtifact) error(message) else logger.warn("WARNING: $message")
 }
 
+// ---------------------------------------------------------------------------
+// Backoffice web host (Android App Links)
+//
+// The backend emails https://<backoffice host>/verify-email?token=…  The app claims that URL
+// as a verified App Link, so it needs the backoffice host of each environment, which is not
+// derived from the API URL. The value reaches two places that must agree:
+//   - the manifest intent-filter, through the per-flavor `webHost` manifest placeholder;
+//   - common code (the navDeepLink pattern), through BuildKonfig `AlEnv.WEB_HOST`.
+// It must equal the host of the backend's BACKOFFICE_DEEPLINK_BASE for that environment, and
+// that origin must serve /.well-known/assetlinks.json or Android will not verify the link.
+// ---------------------------------------------------------------------------
+
+// Unlike the API URL, both environments carry a committed default: the hosts are not secret
+// (they are in every email) and a fresh clone must build either flavor. `web_host_tst` /
+// `web_host_prod` in local.properties are optional overrides.
+val webHostDefaults = mapOf(
+    "tst" to "inpla-dev.up.railway.app",
+    "prod" to "inpla.up.railway.app",
+)
+
+// Accepts a pasted URL as well as a bare host: scheme, path and case are normalized away.
+fun webHostFor(env: String): String {
+    val host = localProperty("web_host_$env", webHostDefaults.getValue(env))
+        .trim()
+        .lowercase()
+        .removePrefix("https://")
+        .removePrefix("http://")
+        .substringBefore("/")
+    // Only an override can get here (e.g. `web_host_tst=https://`); the defaults are bare hosts.
+    require(host.isNotBlank()) {
+        "'web_host_$env' in local.properties has no host. Use a bare host such as " +
+            "'${webHostDefaults.getValue(env)}', or remove the key to use that default."
+    }
+    return host
+}
+
+val webHost: String = webHostFor(targetEnv)
+
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
@@ -103,6 +141,7 @@ buildkonfig {
     defaultConfigs {
         buildConfigField(FieldSpec.Type.STRING, "APP_ENVIRONMENT", targetEnv)
         buildConfigField(FieldSpec.Type.STRING, "API_URL", apiUrl)
+        buildConfigField(FieldSpec.Type.STRING, "WEB_HOST", webHost)
     }
 }
 
@@ -243,11 +282,14 @@ android {
             versionNameSuffix = "-tst"
             resValue("string", "app_name", "Ing. Alimentación (Test)")
             resValue("string", "deep_link_scheme", "ingenieriaalimentacion")
+            // Literal host in the merged manifest: App Links verification reads it from there.
+            manifestPlaceholders["webHost"] = webHostFor("tst")
         }
         create("prod") {
             dimension = "environment"
             resValue("string", "app_name", "Ingeniería en Alimentación")
             resValue("string", "deep_link_scheme", "ingenieriaalimentacion")
+            manifestPlaceholders["webHost"] = webHostFor("prod")
         }
     }
 

@@ -35,6 +35,25 @@
                     android:scheme="@string/deep_link_scheme"
                     android:host="reset-password" />
             </intent-filter>
+            <!--
+              Android App Link for the email-verification link the backend sends:
+              https://<backoffice host>/verify-email?token=…  The host is the per-flavor
+              `webHost` manifest placeholder (composeApp/build.gradle.kts), substituted at
+              merge time. Verification needs https://<host>/.well-known/assetlinks.json to
+              list this package and the SHA-256 of the certificate that signed the installed
+              build; until it does, the link keeps opening the browser, where the backoffice
+              page verifies instead. Kept in its own filter on purpose: mixing it with the
+              custom-scheme filter above would cross-combine schemes and hosts.
+            -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="${webHost}"
+                    android:path="/verify-email" />
+            </intent-filter>
         </activity>
     </application>
 </manifest>

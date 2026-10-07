@@ -4,6 +4,7 @@ import ar.com.ingenieriaalimentacion.domain.model.auth.Credentials
 import ar.com.ingenieriaalimentacion.domain.model.auth.SessionStatus
 import ar.com.ingenieriaalimentacion.domain.model.auth.UserSession
 import ar.com.ingenieriaalimentacion.domain.repository.AuthRepository
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,4 +39,16 @@ class FakeAuthRepository(
 
     override suspend fun requestPasswordRecovery(email: String): Result<Unit> =
         Result.success(Unit)
+
+    var verifyEmailResult: Result<Unit> = Result.success(Unit)
+
+    /** When set, [verifyEmail] suspends on this gate — lets tests observe the in-flight state. */
+    var verifyEmailGate: CompletableDeferred<Unit>? = null
+    val verifyEmailTokens = mutableListOf<String>()
+
+    override suspend fun verifyEmail(token: String): Result<Unit> {
+        verifyEmailTokens += token
+        verifyEmailGate?.await()
+        return verifyEmailResult
+    }
 }

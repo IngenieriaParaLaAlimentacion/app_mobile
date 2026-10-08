@@ -238,6 +238,14 @@ reads `local.properties` and generates one `internal object AlEnv` into **common
 `data/network/ApiConfig` is the only reader of `AlEnv`, so adding a new environment value means
 editing Gradle plus `ApiConfig` and nothing else. Do not read `AlEnv` directly elsewhere.
 
+`web_host_tst` / `web_host_prod` carry the backoffice **web** host of each environment (bare
+host). Unlike the API URL, both have a default committed in `composeApp/build.gradle.kts`, so
+the `local.properties` keys are optional overrides and a fresh clone builds either flavor. The
+host feeds two places that must agree: the `webHost` manifest placeholder of each flavor (the
+`autoVerify` App Link filter for `https://<host>/verify-email`) and `ApiConfig.WEB_HOST` (the
+`navDeepLink` pattern in `presentation/navigation/DeepLinks.kt`). It must match the host of the
+backend's `BACKOFFICE_DEEPLINK_BASE`, and that origin must serve `/.well-known/assetlinks.json`.
+
 **Android flavors** (`flavorDimensions "environment"`) give `tst` an `applicationIdSuffix = ".tst"`
 and a `-tst` version suffix, so both builds coexist on one device. That suffix is what keeps the
 SQLDelight offline queue and the auth prefs sandboxed per environment — without it, queued writes

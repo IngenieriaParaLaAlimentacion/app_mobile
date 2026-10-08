@@ -3,6 +3,8 @@ package ar.com.ingenieriaalimentacion.data.auth
 import ar.com.ingenieriaalimentacion.data.device.DeviceIdProvider
 import ar.com.ingenieriaalimentacion.domain.model.auth.AuthError
 import ar.com.ingenieriaalimentacion.domain.model.auth.Credentials
+import ar.com.ingenieriaalimentacion.domain.model.auth.EmailVerificationError
+import ar.com.ingenieriaalimentacion.domain.model.auth.EmailVerificationFailure
 import ar.com.ingenieriaalimentacion.domain.model.auth.SessionSource
 import ar.com.ingenieriaalimentacion.domain.model.auth.SessionStatus
 import ar.com.ingenieriaalimentacion.domain.model.auth.UserSession
@@ -74,6 +76,22 @@ class AuthRepositoryImpl(
     }.recoverCatching { throwable ->
         throw AuthFailure(mapRequestRecoveryError(throwable), throwable)
     }
+
+    // Deliberately does not read or change the session: verification is independent of login.
+    override suspend fun verifyEmail(token: String): Result<Unit> =
+        when (val outcome = api.verifyEmail(token)) {
+            VerifyEmailOutcome.Verified -> Result.success(Unit)
+            VerifyEmailOutcome.TokenUsed -> verificationFailure(EmailVerificationError.TokenUsed)
+            VerifyEmailOutcome.TokenExpired -> verificationFailure(EmailVerificationError.TokenExpired)
+            VerifyEmailOutcome.InvalidToken -> verificationFailure(EmailVerificationError.InvalidToken)
+            is VerifyEmailOutcome.Retryable ->
+                verificationFailure(EmailVerificationError.Network, outcome.cause)
+        }
+
+    private fun verificationFailure(
+        error: EmailVerificationError,
+        cause: Throwable? = null,
+    ): Result<Unit> = Result.failure(EmailVerificationFailure(error, cause))
 
     private fun clearBearerCache() {
         httpClient.authProviders

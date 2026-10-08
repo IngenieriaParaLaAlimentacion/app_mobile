@@ -5,6 +5,7 @@ import ar.com.ingenieriaalimentacion.presentation.feature.establishment.select_e
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.forgot_password.ForgotPasswordViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.login.LoginViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.reset_password.ResetPasswordViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.auth.verify_email.VerifyEmailViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.get_started.GetStartedViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.home.HomeViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.measurement.create_measurement.MeasurementViewModel
@@ -65,6 +66,9 @@ val viewModelsModule = module {
     }
     viewModel { (route: Route.ResetPassword) ->
         ResetPasswordViewModel(route = route, resetPassword = get())
+    }
+    viewModel { (route: Route.VerifyEmail) ->
+        VerifyEmailViewModel(route = route, verifyEmail = get())
     }
     viewModel { (route: Route.EditProfile) ->
         EditProfileViewModel(route = route, updateMyProfile = get())

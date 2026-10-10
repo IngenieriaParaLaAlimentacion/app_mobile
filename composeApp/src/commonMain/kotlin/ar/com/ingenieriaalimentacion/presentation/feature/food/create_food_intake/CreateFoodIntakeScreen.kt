@@ -38,6 +38,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.A
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.food.Food
 import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_intake.components.FoodLineRow
+import ar.com.ingenieriaalimentacion.presentation.feature.food.components.IntakeProvenanceFields
 import com.komoui.components.Spinner
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -173,6 +174,16 @@ private fun CreateFoodIntakeForm(
                     visualTransformation = DateVisualTransformation(),
                 )
 
+                IntakeProvenanceFields(
+                    origin = state.originType,
+                    isRecurring = state.isRecurring,
+                    originError = state.originError,
+                    recurrenceError = state.recurrenceError,
+                    enabled = enabled,
+                    onOriginSelected = { onAction(CreateFoodIntakeAction.OriginSelected(it)) },
+                    onRecurrenceSelected = { onAction(CreateFoodIntakeAction.RecurrenceSelected(it)) },
+                )
+
                 Column(
                     modifier = Modifier.padding(top = AlTheme.spacing.sm, bottom = AlTheme.spacing.sm),
                     verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.md),
@@ -227,7 +238,7 @@ private fun CreateFoodIntakeForm(
                         singleLine = false,
                         scrollState = scrollState,
                         isImeVisible = isImeVisible,
-                        placeholder = "Agregá información adicional",
+                        placeholder = "Nombre del donante o descripción",
                     )
                     Text(
                         text = state.commentsCount,

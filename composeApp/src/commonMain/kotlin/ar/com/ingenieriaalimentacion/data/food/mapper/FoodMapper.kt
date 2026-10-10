@@ -40,6 +40,8 @@ internal fun NewFoodIntake.toRequest(occurredAtIso: String): FoodIntakeRequest =
     establishmentId = establishmentId,
     occurredAt = occurredAtIso,
     comments = comments?.takeIf { it.isNotBlank() },
+    originType = originType.wireValue,
+    isRecurring = isRecurring,
     items = items.map { FoodLineRequest(foodId = it.foodId, quantity = it.quantity) },
 )
 

@@ -34,6 +34,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRo
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovement
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementDirection
+import ar.com.ingenieriaalimentacion.domain.model.food.contributionLabel
 import ar.com.ingenieriaalimentacion.domain.model.food.movementTitle
 import ar.com.ingenieriaalimentacion.presentation.common.formatMovementTime
 import ar.com.ingenieriaalimentacion.presentation.common.formatQuantityWithUnit
@@ -173,6 +174,16 @@ private fun FoodMovementRow(item: FoodMovement, showDivider: Boolean) {
                     }
                 }
             }
+        }
+        if (item.direction == FoodMovementDirection.Intake) {
+            Text(
+                "Origen del alimento: ${item.originType?.label ?: "Sin datos"} · " +
+                    "Tipo de aporte: ${item.isRecurring.contributionLabel()}",
+                style = AlTheme.typography.caption,
+                color = AlTheme.colors.textMuted,
+                modifier = Modifier.padding(start = detailIndent, end = AlTheme.spacing.md,
+                    top = AlTheme.spacing.xs),
+            )
         }
         // Outside the quantities block on purpose: free-text is not a line, and inside the fill it
         // read as a food with a missing amount.

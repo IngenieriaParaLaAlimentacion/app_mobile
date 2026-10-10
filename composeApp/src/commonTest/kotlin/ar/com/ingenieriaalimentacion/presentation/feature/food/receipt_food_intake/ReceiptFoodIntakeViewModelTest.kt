@@ -1,6 +1,7 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.food.receipt_food_intake
 
 import ar.com.ingenieriaalimentacion.domain.model.food.Food
+import ar.com.ingenieriaalimentacion.domain.model.food.FoodIntakeOrigin
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodUnit
 import ar.com.ingenieriaalimentacion.domain.model.food.NewFoodIntake
 import ar.com.ingenieriaalimentacion.domain.model.food.ReceiptError
@@ -88,6 +89,11 @@ class ReceiptFoodIntakeViewModelTest {
     private fun ReceiptFoodIntakeViewModel.pick() =
         onAction(ReceiptFoodIntakeAction.PhotoPicked(Result.success(photo)))
 
+    private fun selectChoices(vm: ReceiptFoodIntakeViewModel, recurring: Boolean = false) {
+        vm.onAction(ReceiptFoodIntakeAction.OriginSelected(FoodIntakeOrigin.Foundation))
+        vm.onAction(ReceiptFoodIntakeAction.RecurrenceSelected(recurring))
+    }
+
     private fun matchedLine() = ReceiptLine("Arroz", "f1", null, null, "500", "g", true)
 
     @Test fun safePrefillStillRequiresExplicitReview() = runTest(dispatcher) {
@@ -103,13 +109,35 @@ class ReceiptFoodIntakeViewModelTest {
         f.vm.onAction(ReceiptFoodIntakeAction.Submit)
         assertTrue(f.repo.confirms.isEmpty())
         f.vm.onAction(ReceiptFoodIntakeAction.LineConfirmed(line.id))
+        selectChoices(f.vm, recurring = true)
         f.vm.onAction(ReceiptFoodIntakeAction.Submit)
         advanceUntilIdle()
         assertEquals(1, f.repo.confirms.size)
         assertSame(f.repo.proposals.single(), f.repo.confirms.single().third)
         assertEquals("image/webp", f.repo.confirms.single().third.contentType)
         assertEquals("recibo.webp", f.repo.confirms.single().third.fileName)
+        assertEquals(FoodIntakeOrigin.Foundation, f.repo.confirms.single().first.originType)
+        assertEquals(true, f.repo.confirms.single().first.isRecurring)
         assertEquals(ReceiptFoodIntakeDestination.Saved, f.vm.state.value.destination)
+    }
+
+    @Test fun reviewRequiresExplicitOriginAndRecurrence() = runTest(dispatcher) {
+        val f = fixture()
+        f.repo.proposal = Result.success(ReceiptProposal("e1", listOf(matchedLine()), null))
+        advanceUntilIdle(); f.vm.pick(); f.vm.onAction(ReceiptFoodIntakeAction.Analyze); advanceUntilIdle()
+        assertNull(f.vm.state.value.originType)
+        assertNull(f.vm.state.value.isRecurring)
+        f.vm.onAction(ReceiptFoodIntakeAction.LineConfirmed(f.vm.state.value.lines.single().id))
+        f.vm.onAction(ReceiptFoodIntakeAction.Submit)
+        assertTrue(f.repo.confirms.isEmpty())
+        assertEquals("Seleccioná el origen del alimento.", f.vm.state.value.originError)
+        assertEquals("Seleccioná el tipo de aporte.", f.vm.state.value.recurrenceError)
+        f.vm.onAction(ReceiptFoodIntakeAction.OriginSelected(FoodIntakeOrigin.Foundation))
+        assertNull(f.vm.state.value.originError)
+        f.vm.onAction(ReceiptFoodIntakeAction.RecurrenceSelected(false))
+        assertNull(f.vm.state.value.recurrenceError)
+        f.vm.onAction(ReceiptFoodIntakeAction.Submit); advanceUntilIdle()
+        assertEquals(false, f.repo.confirms.single().first.isRecurring)
     }
 
     @Test fun uncertainFailureFreezesRequestAndPhotoAcrossRetry() = runTest(dispatcher) {
@@ -119,13 +147,20 @@ class ReceiptFoodIntakeViewModelTest {
         advanceUntilIdle(); f.vm.pick(); f.vm.onAction(ReceiptFoodIntakeAction.Analyze); advanceUntilIdle()
         val id = f.vm.state.value.lines.single().id
         f.vm.onAction(ReceiptFoodIntakeAction.LineConfirmed(id))
+        selectChoices(f.vm)
         f.vm.onAction(ReceiptFoodIntakeAction.Submit); advanceUntilIdle()
         f.vm.onAction(ReceiptFoodIntakeAction.QuantityChanged(id, "9"))
+        f.vm.onAction(ReceiptFoodIntakeAction.OriginSelected(FoodIntakeOrigin.Church))
+        f.vm.onAction(ReceiptFoodIntakeAction.RecurrenceSelected(true))
         assertEquals("0.5", f.vm.state.value.lines.single().quantity.value)
+        assertEquals(FoodIntakeOrigin.Foundation, f.vm.state.value.originType)
+        assertEquals(false, f.vm.state.value.isRecurring)
         f.repo.confirmation = Result.success(Unit)
         f.vm.onAction(ReceiptFoodIntakeAction.RetrySubmit); advanceUntilIdle()
         assertEquals(2, f.repo.confirms.size)
         assertEquals(f.repo.confirms[0].first, f.repo.confirms[1].first)
+        assertEquals(FoodIntakeOrigin.Foundation, f.repo.confirms[1].first.originType)
+        assertEquals(false, f.repo.confirms[1].first.isRecurring)
         assertSame(f.repo.proposals.single(), f.repo.confirms[0].third)
         assertSame(f.repo.confirms[0].third, f.repo.confirms[1].third)
         assertEquals(1, f.ids.count)
@@ -135,14 +170,18 @@ class ReceiptFoodIntakeViewModelTest {
         val f = fixture()
         advanceUntilIdle(); f.vm.pick(); f.vm.onAction(ReceiptFoodIntakeAction.Analyze); advanceUntilIdle()
         assertEquals(ReceiptSource.ManualFallback, f.vm.state.value.source)
+        assertNull(f.vm.state.value.originType)
+        assertNull(f.vm.state.value.isRecurring)
         f.vm.onAction(ReceiptFoodIntakeAction.AddLine)
         val id = f.vm.state.value.lines.single().id
         assertNull(f.vm.state.value.lines.single().description)
         f.vm.onAction(ReceiptFoodIntakeAction.FoodPicked(id, food)); advanceUntilIdle()
         f.vm.onAction(ReceiptFoodIntakeAction.QuantityChanged(id, "2"))
         f.vm.onAction(ReceiptFoodIntakeAction.LineConfirmed(id))
+        selectChoices(f.vm)
         f.vm.onAction(ReceiptFoodIntakeAction.Submit); advanceUntilIdle()
         assertEquals(ReceiptSource.ManualFallback, f.repo.confirms.single().second)
+        assertEquals(false, f.repo.confirms.single().first.isRecurring)
         assertSame(photo, f.repo.confirms.single().third)
     }
 
@@ -200,11 +239,14 @@ class ReceiptFoodIntakeViewModelTest {
         advanceUntilIdle(); f.vm.pick(); f.vm.onAction(ReceiptFoodIntakeAction.Analyze); advanceUntilIdle()
         val id = f.vm.state.value.lines.single().id
         f.vm.onAction(ReceiptFoodIntakeAction.LineConfirmed(id))
+        selectChoices(f.vm)
         f.vm.onAction(ReceiptFoodIntakeAction.Submit); advanceUntilIdle()
         assertTrue(f.vm.state.value.submissionLocked)
         f.vm.onAction(ReceiptFoodIntakeAction.ReviseAfterFailure)
         assertFalse(f.vm.state.value.submissionLocked)
         assertEquals("id-2", f.vm.state.value.intakeId)
+        assertEquals(FoodIntakeOrigin.Foundation, f.vm.state.value.originType)
+        assertEquals(false, f.vm.state.value.isRecurring)
     }
 
     @Test fun offlineSubmitDoesNotSend() = runTest(dispatcher) {

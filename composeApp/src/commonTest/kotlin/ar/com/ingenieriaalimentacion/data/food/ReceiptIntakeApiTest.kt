@@ -30,6 +30,7 @@ import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
@@ -39,7 +40,7 @@ class ReceiptIntakeApiTest {
     private val photo = ReceiptPhoto(byteArrayOf(0xff.toByte(), 0xd8.toByte(), 0xff.toByte(), 1, 2),
         "image/jpeg", "recibo.jpg")
     private val request = FoodIntakeRequest("intake-1", "e1", "2026-09-06T12:00:00Z", null,
-        "photo", listOf(FoodLineRequest("food-1", "1.250")))
+        "photo", "foundation", false, listOf(FoodLineRequest("food-1", "1.250")))
 
     private fun api(handler: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData): ReceiptIntakeApi {
         val client = HttpClient(MockEngine(handler)) {
@@ -72,7 +73,22 @@ class ReceiptIntakeApiTest {
         assertEquals("image/jpeg", firstImage.headers[HttpHeaders.ContentType])
         val data = (captures[1][0] as PartData.FormItem).value
         assertTrue(data.contains("\"source\":\"photo\""))
+        assertTrue(data.contains("\"origin_type\":\"foundation\""))
+        assertTrue(data.contains("\"is_recurring\":false"))
         assertTrue(data.contains("\"quantity\":1.250"))
+    }
+
+    @Test fun manualFallbackIncludesProvenanceAndTrueRecurrence() = runTest {
+        var data: String? = null
+        val api = api { req ->
+            data = ((req.body as MultiPartFormDataContent).parts[0] as PartData.FormItem).value
+            respond("{}", HttpStatusCode.Created, jsonHeaders())
+        }
+        api.confirm(request.copy(source = "manual", isRecurring = true), photo)
+        val body = requireNotNull(data)
+        assertFalse(body.contains("\"source\":\"photo\""))
+        assertTrue(body.contains("\"origin_type\":\"foundation\""))
+        assertTrue(body.contains("\"is_recurring\":true"))
     }
 
     @Test fun acceptsIdempotentReplay() = runTest {

@@ -2,6 +2,7 @@ package ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_inta
 
 import ar.com.ingenieriaalimentacion.core.validation.TextFieldState
 import ar.com.ingenieriaalimentacion.domain.model.food.Food
+import ar.com.ingenieriaalimentacion.domain.model.food.FoodIntakeOrigin
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 
 /** Longest `comments` the backend accepts. */
@@ -56,6 +57,10 @@ data class CreateFoodIntakeState(
     /** Raw `DDMMYYYY` digit buffer behind `DateVisualTransformation`, pre-filled with today. */
     val receivedAt: TextFieldState = TextFieldState(),
     val comments: TextFieldState = TextFieldState(),
+    val originType: FoodIntakeOrigin? = null,
+    val isRecurring: Boolean? = null,
+    val originError: String? = null,
+    val recurrenceError: String? = null,
     val lines: List<FoodIntakeLine> = emptyList(),
     val search: FoodSearchState = FoodSearchState(),
     val isOnline: Boolean = true,

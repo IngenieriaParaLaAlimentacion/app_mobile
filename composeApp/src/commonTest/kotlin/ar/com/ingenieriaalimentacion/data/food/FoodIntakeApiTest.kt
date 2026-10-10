@@ -2,6 +2,10 @@ package ar.com.ingenieriaalimentacion.data.food
 
 import ar.com.ingenieriaalimentacion.data.food.dto.FoodIntakeRequest
 import ar.com.ingenieriaalimentacion.data.food.dto.FoodLineRequest
+import ar.com.ingenieriaalimentacion.data.food.mapper.toRequest
+import ar.com.ingenieriaalimentacion.domain.model.food.FoodIntakeOrigin
+import ar.com.ingenieriaalimentacion.domain.model.food.NewFoodIntake
+import ar.com.ingenieriaalimentacion.domain.model.food.NewFoodIntakeLine
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -33,6 +37,8 @@ class FoodIntakeApiTest {
         establishmentId = "22222222-2222-4222-8222-222222222222",
         occurredAt = "2026-09-06T12:00:00Z",
         comments = "Donación",
+        originType = "foundation",
+        isRecurring = false,
         items = listOf(FoodLineRequest(foodId = "food-1", quantity = "12.5")),
     )
 
@@ -51,6 +57,19 @@ class FoodIntakeApiTest {
     private fun jsonHeaders() = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
 
     private fun problemHeaders() = headersOf(HttpHeaders.ContentType, "application/problem+json")
+
+    @Test
+    fun `shared command mapper carries typed origin and false recurrence`() {
+        val command = NewFoodIntake(
+            id = "intake-1", establishmentId = "e1", receivedAtEpochMillis = 0L,
+            comments = null, originType = FoodIntakeOrigin.SocialOrganization,
+            isRecurring = false, items = listOf(NewFoodIntakeLine("f1", "1")),
+        )
+        val body = command.toRequest("2026-09-06T12:00:00Z")
+        assertEquals("social_organization", body.originType)
+        assertEquals(false, body.isRecurring)
+        assertEquals("manual", body.source)
+    }
 
     @Test
     fun `201 maps to Created`() = runTest {
@@ -131,6 +150,20 @@ class FoodIntakeApiTest {
         val body = assertNotNull(captured)
         assertTrue(body.contains("\"quantity\":12.5"), "body: $body")
         assertFalse(body.contains("\"quantity\":\"12.5\""), "quantity must not be quoted: $body")
+    }
+
+    @Test
+    fun `request always encodes origin and either recurrence choice`() = runTest {
+        val bodies = mutableListOf<String>()
+        val api = api { req ->
+            bodies += (req.body as io.ktor.http.content.TextContent).text
+            respond(successBody, HttpStatusCode.Created, jsonHeaders())
+        }
+        api.create(request.copy(isRecurring = false))
+        api.create(request.copy(isRecurring = true))
+        assertTrue(bodies.all { it.contains("\"origin_type\":\"foundation\"") })
+        assertTrue(bodies[0].contains("\"is_recurring\":false"))
+        assertTrue(bodies[1].contains("\"is_recurring\":true"))
     }
 
     @Test

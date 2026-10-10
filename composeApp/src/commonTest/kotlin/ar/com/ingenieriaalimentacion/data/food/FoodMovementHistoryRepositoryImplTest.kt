@@ -2,6 +2,7 @@ package ar.com.ingenieriaalimentacion.data.food
 
 import ar.com.ingenieriaalimentacion.data.activity.local.ActivityItemType
 import ar.com.ingenieriaalimentacion.data.activity.local.CachedActivityRow
+import ar.com.ingenieriaalimentacion.domain.model.food.FoodIntakeOrigin
 import ar.com.ingenieriaalimentacion.fake.FakeActivityLocalStore
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -59,6 +60,7 @@ class FoodMovementHistoryRepositoryImplTest {
           "$direction": {
             "id": "$id",
             "establishment": { "id": "e1", "name": "Comedor" },
+            ${if (direction == "food_intake") "\"origin_type\": \"foundation\", \"is_recurring\": false," else ""}
             "items": [ { "food": { "id": "f1", "name": "Arroz" }, "unit": "kilogramos", "quantity": 1 } ]
           }
         }
@@ -184,6 +186,18 @@ class FoodMovementHistoryRepositoryImplTest {
 
         assertEquals(emptyList(), result.items)
         assertEquals(false, result.hasMore)
+    }
+
+    @Test
+    fun `cached intake provenance survives round trip while outflow remains empty`() = runTest {
+        repository(page(1, 1, intake1, outflow1)).getPage(1, 20).getOrThrow()
+        val cached = repository(null).observeLocalMerged().first()
+        val intake = cached.single { it.id == "i1" }
+        val outflow = cached.single { it.id == "o1" }
+        assertEquals(FoodIntakeOrigin.Foundation, intake.originType)
+        assertEquals(false, intake.isRecurring)
+        assertEquals(null, outflow.originType)
+        assertEquals(null, outflow.isRecurring)
     }
 
     @Test

@@ -13,6 +13,8 @@ data class NewFoodIntake(
     val establishmentId: String,
     val receivedAtEpochMillis: Long,
     val comments: String?,
+    val originType: FoodIntakeOrigin,
+    val isRecurring: Boolean,
     val items: List<NewFoodIntakeLine>,
 )
 

@@ -2,6 +2,7 @@ package ar.com.ingenieriaalimentacion.data.food.mapper
 
 import ar.com.ingenieriaalimentacion.data.food.dto.FoodMovementActivityItemResponse
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementDirection
+import ar.com.ingenieriaalimentacion.domain.model.food.FoodIntakeOrigin
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodUnit
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
@@ -99,6 +100,22 @@ class FoodMovementMapperTest {
         )
 
         assertNull(movement.comments)
+    }
+
+    @Test
+    fun `intake provenance maps both recurrence values and outflow ignores it`() {
+        val enriched = payload(rice).replace(
+            "\"comments\": \"Donación\",",
+            "\"comments\": \"Donación\", \"origin_type\": \"foundation\", \"is_recurring\": false,",
+        )
+        val intake = assertNotNull(item("""{ "type": "food_intake", "occurred_at": "2026-04-01T00:00:00Z", "food_intake": $enriched }""").toDomain())
+        assertEquals(FoodIntakeOrigin.Foundation, intake.originType)
+        assertEquals(false, intake.isRecurring)
+        val recurring = enriched.replace("\"is_recurring\": false", "\"is_recurring\": true")
+        assertEquals(true, assertNotNull(item("""{ "type": "food_intake", "occurred_at": "2026-04-01T00:00:00Z", "food_intake": $recurring }""").toDomain()).isRecurring)
+        val outflow = assertNotNull(item("""{ "type": "food_outflow", "occurred_at": "2026-04-01T00:00:00Z", "food_outflow": $enriched }""").toDomain())
+        assertNull(outflow.originType)
+        assertNull(outflow.isRecurring)
     }
 
     @Test

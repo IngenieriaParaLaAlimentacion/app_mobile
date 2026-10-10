@@ -3,6 +3,7 @@ package ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_inta
 import ar.com.ingenieriaalimentacion.domain.model.food.Food
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodIntakeError
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodIntakeFailure
+import ar.com.ingenieriaalimentacion.domain.model.food.FoodIntakeOrigin
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodSearchResult
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodUnit
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
@@ -97,6 +98,11 @@ class CreateFoodIntakeViewModelTest {
                 idGenerator = ids,
             ),
         )
+    }
+
+    private fun selectChoices(vm: CreateFoodIntakeViewModel, recurring: Boolean = false) {
+        vm.onAction(CreateFoodIntakeAction.OriginSelected(FoodIntakeOrigin.Foundation))
+        vm.onAction(CreateFoodIntakeAction.RecurrenceSelected(recurring))
     }
 
     /** A `DDMMYYYY` buffer for a date [daysFromToday] away from today. */
@@ -206,6 +212,7 @@ class CreateFoodIntakeViewModelTest {
         advanceUntilIdle()
         f.viewModel.onAction(CreateFoodIntakeAction.FoodPicked(pollo))
         f.viewModel.onAction(CreateFoodIntakeAction.LineQuantityChanged(pollo.id, "12,5"))
+        selectChoices(f.viewModel, recurring = true)
 
         assertEquals("12.5", f.viewModel.state.value.lines.single().quantity.value)
 
@@ -213,7 +220,30 @@ class CreateFoodIntakeViewModelTest {
         advanceUntilIdle()
 
         assertEquals("12.5", f.intakes.created.single().items.single().quantity)
+        assertEquals(FoodIntakeOrigin.Foundation, f.intakes.created.single().originType)
+        assertEquals(true, f.intakes.created.single().isRecurring)
         assertEquals(establishment.id, f.intakes.created.single().establishmentId)
+    }
+
+    @Test
+    fun `missing choices block submit and selecting each clears its field error`() = runTest(dispatcher) {
+        val f = fixture()
+        advanceUntilIdle()
+        f.viewModel.onAction(CreateFoodIntakeAction.FoodPicked(pollo))
+        f.viewModel.onAction(CreateFoodIntakeAction.LineQuantityChanged(pollo.id, "10"))
+        f.viewModel.onAction(CreateFoodIntakeAction.Submit)
+        assertTrue(f.intakes.created.isEmpty())
+        assertEquals("Seleccioná el origen del alimento.", f.viewModel.state.value.originError)
+        assertEquals("Seleccioná el tipo de aporte.", f.viewModel.state.value.recurrenceError)
+        f.viewModel.onAction(CreateFoodIntakeAction.OriginSelected(FoodIntakeOrigin.Foundation))
+        assertNull(f.viewModel.state.value.originError)
+        assertEquals("Seleccioná el tipo de aporte.", f.viewModel.state.value.recurrenceError)
+        f.viewModel.onAction(CreateFoodIntakeAction.RecurrenceSelected(false))
+        assertNull(f.viewModel.state.value.recurrenceError)
+        f.viewModel.onAction(CreateFoodIntakeAction.Submit)
+        advanceUntilIdle()
+        assertEquals(FoodIntakeOrigin.Foundation, f.intakes.created.single().originType)
+        assertEquals(false, f.intakes.created.single().isRecurring)
     }
 
     @Test
@@ -234,6 +264,7 @@ class CreateFoodIntakeViewModelTest {
         advanceUntilIdle()
         f.viewModel.onAction(CreateFoodIntakeAction.FoodPicked(pollo))
         f.viewModel.onAction(CreateFoodIntakeAction.LineQuantityChanged(pollo.id, "10"))
+        selectChoices(f.viewModel)
 
         f.viewModel.onAction(CreateFoodIntakeAction.Submit)
         advanceUntilIdle()
@@ -244,6 +275,8 @@ class CreateFoodIntakeViewModelTest {
 
         assertEquals(2, f.intakes.created.size)
         assertEquals(f.intakes.created[0].id, f.intakes.created[1].id)
+        assertEquals(FoodIntakeOrigin.Foundation, f.intakes.created[1].originType)
+        assertEquals(false, f.intakes.created[1].isRecurring)
         assertEquals(1, f.viewModel.state.value.lines.size)
         assertNull(f.viewModel.state.value.destination)
     }
@@ -255,6 +288,7 @@ class CreateFoodIntakeViewModelTest {
         val firstId = f.viewModel.state.value.intakeId
         f.viewModel.onAction(CreateFoodIntakeAction.FoodPicked(pollo))
         f.viewModel.onAction(CreateFoodIntakeAction.LineQuantityChanged(pollo.id, "10"))
+        selectChoices(f.viewModel)
         f.viewModel.onAction(CreateFoodIntakeAction.CommentsChanged("Donación"))
 
         f.viewModel.onAction(CreateFoodIntakeAction.Submit)
@@ -275,6 +309,7 @@ class CreateFoodIntakeViewModelTest {
         advanceUntilIdle()
         f.viewModel.onAction(CreateFoodIntakeAction.FoodPicked(pollo))
         f.viewModel.onAction(CreateFoodIntakeAction.LineQuantityChanged(pollo.id, "10"))
+        selectChoices(f.viewModel)
 
         assertFalse(f.viewModel.state.value.isOnline)
         assertFalse(f.viewModel.state.value.canSubmit)
@@ -290,6 +325,7 @@ class CreateFoodIntakeViewModelTest {
         advanceUntilIdle()
         f.viewModel.onAction(CreateFoodIntakeAction.FoodPicked(pollo))
         f.viewModel.onAction(CreateFoodIntakeAction.LineQuantityChanged(pollo.id, "10"))
+        selectChoices(f.viewModel)
         f.viewModel.onAction(CreateFoodIntakeAction.ReceivedAtChanged(dateDigits(daysFromToday = 1)))
 
         f.viewModel.onAction(CreateFoodIntakeAction.Submit)
@@ -305,6 +341,7 @@ class CreateFoodIntakeViewModelTest {
         advanceUntilIdle()
         f.viewModel.onAction(CreateFoodIntakeAction.FoodPicked(pollo))
         f.viewModel.onAction(CreateFoodIntakeAction.LineQuantityChanged(pollo.id, "10"))
+        selectChoices(f.viewModel)
         f.viewModel.onAction(CreateFoodIntakeAction.ReceivedAtChanged(dateDigits(daysFromToday = -7)))
 
         f.viewModel.onAction(CreateFoodIntakeAction.Submit)
@@ -351,6 +388,7 @@ class CreateFoodIntakeViewModelTest {
         advanceUntilIdle()
         f.viewModel.onAction(CreateFoodIntakeAction.FoodPicked(pollo))
         f.viewModel.onAction(CreateFoodIntakeAction.LineQuantityChanged(pollo.id, "10"))
+        selectChoices(f.viewModel)
         f.viewModel.onAction(CreateFoodIntakeAction.CommentsChanged("x".repeat(MAX_COMMENTS + 1)))
 
         f.viewModel.onAction(CreateFoodIntakeAction.Submit)

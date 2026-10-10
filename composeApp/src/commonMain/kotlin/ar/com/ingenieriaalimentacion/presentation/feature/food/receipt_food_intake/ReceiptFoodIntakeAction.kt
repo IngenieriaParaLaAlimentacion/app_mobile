@@ -1,6 +1,7 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.food.receipt_food_intake
 
 import ar.com.ingenieriaalimentacion.domain.model.food.Food
+import ar.com.ingenieriaalimentacion.domain.model.food.FoodIntakeOrigin
 import ar.com.ingenieriaalimentacion.domain.model.food.ReceiptPhoto
 
 sealed interface ReceiptFoodIntakeAction {
@@ -24,6 +25,8 @@ sealed interface ReceiptFoodIntakeAction {
     data class DateFocusChanged(val focused: Boolean) : ReceiptFoodIntakeAction
     data class CommentsChanged(val value: String) : ReceiptFoodIntakeAction
     data class CommentsFocusChanged(val focused: Boolean) : ReceiptFoodIntakeAction
+    data class OriginSelected(val origin: FoodIntakeOrigin) : ReceiptFoodIntakeAction
+    data class RecurrenceSelected(val isRecurring: Boolean) : ReceiptFoodIntakeAction
     data object Submit : ReceiptFoodIntakeAction
     data object RetrySubmit : ReceiptFoodIntakeAction
     data object ReviseAfterFailure : ReceiptFoodIntakeAction

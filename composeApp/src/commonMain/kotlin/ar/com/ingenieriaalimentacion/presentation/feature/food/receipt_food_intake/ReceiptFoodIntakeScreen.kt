@@ -40,6 +40,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.input.DateVis
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
+import ar.com.ingenieriaalimentacion.presentation.feature.food.components.IntakeProvenanceFields
 import ar.com.ingenieriaalimentacion.domain.model.food.ReceiptError
 import ar.com.ingenieriaalimentacion.domain.model.food.ReceiptPhoto
 import com.komoui.components.Spinner
@@ -213,6 +214,13 @@ private fun ReviewForm(state: ReceiptFoodIntakeState, photo: ReceiptPhoto?,
         visualTransformation = DateVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         placeholder = "DD/MM/AAAA", error = state.date.displayError, enabled = editable)
+    IntakeProvenanceFields(
+        origin = state.originType, isRecurring = state.isRecurring,
+        originError = state.originError, recurrenceError = state.recurrenceError,
+        enabled = editable,
+        onOriginSelected = { onAction(ReceiptFoodIntakeAction.OriginSelected(it)) },
+        onRecurrenceSelected = { onAction(ReceiptFoodIntakeAction.RecurrenceSelected(it)) },
+    )
     state.lines.forEach { line ->
         AlCard(Modifier.fillMaxWidth()) {
             val isSearching = state.searchLineId == line.id
@@ -267,6 +275,7 @@ private fun ReviewForm(state: ReceiptFoodIntakeState, photo: ReceiptPhoto?,
     AlInput(label = "Comentarios (opcional)", value = state.comments.value,
         onValueChange = { onAction(ReceiptFoodIntakeAction.CommentsChanged(it)) },
         onFocusChange = { onAction(ReceiptFoodIntakeAction.CommentsFocusChanged(it)) },
+        placeholder = "Nombre del donante o descripción",
         error = state.comments.displayError, enabled = editable, singleLine = false)
     Text("${state.comments.value.length}/500", color = AlTheme.colors.textMuted)
     if (state.submissionLocked) {

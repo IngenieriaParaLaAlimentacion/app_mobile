@@ -43,8 +43,8 @@ data class FoodActivityLineResponse(
 )
 
 /**
- * `source` (`manual`/`photo`) is intentionally **not parsed**: the app renders no "origen de la
- * carga" affordance, so decoding it would create a client-side concept with no consumer.
+ * `source` (`manual`/`photo`) is intentionally **not parsed**: the personal activity view
+ * displays supplier origin and recurrence, not the capture method.
  * `responsible` is likewise absent from the payload — `/me/activity` is already caller-scoped.
  */
 @Serializable
@@ -52,6 +52,8 @@ data class FoodMovementActivityPayloadResponse(
     val id: String,
     val establishment: FoodActivityEstablishmentResponse,
     val comments: String? = null,
+    @SerialName("origin_type") val originType: String? = null,
+    @SerialName("is_recurring") val isRecurring: Boolean? = null,
     val items: List<FoodActivityLineResponse> = emptyList(),
 )
 

@@ -47,6 +47,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlSc
 import ar.com.ingenieriaalimentacion.core.design_system.components.sheet.AlBottomSheet
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
+import ar.com.ingenieriaalimentacion.domain.model.food.FoodOutflowCategory
 import ar.com.ingenieriaalimentacion.presentation.common.formatQuantityWithUnit
 import ar.com.ingenieriaalimentacion.presentation.feature.food.components.FoodSelectionOption
 import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_outflow.components.FoodOutflowLineRow
@@ -102,6 +103,7 @@ fun CreateFoodOutflowScreen(
         }
         if (state.stock.showPicker) StockSheet(state, onAction)
         if (state.stock.showCategoryPicker) CategorySheet(state, onAction)
+        if (state.showOutflowCategoryPicker) OutflowCategorySheet(state, onAction)
     }
 }
 
@@ -156,6 +158,22 @@ private fun OutflowForm(
                     scrollState = scrollState,
                     isImeVisible = isImeVisible,
                 )
+                Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
+                    AlSelectField(
+                        label = "Destino del egreso",
+                        value = state.outflowCategory?.label.orEmpty(),
+                        placeholder = "Elegí una opción",
+                        enabled = enabled,
+                        onClick = { onAction(CreateFoodOutflowAction.OutflowCategoryPickerOpen) },
+                    )
+                    state.outflowCategoryError?.let { error ->
+                        Text(
+                            error,
+                            style = AlTheme.typography.caption,
+                            color = AlTheme.colors.danger,
+                        )
+                    }
+                }
                 Column(
                     modifier = Modifier.padding(top = AlTheme.spacing.sm, bottom = AlTheme.spacing.sm),
                     verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.md),
@@ -185,26 +203,28 @@ private fun OutflowForm(
                         )
                     }
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
-                    AlInput(
-                        label = "Comentarios (opcional)",
-                        value = state.comments.value,
-                        onValueChange = { onAction(CreateFoodOutflowAction.CommentsChanged(it)) },
-                        onFocusChange = { onAction(CreateFoodOutflowAction.CommentsFocusChanged(it)) },
-                        error = state.comments.displayError,
-                        enabled = enabled,
-                        singleLine = false,
-                        placeholder = "Agregá información adicional",
-                        scrollState = scrollState,
-                        isImeVisible = isImeVisible,
-                    )
-                    Text(
-                        text = state.commentsCount,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.End,
-                        style = AlTheme.typography.caption,
-                        color = AlTheme.colors.textMuted,
-                    )
+                if (state.outflowCategory == FoodOutflowCategory.Other) {
+                    Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
+                        AlInput(
+                            label = "Especificá otro destino (opcional)",
+                            value = state.comments.value,
+                            onValueChange = { onAction(CreateFoodOutflowAction.CommentsChanged(it)) },
+                            onFocusChange = { onAction(CreateFoodOutflowAction.CommentsFocusChanged(it)) },
+                            error = state.comments.displayError,
+                            enabled = enabled,
+                            singleLine = false,
+                            placeholder = "Agregá información adicional",
+                            scrollState = scrollState,
+                            isImeVisible = isImeVisible,
+                        )
+                        Text(
+                            text = state.commentsCount,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.End,
+                            style = AlTheme.typography.caption,
+                            color = AlTheme.colors.textMuted,
+                        )
+                    }
                 }
             }
             HorizontalDivider(color = AlTheme.colors.border)
@@ -358,6 +378,39 @@ private fun CategorySheet(
                     title = category.name,
                     selected = state.stock.selectedCategoryId == category.id,
                     onClick = { onAction(CreateFoodOutflowAction.CategorySelected(category.id)) },
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun OutflowCategorySheet(
+    state: CreateFoodOutflowState,
+    onAction: (CreateFoodOutflowAction) -> Unit,
+) {
+    AlBottomSheet(
+        onDismissRequest = { onAction(CreateFoodOutflowAction.OutflowCategoryPickerDismiss) },
+    ) {
+        Column(
+            modifier = Modifier
+                .navigationBarsPadding()
+                .heightIn(max = 480.dp)
+                .verticalScroll(rememberScrollState())
+                .selectableGroup(),
+        ) {
+            Text(
+                "Destino del egreso",
+                style = AlTheme.typography.subtitle,
+                color = AlTheme.colors.textBase,
+                modifier = Modifier.padding(AlTheme.spacing.md),
+            )
+            FoodOutflowCategory.entries.forEach { category ->
+                FoodSelectionOption(
+                    title = category.label,
+                    selected = state.outflowCategory == category,
+                    onClick = { onAction(CreateFoodOutflowAction.OutflowCategorySelected(category)) },
                 )
             }
         }

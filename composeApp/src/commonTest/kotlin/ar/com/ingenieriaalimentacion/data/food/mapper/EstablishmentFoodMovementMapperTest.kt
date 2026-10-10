@@ -8,6 +8,7 @@ import ar.com.ingenieriaalimentacion.data.food.dto.PaginatedEstablishmentFoodMov
 import ar.com.ingenieriaalimentacion.data.food.dto.ResponsibleRefDto
 import ar.com.ingenieriaalimentacion.domain.model.food.EstablishmentFoodMovementDirection
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementSource
+import ar.com.ingenieriaalimentacion.domain.model.food.FoodOutflowCategory
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodUnit
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -52,14 +53,29 @@ class EstablishmentFoodMovementMapperTest {
                 EstablishmentFoodMovementLineDto(IdentifierRefDto("f1", "Arroz"), "unknown", "2.500"),
                 EstablishmentFoodMovementLineDto(IdentifierRefDto("f1", "Arroz"), "litros", "1.000"),
             ),
+            category = "other",
         )
         val detail = dto.toDomain()
         assertEquals(EstablishmentFoodMovementDirection.Out, detail.direction)
         assertEquals(FoodMovementSource.Manual, detail.source)
         assertNull(detail.comments)
+        assertEquals(FoodOutflowCategory.Other, detail.category)
         assertEquals(listOf("f1", "f1"), detail.items.map { it.foodId })
         assertEquals(listOf("2.500", "1.000"), detail.items.map { it.quantity })
         assertEquals(listOf(FoodUnit.Kilogramos, FoodUnit.Litros), detail.items.map { it.unit })
+    }
+
+    @Test
+    fun `outflow category maps while intake and unknown categories remain unlabeled`() {
+        val out = summary(direction = "out").copy(category = "family_delivery").toDomain()
+        val intake = summary().copy(category = "kitchen").toDomain()
+        val unknown = summary(direction = "out").copy(category = "future").toDomain()
+        val missing = summary(direction = "out").toDomain()
+
+        assertEquals(FoodOutflowCategory.FamilyDelivery, out.category)
+        assertNull(intake.category)
+        assertNull(unknown.category)
+        assertNull(missing.category)
     }
 
     @Test

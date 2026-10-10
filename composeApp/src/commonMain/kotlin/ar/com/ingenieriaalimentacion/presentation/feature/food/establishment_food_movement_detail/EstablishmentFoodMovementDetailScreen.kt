@@ -121,6 +121,9 @@ private fun DetailContent(detail: EstablishmentFoodMovementDetail) {
                         "Origen",
                         if (detail.source == FoodMovementSource.Photo) "Foto" else "Manual",
                     )
+                    if (detail.direction == EstablishmentFoodMovementDirection.Out) {
+                        detail.category?.let { DetailFact("Destino del egreso", it.label) }
+                    }
                     detail.comments?.takeIf { it.isNotBlank() }?.let {
                         DetailFact("Comentarios", it)
                     }

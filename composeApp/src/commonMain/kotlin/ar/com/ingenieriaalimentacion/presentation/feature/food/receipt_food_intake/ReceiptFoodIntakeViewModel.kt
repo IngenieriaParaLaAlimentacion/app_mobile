@@ -165,6 +165,12 @@ class ReceiptFoodIntakeViewModel(
             is ReceiptFoodIntakeAction.CommentsFocusChanged -> if (editable()) _state.update {
                 it.copy(comments = it.comments.onFocus(action.focused, commentsValidator))
             }
+            is ReceiptFoodIntakeAction.OriginSelected -> if (editable()) _state.update {
+                it.copy(originType = action.origin, originError = null)
+            }
+            is ReceiptFoodIntakeAction.RecurrenceSelected -> if (editable()) _state.update {
+                it.copy(isRecurring = action.isRecurring, recurrenceError = null)
+            }
             ReceiptFoodIntakeAction.Submit -> if (editable()) submit()
             ReceiptFoodIntakeAction.RetrySubmit -> pending?.let { if (state.value.isOnline) sendPending(it) }
             ReceiptFoodIntakeAction.ReviseAfterFailure -> if (state.value.submitFailureKind != ReceiptError.Retryable && !state.value.isSubmitting) {
@@ -300,12 +306,15 @@ class ReceiptFoodIntakeViewModel(
         val validated = current.copy(
             date = current.date.showError(dateValidator),
             comments = current.comments.showError(commentsValidator),
+            originError = if (current.originType == null) "Seleccioná el origen del alimento." else null,
+            recurrenceError = if (current.isRecurring == null) "Seleccioná el tipo de aporte." else null,
             lines = current.lines.map { it.copy(quantity = it.quantity.showError(quantityValidator(it.food?.unit))) },
         )
         _state.value = validated
         if (!validated.date.isValid || !validated.comments.isValid ||
+            validated.originType == null || validated.isRecurring == null ||
             validated.lines.any { it.food == null || !it.quantity.isValid || !it.reviewed }) {
-            _state.update { it.copy(error = "Revisá todos los alimentos, sus cantidades y la fecha.") }
+            _state.update { it.copy(error = "Revisá los datos del ingreso y los alimentos.") }
             return
         }
         val captured = photo ?: return
@@ -314,6 +323,8 @@ class ReceiptFoodIntakeViewModel(
             establishmentId = validated.selectedEstablishment!!.id,
             receivedAtEpochMillis = selectedDateMillis(validated.date.value),
             comments = validated.comments.value.trim().ifBlank { null },
+            originType = requireNotNull(validated.originType),
+            isRecurring = requireNotNull(validated.isRecurring),
             items = validated.lines.map { NewFoodIntakeLine(it.food!!.id, it.quantity.value.trimEnd('.')) },
         )
         pending = Pending(intake, validated.source, captured)

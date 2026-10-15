@@ -2,6 +2,7 @@ package ar.com.ingenieriaalimentacion.presentation.feature.food.receipt_food_int
 
 import ar.com.ingenieriaalimentacion.core.validation.TextFieldState
 import ar.com.ingenieriaalimentacion.domain.model.food.Food
+import ar.com.ingenieriaalimentacion.domain.model.food.FoodIntakeOrigin
 import ar.com.ingenieriaalimentacion.domain.model.food.ReceiptError
 import ar.com.ingenieriaalimentacion.domain.model.food.ReceiptSource
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
@@ -37,6 +38,10 @@ data class ReceiptFoodIntakeState(
     val searchLineId: Int? = null,
     val date: TextFieldState = TextFieldState(),
     val comments: TextFieldState = TextFieldState(),
+    val originType: FoodIntakeOrigin? = null,
+    val isRecurring: Boolean? = null,
+    val originError: String? = null,
+    val recurrenceError: String? = null,
     val isOnline: Boolean = true,
     val isSubmitting: Boolean = false,
     val submissionLocked: Boolean = false,

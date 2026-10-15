@@ -17,6 +17,8 @@ data class EstablishmentFoodMovementSummaryDto(
     @SerialName("occurred_at") val occurredAt: String,
     val responsible: ResponsibleRefDto,
     @SerialName("food_count") val foodCount: Int,
+    @SerialName("origin_type") val originType: String? = null,
+    @SerialName("is_recurring") val isRecurring: Boolean? = null,
     val category: String? = null,
 )
 
@@ -42,6 +44,8 @@ data class EstablishmentFoodMovementDetailDto(
     val direction: String,
     @SerialName("occurred_at") val occurredAt: String,
     val source: String,
+    @SerialName("origin_type") val originType: String? = null,
+    @SerialName("is_recurring") val isRecurring: Boolean? = null,
     val comments: String? = null,
     val responsible: ResponsibleRefDto,
     val items: List<EstablishmentFoodMovementLineDto>,

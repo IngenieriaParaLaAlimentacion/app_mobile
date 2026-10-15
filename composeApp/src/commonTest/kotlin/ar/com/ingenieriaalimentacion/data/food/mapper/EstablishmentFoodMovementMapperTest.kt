@@ -8,6 +8,7 @@ import ar.com.ingenieriaalimentacion.data.food.dto.PaginatedEstablishmentFoodMov
 import ar.com.ingenieriaalimentacion.data.food.dto.ResponsibleRefDto
 import ar.com.ingenieriaalimentacion.domain.model.food.EstablishmentFoodMovementDirection
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementSource
+import ar.com.ingenieriaalimentacion.domain.model.food.FoodIntakeOrigin
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodOutflowCategory
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodUnit
 import kotlin.test.Test
@@ -63,6 +64,37 @@ class EstablishmentFoodMovementMapperTest {
         assertEquals(listOf("f1", "f1"), detail.items.map { it.foodId })
         assertEquals(listOf("2.500", "1.000"), detail.items.map { it.quantity })
         assertEquals(listOf(FoodUnit.Kilogramos, FoodUnit.Litros), detail.items.map { it.unit })
+    }
+
+    @Test
+    fun `intake provenance maps true false and missing legacy values`() {
+        val intake = summary().copy(originType = "foundation", isRecurring = true).toDomain()
+        assertEquals(FoodIntakeOrigin.Foundation, intake.originType)
+        assertEquals(true, intake.isRecurring)
+        assertEquals(false, summary().copy(isRecurring = false).toDomain().isRecurring)
+        assertNull(summary().toDomain().originType)
+        assertNull(summary().toDomain().isRecurring)
+        val detail = EstablishmentFoodMovementDetailDto(
+            id = "m1", direction = "in", occurredAt = "2026-09-19T12:00:00Z",
+            source = "photo", comments = null, responsible = responsible, items = emptyList(),
+            originType = "church", isRecurring = false,
+        ).toDomain()
+        assertEquals(FoodIntakeOrigin.Church, detail.originType)
+        assertEquals(false, detail.isRecurring)
+    }
+
+    @Test
+    fun `outflow ignores malformed intake metadata`() {
+        val summary = summary(direction = "out").copy(originType = "church", isRecurring = true).toDomain()
+        assertNull(summary.originType)
+        assertNull(summary.isRecurring)
+        val detail = EstablishmentFoodMovementDetailDto(
+            id = "m1", direction = "out", occurredAt = "2026-09-19T12:00:00Z",
+            source = "manual", comments = null, responsible = responsible, items = emptyList(),
+            originType = "church", isRecurring = true,
+        ).toDomain()
+        assertNull(detail.originType)
+        assertNull(detail.isRecurring)
     }
 
     @Test

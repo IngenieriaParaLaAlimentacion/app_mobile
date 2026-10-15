@@ -5,6 +5,7 @@ import ar.com.ingenieriaalimentacion.data.food.dto.FoodMovementActivityItemRespo
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovement
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementDirection
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementLine
+import ar.com.ingenieriaalimentacion.domain.model.food.FoodIntakeOrigin
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodUnit
 import kotlin.time.Instant
 
@@ -35,6 +36,9 @@ internal fun FoodMovementActivityItemResponse.toDomain(): FoodMovement? {
         // `map`, never `distinctBy`/`associateBy`: the same food may legally appear twice in one
         // movement and both lines must render, as stored, in stored order.
         lines = payload.items.map { it.toDomain() },
+        originType = if (direction == FoodMovementDirection.Intake)
+            FoodIntakeOrigin.fromWire(payload.originType) else null,
+        isRecurring = payload.isRecurring.takeIf { direction == FoodMovementDirection.Intake },
     )
 }
 

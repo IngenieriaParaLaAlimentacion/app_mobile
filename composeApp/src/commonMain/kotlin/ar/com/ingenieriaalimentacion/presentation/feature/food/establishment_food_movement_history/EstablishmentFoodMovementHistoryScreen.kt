@@ -1,5 +1,7 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_food_movement_history
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -7,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -53,6 +56,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.A
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.food.EstablishmentFoodMovementDirection
 import ar.com.ingenieriaalimentacion.domain.model.food.EstablishmentFoodMovementSummary
+import ar.com.ingenieriaalimentacion.domain.model.food.contributionLabel
 import ar.com.ingenieriaalimentacion.presentation.common.dayOf
 import ar.com.ingenieriaalimentacion.presentation.common.formatMovementTime
 import ar.com.ingenieriaalimentacion.presentation.common.today
@@ -237,24 +241,45 @@ internal fun MovementRow(
     showDivider: Boolean = true,
     onClick: () -> Unit,
 ) {
-    AlListRow(
-        title = if (item.direction == EstablishmentFoodMovementDirection.In) "Ingreso" else "Egreso",
-        subtitle = buildList {
-            add(formatMovementTime(item.occurredAtMillis))
-            add(item.responsible.fullName)
-            if (item.direction == EstablishmentFoodMovementDirection.Out) {
-                item.category?.label?.let(::add)
-            }
-        }.joinToString(" · "),
-        value = "${item.foodCount} alimento${if (item.foodCount == 1) "" else "s"}",
-        leadingIcon = if (item.direction == EstablishmentFoodMovementDirection.In) {
-            Res.drawable.ic_mingcute_package_line
-        } else {
-            Res.drawable.ic_mingcute_package_2_line
-        },
-        showDivider = showDivider,
-        onClick = onClick,
-    )
+    Column(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+        AlListRow(
+            title = if (item.direction == EstablishmentFoodMovementDirection.In) "Ingreso" else "Egreso",
+            subtitle = buildList {
+                add(formatMovementTime(item.occurredAtMillis))
+                add(item.responsible.fullName)
+                if (item.direction == EstablishmentFoodMovementDirection.Out) {
+                    item.category?.label?.let(::add)
+                }
+            }.joinToString(" · "),
+            value = "${item.foodCount} alimento${if (item.foodCount == 1) "" else "s"}",
+            leadingIcon = if (item.direction == EstablishmentFoodMovementDirection.In) {
+                Res.drawable.ic_mingcute_package_line
+            } else {
+                Res.drawable.ic_mingcute_package_2_line
+            },
+            showDivider = false,
+            showChevron = true,
+        )
+        if (item.direction == EstablishmentFoodMovementDirection.In) {
+            Text(
+                "Origen del alimento: ${item.originType?.label ?: "Sin datos"} · " +
+                    "Tipo de aporte: ${item.isRecurring.contributionLabel()}",
+                modifier = Modifier.padding(
+                    start = AlTheme.spacing.lg,
+                    end = AlTheme.spacing.md,
+                    bottom = AlTheme.spacing.sm,
+                ),
+                style = AlTheme.typography.caption,
+                color = AlTheme.colors.textMuted,
+            )
+        }
+        if (showDivider) {
+            Box(
+                Modifier.fillMaxWidth().padding(horizontal = AlTheme.spacing.md)
+                    .height(AlTheme.borders.thin).background(AlTheme.colors.border),
+            )
+        }
+    }
 }
 
 @Composable

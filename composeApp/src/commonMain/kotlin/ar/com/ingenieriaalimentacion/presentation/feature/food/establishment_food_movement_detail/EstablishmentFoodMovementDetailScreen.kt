@@ -25,6 +25,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.food.EstablishmentFoodMovementDetail
 import ar.com.ingenieriaalimentacion.domain.model.food.EstablishmentFoodMovementDirection
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementSource
+import ar.com.ingenieriaalimentacion.domain.model.food.contributionLabel
 import ar.com.ingenieriaalimentacion.presentation.common.formatQuantityWithUnit
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 import com.komoui.components.Spinner
@@ -117,8 +118,12 @@ private fun DetailContent(detail: EstablishmentFoodMovementDetail) {
                     )
                     DetailFact("Fecha", formatDetailDateTime(detail.occurredAtMillis), data = true)
                     DetailFact("Responsable", detail.responsible.fullName)
+                    if (detail.direction == EstablishmentFoodMovementDirection.In) {
+                        DetailFact("Origen del alimento", detail.originType?.label ?: "Sin datos")
+                        DetailFact("Tipo de aporte", detail.isRecurring.contributionLabel())
+                    }
                     DetailFact(
-                        "Origen",
+                        "Modo de carga",
                         if (detail.source == FoodMovementSource.Photo) "Foto" else "Manual",
                     )
                     if (detail.direction == EstablishmentFoodMovementDirection.Out) {

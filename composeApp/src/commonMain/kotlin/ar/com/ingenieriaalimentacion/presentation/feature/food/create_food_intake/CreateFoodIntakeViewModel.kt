@@ -102,6 +102,12 @@ class CreateFoodIntakeViewModel(
             is CreateFoodIntakeAction.CommentsFocusChanged ->
                 _state.update { it.copy(comments = it.comments.onFocus(action.focused, commentsValidator)) }
 
+            is CreateFoodIntakeAction.OriginSelected ->
+                _state.update { it.copy(originType = action.origin, originError = null) }
+
+            is CreateFoodIntakeAction.RecurrenceSelected ->
+                _state.update { it.copy(isRecurring = action.isRecurring, recurrenceError = null) }
+
             is CreateFoodIntakeAction.SearchQueryChanged -> {
                 _state.update { it.copy(search = it.search.copy(query = action.value)) }
                 query.value = action.value
@@ -228,6 +234,8 @@ class CreateFoodIntakeViewModel(
         val validated = current.copy(
             receivedAt = current.receivedAt.showError(receivedAtValidator),
             comments = current.comments.showError(commentsValidator),
+            originError = if (current.originType == null) "Seleccioná el origen del alimento." else null,
+            recurrenceError = if (current.isRecurring == null) "Seleccioná el tipo de aporte." else null,
             lines = current.lines.map { it.copy(quantity = it.quantity.showError(validatorFor(it.food.unit))) },
         )
 
@@ -263,6 +271,8 @@ class CreateFoodIntakeViewModel(
 
     private fun buildIntake(state: CreateFoodIntakeState): NewFoodIntake? {
         val establishment = state.selectedEstablishment ?: return null
+        val origin = state.originType ?: return null
+        val recurring = state.isRecurring ?: return null
         if (state.lines.isEmpty()) return null
         if (!state.receivedAt.isValid || !state.comments.isValid) return null
         if (state.lines.any { !it.quantity.isValid }) return null
@@ -273,6 +283,8 @@ class CreateFoodIntakeViewModel(
             establishmentId = establishment.id,
             receivedAtEpochMillis = receivedAtMillis(date),
             comments = state.comments.value.trim().takeIf { it.isNotBlank() },
+            originType = origin,
+            isRecurring = recurring,
             items = state.lines.map {
                 NewFoodIntakeLine(
                     foodId = it.food.id,

@@ -31,8 +31,8 @@ data class FoodMovementLine(
  * fields therefore needs a scoped cache-invalidation `.sqm`.
  *
  * There is no `SyncState` and no `isLocal`: food movements have no offline queue, so every row here
- * is by definition already on the server. There is no `source` either — the app renders no "origen
- * de la carga". [occurredAtMillis] is denormalized alongside the ISO [occurredAt] so sorting and
+ * is by definition already on the server. Capture `source` is not shown in personal activity.
+ * [occurredAtMillis] is denormalized alongside the ISO [occurredAt] so sorting and
  * day-grouping read the *same* parsed value.
  */
 @Serializable
@@ -44,6 +44,8 @@ data class FoodMovement(
     val establishmentName: String,
     val comments: String? = null,
     val lines: List<FoodMovementLine> = emptyList(),
+    val originType: FoodIntakeOrigin? = null,
+    val isRecurring: Boolean? = null,
 )
 
 /** "3 alimentos" / "1 alimento" — counts **lines**, not distinct foods, matching what is rendered. */

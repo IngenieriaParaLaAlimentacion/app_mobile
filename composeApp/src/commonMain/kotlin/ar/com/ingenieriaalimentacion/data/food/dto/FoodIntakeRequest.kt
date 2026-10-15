@@ -17,6 +17,8 @@ data class FoodIntakeRequest(
     @SerialName("occurred_at") val occurredAt: String,
     val comments: String? = null,
     val source: String = MANUAL_SOURCE,
+    @SerialName("origin_type") val originType: String,
+    @SerialName("is_recurring") val isRecurring: Boolean,
     val items: List<FoodLineRequest>,
 )
 

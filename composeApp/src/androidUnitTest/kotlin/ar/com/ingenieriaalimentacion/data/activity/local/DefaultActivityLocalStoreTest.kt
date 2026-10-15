@@ -72,6 +72,25 @@ class DefaultActivityLocalStoreTest {
     }
 
     @Test
+    fun `v8 migration removes only cached food intakes`() = runTest {
+        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+        AppDatabase.Schema.create(driver)
+        val local = DefaultActivityLocalStore(AppDatabase(driver).cachedActivityItemQueries,
+            dispatcher = Dispatchers.Unconfined)
+        local.upsertPage(ActivityItemType.FOOD_INTAKE, listOf(row("in:i-1", 1L)))
+        local.upsertPage(ActivityItemType.FOOD_OUTFLOW, listOf(row("out:o-1", 2L)))
+        local.upsertPage(ActivityItemType.SUBJECT, listOf(row("subject-1", 3L)))
+        local.upsertPage(ActivityItemType.MEASUREMENT, listOf(row("measurement-1", 4L)))
+
+        AppDatabase.Schema.migrate(driver, 8L, 9L)
+
+        assertTrue(local.observe(ActivityItemType.FOOD_INTAKE).first().isEmpty())
+        assertEquals(listOf("out:o-1"), local.observe(ActivityItemType.FOOD_OUTFLOW).first().map { it.id })
+        assertEquals(listOf("subject-1"), local.observe(ActivityItemType.SUBJECT).first().map { it.id })
+        assertEquals(listOf("measurement-1"), local.observe(ActivityItemType.MEASUREMENT).first().map { it.id })
+    }
+
+    @Test
     fun `getPage paginates newest-first`() = runTest {
         val rows = (1..30).map { row("subject-$it", occurredAtMillis = it.toLong()) }
         store.upsertPage(ActivityItemType.SUBJECT, rows, cap = 200)

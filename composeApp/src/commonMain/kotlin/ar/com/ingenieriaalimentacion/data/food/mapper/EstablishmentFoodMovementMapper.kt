@@ -10,6 +10,7 @@ import ar.com.ingenieriaalimentacion.domain.model.food.EstablishmentFoodMovement
 import ar.com.ingenieriaalimentacion.domain.model.food.EstablishmentFoodMovementSummary
 import ar.com.ingenieriaalimentacion.domain.model.food.EstablishmentFoodMovementDirection
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementSource
+import ar.com.ingenieriaalimentacion.domain.model.food.FoodIntakeOrigin
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodOutflowCategory
 import ar.com.ingenieriaalimentacion.domain.model.food.ResponsibleRef
 import kotlin.time.Instant
@@ -28,6 +29,8 @@ internal fun EstablishmentFoodMovementSummaryDto.toDomain() = EstablishmentFoodM
     occurredAtMillis = Instant.parse(occurredAt).toEpochMilliseconds(),
     responsible = responsible.toDomain(),
     foodCount = foodCount,
+    originType = if (direction == "in") FoodIntakeOrigin.fromWire(originType) else null,
+    isRecurring = isRecurring.takeIf { direction == "in" },
     category = if (direction == "out") FoodOutflowCategory.fromWireValue(category) else null,
 )
 
@@ -40,6 +43,8 @@ internal fun EstablishmentFoodMovementDetailDto.toDomain() = EstablishmentFoodMo
     occurredAtMillis = Instant.parse(occurredAt).toEpochMilliseconds(),
     source = if (source == "photo") FoodMovementSource.Photo else FoodMovementSource.Manual,
     comments = comments,
+    originType = if (direction == "in") FoodIntakeOrigin.fromWire(originType) else null,
+    isRecurring = isRecurring.takeIf { direction == "in" },
     category = if (direction == "out") FoodOutflowCategory.fromWireValue(category) else null,
     responsible = responsible.toDomain(),
     items = items.map { line ->

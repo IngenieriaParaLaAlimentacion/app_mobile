@@ -30,7 +30,7 @@ class FoodOutflowMapperTest {
     }
 
     @Test
-    fun `other specification is trimmed and stale kitchen comments are dropped`() {
+    fun `comments are trimmed for every outflow category`() {
         val base = NewFoodOutflow(
             id = "id",
             establishmentId = "est",
@@ -45,6 +45,6 @@ class FoodOutflowMapperTest {
         assertEquals("other", otherRequest.category)
         assertEquals("Comedor barrial", otherRequest.comments)
         assertEquals("kitchen", kitchenRequest.category)
-        assertNull(kitchenRequest.comments)
+        assertEquals("Comedor barrial", kitchenRequest.comments)
     }
 }

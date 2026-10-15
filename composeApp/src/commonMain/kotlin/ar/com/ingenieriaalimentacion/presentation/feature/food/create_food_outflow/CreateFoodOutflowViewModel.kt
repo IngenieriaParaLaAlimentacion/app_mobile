@@ -11,7 +11,6 @@ import ar.com.ingenieriaalimentacion.core.validation.showError
 import ar.com.ingenieriaalimentacion.data.network.connectivity.ConnectivityObserver
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodOutflowError
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodOutflowFailure
-import ar.com.ingenieriaalimentacion.domain.model.food.FoodOutflowCategory
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodStockFilters
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodStockItem
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodUnit
@@ -104,11 +103,6 @@ class CreateFoodOutflowViewModel(
                     outflowCategory = action.category,
                     outflowCategoryError = null,
                     showOutflowCategoryPicker = false,
-                    comments = if (action.category == FoodOutflowCategory.Other) {
-                        current.comments
-                    } else {
-                        TextFieldState()
-                    },
                 )
             }
             CreateFoodOutflowAction.StockPickerOpen -> {
@@ -337,9 +331,7 @@ class CreateFoodOutflowViewModel(
             outflowCategoryError = if (current.outflowCategory == null) {
                 "Elegí el destino del egreso."
             } else null,
-            comments = if (current.outflowCategory == FoodOutflowCategory.Other) {
-                current.comments.showError(commentsValidator)
-            } else current.comments,
+            comments = current.comments.showError(commentsValidator),
             lines = current.lines.map { it.copy(quantity = it.quantity.showError(validatorFor(it))) },
         )
         val outflow = buildOutflow(validated)
@@ -394,7 +386,7 @@ class CreateFoodOutflowViewModel(
         val category = state.outflowCategory ?: return null
         if (
             !state.occurredAt.isValid ||
-            (category == FoodOutflowCategory.Other && !state.comments.isValid) ||
+            !state.comments.isValid ||
             state.lines.isEmpty() || state.lines.any { !it.quantity.isValid }
         ) return null
         return NewFoodOutflow(
@@ -402,8 +394,7 @@ class CreateFoodOutflowViewModel(
             establishmentId = establishment.id,
             occurredAtEpochMillis = occurredAtMillis(date),
             category = category,
-            comments = state.comments.value.trim().takeIf(String::isNotBlank)
-                .takeIf { category == FoodOutflowCategory.Other },
+            comments = state.comments.value.trim().takeIf(String::isNotBlank),
             items = state.lines.map {
                 NewFoodOutflowLine(it.stock.foodId, it.quantity.value.trimEnd('.'))
             },

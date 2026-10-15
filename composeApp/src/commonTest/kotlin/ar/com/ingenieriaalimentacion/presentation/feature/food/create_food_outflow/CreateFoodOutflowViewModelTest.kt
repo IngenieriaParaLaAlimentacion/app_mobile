@@ -136,15 +136,29 @@ class CreateFoodOutflowViewModelTest {
     }
 
     @Test
-    fun `switching from other clears its specification`() = runTest(dispatcher) {
+    fun `switching category preserves comments`() = runTest(dispatcher) {
         val f = readyFixture()
         advanceUntilIdle()
         f.viewModel.onAction(CreateFoodOutflowAction.OutflowCategorySelected(FoodOutflowCategory.Other))
         f.viewModel.onAction(CreateFoodOutflowAction.CommentsChanged("Comedor barrial"))
         f.viewModel.onAction(CreateFoodOutflowAction.OutflowCategorySelected(FoodOutflowCategory.Kitchen))
 
-        assertEquals("", f.viewModel.state.value.comments.value)
+        assertEquals("Comedor barrial", f.viewModel.state.value.comments.value)
         assertEquals(FoodOutflowCategory.Kitchen, f.viewModel.state.value.outflowCategory)
+    }
+
+    @Test
+    fun `family delivery submits its comments`() = runTest(dispatcher) {
+        val f = readyFixture()
+        advanceUntilIdle()
+        f.viewModel.onAction(CreateFoodOutflowAction.OutflowCategorySelected(FoodOutflowCategory.FamilyDelivery))
+        f.viewModel.onAction(CreateFoodOutflowAction.CommentsChanged("Familia Gonzales"))
+        f.viewModel.onAction(CreateFoodOutflowAction.FoodPicked(arroz))
+        f.viewModel.onAction(CreateFoodOutflowAction.LineQuantityChanged(arroz.foodId, "4"))
+        f.viewModel.onAction(CreateFoodOutflowAction.Submit)
+        advanceUntilIdle()
+
+        assertEquals("Familia Gonzales", f.outflows.created.single().comments)
     }
 
     @Test

@@ -203,28 +203,26 @@ private fun OutflowForm(
                         )
                     }
                 }
-                if (state.outflowCategory == FoodOutflowCategory.Other) {
-                    Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
-                        AlInput(
-                            label = "Especificá otro destino (opcional)",
-                            value = state.comments.value,
-                            onValueChange = { onAction(CreateFoodOutflowAction.CommentsChanged(it)) },
-                            onFocusChange = { onAction(CreateFoodOutflowAction.CommentsFocusChanged(it)) },
-                            error = state.comments.displayError,
-                            enabled = enabled,
-                            singleLine = false,
-                            placeholder = "Agregá información adicional",
-                            scrollState = scrollState,
-                            isImeVisible = isImeVisible,
-                        )
-                        Text(
-                            text = state.commentsCount,
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.End,
-                            style = AlTheme.typography.caption,
-                            color = AlTheme.colors.textMuted,
-                        )
-                    }
+                Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
+                    AlInput(
+                        label = "Comentarios (opcional)",
+                        value = state.comments.value,
+                        onValueChange = { onAction(CreateFoodOutflowAction.CommentsChanged(it)) },
+                        onFocusChange = { onAction(CreateFoodOutflowAction.CommentsFocusChanged(it)) },
+                        error = state.comments.displayError,
+                        enabled = enabled,
+                        singleLine = false,
+                        placeholder = "Agregá información adicional",
+                        scrollState = scrollState,
+                        isImeVisible = isImeVisible,
+                    )
+                    Text(
+                        text = state.commentsCount,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.End,
+                        style = AlTheme.typography.caption,
+                        color = AlTheme.colors.textMuted,
+                    )
                 }
             }
             HorizontalDivider(color = AlTheme.colors.border)

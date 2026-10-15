@@ -9,6 +9,7 @@ internal fun NewFoodOutflow.toRequest(occurredAtIso: String): FoodOutflowRequest
         id = id,
         establishmentId = establishmentId,
         occurredAt = occurredAtIso,
-        comments = comments?.takeIf(String::isNotBlank),
+        category = category.wireValue,
+        comments = comments?.trim()?.takeIf(String::isNotBlank),
         items = items.map { FoodLineRequest(foodId = it.foodId, quantity = it.quantity) },
     )

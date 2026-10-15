@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_outflow
 
+import ar.com.ingenieriaalimentacion.domain.model.food.FoodOutflowCategory
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodStockItem
 
 sealed interface CreateFoodOutflowAction {
@@ -9,6 +10,9 @@ sealed interface CreateFoodOutflowAction {
     data class OccurredAtFocusChanged(val focused: Boolean) : CreateFoodOutflowAction
     data class CommentsChanged(val value: String) : CreateFoodOutflowAction
     data class CommentsFocusChanged(val focused: Boolean) : CreateFoodOutflowAction
+    data object OutflowCategoryPickerOpen : CreateFoodOutflowAction
+    data object OutflowCategoryPickerDismiss : CreateFoodOutflowAction
+    data class OutflowCategorySelected(val category: FoodOutflowCategory) : CreateFoodOutflowAction
     data object StockPickerOpen : CreateFoodOutflowAction
     data object StockPickerDismiss : CreateFoodOutflowAction
     data object CategoryPickerOpen : CreateFoodOutflowAction

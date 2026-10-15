@@ -2,6 +2,7 @@ package ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_outf
 
 import ar.com.ingenieriaalimentacion.core.validation.TextFieldState
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodCategory
+import ar.com.ingenieriaalimentacion.domain.model.food.FoodOutflowCategory
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodStockItem
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 
@@ -35,11 +36,15 @@ data class CreateFoodOutflowState(
     val profileError: String? = null,
     val selectedEstablishment: EstablishmentWithStatus? = null,
     val occurredAt: TextFieldState = TextFieldState(),
+    val outflowCategory: FoodOutflowCategory? = null,
+    val outflowCategoryError: String? = null,
+    val showOutflowCategoryPicker: Boolean = false,
     val comments: TextFieldState = TextFieldState(),
     val lines: List<FoodOutflowLine> = emptyList(),
     val stock: AvailableStockState = AvailableStockState(),
     val isOnline: Boolean = true,
     val isSubmitting: Boolean = false,
+    val isRetryPending: Boolean = false,
     val submitError: String? = null,
 ) {
     val commentsCount: String get() = "${comments.value.length}/$MAX_OUTFLOW_COMMENTS"

@@ -17,6 +17,7 @@ data class EstablishmentFoodMovementSummaryDto(
     @SerialName("occurred_at") val occurredAt: String,
     val responsible: ResponsibleRefDto,
     @SerialName("food_count") val foodCount: Int,
+    val category: String? = null,
 )
 
 @Serializable
@@ -44,4 +45,5 @@ data class EstablishmentFoodMovementDetailDto(
     val comments: String? = null,
     val responsible: ResponsibleRefDto,
     val items: List<EstablishmentFoodMovementLineDto>,
+    val category: String? = null,
 )

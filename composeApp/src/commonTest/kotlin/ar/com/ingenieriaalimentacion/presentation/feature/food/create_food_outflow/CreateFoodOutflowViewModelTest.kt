@@ -3,6 +3,7 @@ package ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_outf
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodCategory
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodOutflowError
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodOutflowFailure
+import ar.com.ingenieriaalimentacion.domain.model.food.FoodOutflowCategory
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodStockItem
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodStockPage
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodUnit
@@ -96,11 +97,68 @@ class CreateFoodOutflowViewModelTest {
     ) = fixture(stockPages = stockPages)
 
     private fun submitValid(fixture: Fixture, quantity: String = "4") {
+        fixture.viewModel.onAction(
+            CreateFoodOutflowAction.OutflowCategorySelected(FoodOutflowCategory.FamilyDelivery),
+        )
         fixture.viewModel.onAction(CreateFoodOutflowAction.FoodPicked(arroz))
         fixture.viewModel.onAction(
             CreateFoodOutflowAction.LineQuantityChanged(arroz.foodId, quantity),
         )
         fixture.viewModel.onAction(CreateFoodOutflowAction.Submit)
+    }
+
+    @Test
+    fun `submit requires an outflow category and shows its error`() = runTest(dispatcher) {
+        val f = readyFixture()
+        advanceUntilIdle()
+        f.viewModel.onAction(CreateFoodOutflowAction.FoodPicked(arroz))
+        f.viewModel.onAction(CreateFoodOutflowAction.LineQuantityChanged(arroz.foodId, "4"))
+        f.viewModel.onAction(CreateFoodOutflowAction.Submit)
+        advanceUntilIdle()
+
+        assertEquals("Elegí el destino del egreso.", f.viewModel.state.value.outflowCategoryError)
+        assertTrue(f.outflows.created.isEmpty())
+    }
+
+    @Test
+    fun `each selected category reaches the domain command`() = runTest(dispatcher) {
+        FoodOutflowCategory.entries.forEach { category ->
+            val f = readyFixture()
+            advanceUntilIdle()
+            f.viewModel.onAction(CreateFoodOutflowAction.FoodPicked(arroz))
+            f.viewModel.onAction(CreateFoodOutflowAction.LineQuantityChanged(arroz.foodId, "4"))
+            f.viewModel.onAction(CreateFoodOutflowAction.OutflowCategorySelected(category))
+            f.viewModel.onAction(CreateFoodOutflowAction.Submit)
+            advanceUntilIdle()
+
+            assertEquals(category, f.outflows.created.single().category)
+        }
+    }
+
+    @Test
+    fun `switching category preserves comments`() = runTest(dispatcher) {
+        val f = readyFixture()
+        advanceUntilIdle()
+        f.viewModel.onAction(CreateFoodOutflowAction.OutflowCategorySelected(FoodOutflowCategory.Other))
+        f.viewModel.onAction(CreateFoodOutflowAction.CommentsChanged("Comedor barrial"))
+        f.viewModel.onAction(CreateFoodOutflowAction.OutflowCategorySelected(FoodOutflowCategory.Kitchen))
+
+        assertEquals("Comedor barrial", f.viewModel.state.value.comments.value)
+        assertEquals(FoodOutflowCategory.Kitchen, f.viewModel.state.value.outflowCategory)
+    }
+
+    @Test
+    fun `family delivery submits its comments`() = runTest(dispatcher) {
+        val f = readyFixture()
+        advanceUntilIdle()
+        f.viewModel.onAction(CreateFoodOutflowAction.OutflowCategorySelected(FoodOutflowCategory.FamilyDelivery))
+        f.viewModel.onAction(CreateFoodOutflowAction.CommentsChanged("Familia Gonzales"))
+        f.viewModel.onAction(CreateFoodOutflowAction.FoodPicked(arroz))
+        f.viewModel.onAction(CreateFoodOutflowAction.LineQuantityChanged(arroz.foodId, "4"))
+        f.viewModel.onAction(CreateFoodOutflowAction.Submit)
+        advanceUntilIdle()
+
+        assertEquals("Familia Gonzales", f.outflows.created.single().comments)
     }
 
     @Test
@@ -250,13 +308,21 @@ class CreateFoodOutflowViewModelTest {
         val f = readyFixture()
         f.outflows.result = Result.failure(FoodOutflowFailure(FoodOutflowError.Network, null))
         advanceUntilIdle()
-        submitValid(f)
+        f.viewModel.onAction(CreateFoodOutflowAction.OutflowCategorySelected(FoodOutflowCategory.Other))
+        f.viewModel.onAction(CreateFoodOutflowAction.CommentsChanged("Comedor barrial"))
+        f.viewModel.onAction(CreateFoodOutflowAction.FoodPicked(arroz))
+        f.viewModel.onAction(CreateFoodOutflowAction.LineQuantityChanged(arroz.foodId, "4"))
+        f.viewModel.onAction(CreateFoodOutflowAction.Submit)
         advanceUntilIdle()
         f.viewModel.onAction(CreateFoodOutflowAction.Submit)
         advanceUntilIdle()
 
         assertEquals(2, f.outflows.created.size)
         assertEquals(f.outflows.created[0].id, f.outflows.created[1].id)
+        assertEquals(f.outflows.created[0], f.outflows.created[1])
+        assertTrue(f.viewModel.state.value.isRetryPending)
+        assertEquals(FoodOutflowCategory.Other, f.viewModel.state.value.outflowCategory)
+        assertEquals("Comedor barrial", f.viewModel.state.value.comments.value)
         assertTrue(f.viewModel.state.value.lines.isNotEmpty())
         assertNull(f.viewModel.state.value.destination)
     }
@@ -266,8 +332,11 @@ class CreateFoodOutflowViewModelTest {
         val f = readyFixture()
         advanceUntilIdle()
         val firstId = f.viewModel.state.value.outflowId
+        f.viewModel.onAction(CreateFoodOutflowAction.OutflowCategorySelected(FoodOutflowCategory.Other))
         f.viewModel.onAction(CreateFoodOutflowAction.CommentsChanged("Almuerzo"))
-        submitValid(f)
+        f.viewModel.onAction(CreateFoodOutflowAction.FoodPicked(arroz))
+        f.viewModel.onAction(CreateFoodOutflowAction.LineQuantityChanged(arroz.foodId, "4"))
+        f.viewModel.onAction(CreateFoodOutflowAction.Submit)
         advanceUntilIdle()
 
         with(f.viewModel.state.value) {
@@ -278,6 +347,8 @@ class CreateFoodOutflowViewModelTest {
             assertEquals(CreateFoodOutflowDestination.Saved, destination)
         }
         assertEquals(establishment.id, f.outflows.created.single().establishmentId)
+        assertEquals(FoodOutflowCategory.Other, f.outflows.created.single().category)
+        assertEquals("Almuerzo", f.outflows.created.single().comments)
         assertEquals(1, f.stock.requests.size)
     }
 

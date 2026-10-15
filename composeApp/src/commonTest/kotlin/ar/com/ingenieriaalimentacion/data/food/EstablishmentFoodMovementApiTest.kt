@@ -49,7 +49,7 @@ class EstablishmentFoodMovementApiTest {
         "application/problem+json",
     )
 
-    private val pageJson = """{"items":[{"id":"m1","direction":"in","occurred_at":"2026-09-19T12:00:00Z","responsible":{"id":"u1","name":"Ana","last_name":"Pérez"},"food_count":3}],"total":1,"page":1,"page_size":20,"total_pages":1}"""
+    private val pageJson = """{"items":[{"id":"m1","direction":"in","occurred_at":"2026-09-19T12:00:00Z","responsible":{"id":"u1","name":"Ana","last_name":"Pérez"},"food_count":3,"category":null}],"total":1,"page":1,"page_size":20,"total_pages":1}"""
     private val detailJson = """{"id":"m1","direction":"in","occurred_at":"2026-09-19T12:00:00Z","source":"manual","comments":"Donación","responsible":{"id":"u1","name":"Ana","last_name":"Pérez"},"items":[{"food":{"id":"f1","name":"Arroz"},"unit":"kilogramos","quantity":"12.500"},{"food":{"id":"f1","name":"Arroz"},"unit":"kilogramos","quantity":"1.000"}]}"""
 
     @Test
@@ -88,11 +88,13 @@ class EstablishmentFoodMovementApiTest {
         ).response
         assertEquals("Pérez", page.items.single().responsible.lastName)
         assertEquals(3, page.items.single().foodCount)
+        assertNull(page.items.single().category)
 
         val detail = assertIs<FoodMovementDetailOutcome.Loaded>(
             api { response(detailJson) }.detail("e1", "m1"),
         ).response
         assertEquals("Donación", detail.comments)
+        assertNull(detail.category)
         assertEquals(listOf("f1", "f1"), detail.items.map { it.food.id })
         assertEquals(listOf("12.500", "1.000"), detail.items.map { it.quantity })
 
@@ -108,6 +110,30 @@ class EstablishmentFoodMovementApiTest {
                 api { response(detailJson.replace("\"Donación\"", "null")) }
                     .detail("e1", "m1"),
             ).response.comments,
+        )
+    }
+
+    @Test
+    fun `outflow categories decode and older responses may omit category`() = runTest {
+        val outPageJson = pageJson.replace("\"direction\":\"in\"", "\"direction\":\"out\"")
+            .replace("\"category\":null", "\"category\":\"discard\"")
+        val outDetailJson = detailJson.replace("\"direction\":\"in\"", "\"direction\":\"out\"")
+            .replace("\"comments\":\"Donación\"", "\"comments\":\"Comedor barrial\"")
+            .replace("\"source\":\"manual\"", "\"source\":\"manual\",\"category\":\"other\"")
+
+        val outPage = assertIs<FoodMovementPageOutcome.Loaded>(
+            api { response(outPageJson) }.list("e1", null, null, null, null, 1, 20),
+        ).response
+        val outDetail = assertIs<FoodMovementDetailOutcome.Loaded>(
+            api { response(outDetailJson) }.detail("e1", "m1"),
+        ).response
+
+        assertEquals("discard", outPage.items.single().category)
+        assertEquals("other", outDetail.category)
+        assertNull(
+            assertIs<FoodMovementDetailOutcome.Loaded>(
+                api { response(detailJson) }.detail("e1", "m1"),
+            ).response.category,
         )
     }
 

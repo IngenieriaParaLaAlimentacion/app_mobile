@@ -31,6 +31,7 @@ class FoodOutflowApiTest {
         id = "11111111-1111-4111-8111-111111111111",
         establishmentId = "22222222-2222-4222-8222-222222222222",
         occurredAt = "2026-09-02T10:00:00Z",
+        category = "other",
         comments = "Almuerzo",
         items = listOf(FoodLineRequest("food-1", "4.000")),
     )
@@ -40,7 +41,7 @@ class FoodOutflowApiTest {
         handler: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData,
     ): FoodOutflowApi = FoodOutflowApi(
         HttpClient(MockEngine(handler)) {
-            install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+            install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true; encodeDefaults = true }) }
             defaultRequest { url("https://api.example.com/") }
         },
     )
@@ -68,7 +69,22 @@ class FoodOutflowApiTest {
 
         val encoded = assertNotNull(body)
         assertTrue(encoded.contains("\"occurred_at\":\"2026-09-02T10:00:00Z\""))
+        assertTrue(encoded.contains("\"category\":\"other\""))
+        assertTrue(encoded.contains("\"comments\":\"Almuerzo\""))
         assertTrue(encoded.contains("\"quantity\":4.000"))
+    }
+
+    @Test
+    fun `non other request omits comments key even with global encode defaults`() = runTest {
+        var body: String? = null
+        api { captured ->
+            body = (captured.body as TextContent).text
+            respond(successBody, HttpStatusCode.Created, jsonHeaders())
+        }.create(request.copy(category = "kitchen", comments = null))
+
+        val encoded = assertNotNull(body)
+        assertTrue(encoded.contains("\"category\":\"kitchen\""))
+        assertTrue(!encoded.contains("\"comments\""))
     }
 
     @Test

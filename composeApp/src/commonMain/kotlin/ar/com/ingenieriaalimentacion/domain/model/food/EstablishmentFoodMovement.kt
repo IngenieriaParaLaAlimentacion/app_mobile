@@ -15,6 +15,7 @@ data class EstablishmentFoodMovementSummary(
     val occurredAtMillis: Long,
     val responsible: ResponsibleRef,
     val foodCount: Int,
+    val category: FoodOutflowCategory? = null,
 )
 
 data class EstablishmentFoodMovementLine(
@@ -34,6 +35,7 @@ data class EstablishmentFoodMovementDetail(
     val comments: String?,
     val responsible: ResponsibleRef,
     val items: List<EstablishmentFoodMovementLine>,
+    val category: FoodOutflowCategory? = null,
 )
 
 data class EstablishmentFoodMovementFilters(

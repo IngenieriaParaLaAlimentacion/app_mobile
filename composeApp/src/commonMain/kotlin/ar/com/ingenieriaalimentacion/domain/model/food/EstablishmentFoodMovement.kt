@@ -17,6 +17,7 @@ data class EstablishmentFoodMovementSummary(
     val foodCount: Int,
     val originType: FoodIntakeOrigin? = null,
     val isRecurring: Boolean? = null,
+    val category: FoodOutflowCategory? = null,
 )
 
 data class EstablishmentFoodMovementLine(
@@ -38,6 +39,7 @@ data class EstablishmentFoodMovementDetail(
     val items: List<EstablishmentFoodMovementLine>,
     val originType: FoodIntakeOrigin? = null,
     val isRecurring: Boolean? = null,
+    val category: FoodOutflowCategory? = null,
 )
 
 data class EstablishmentFoodMovementFilters(

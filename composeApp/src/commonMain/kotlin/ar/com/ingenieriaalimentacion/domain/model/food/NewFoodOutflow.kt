@@ -4,6 +4,7 @@ data class NewFoodOutflow(
     val id: String,
     val establishmentId: String,
     val occurredAtEpochMillis: Long,
+    val category: FoodOutflowCategory,
     val comments: String?,
     val items: List<NewFoodOutflowLine>,
 )

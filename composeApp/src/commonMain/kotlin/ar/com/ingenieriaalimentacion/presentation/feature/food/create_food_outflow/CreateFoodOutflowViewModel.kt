@@ -55,6 +55,7 @@ class CreateFoodOutflowViewModel(
     )
     val state = _state.asStateFlow()
     private var stockJob: Job? = null
+    private var pendingOutflow: NewFoodOutflow? = null
 
     init {
         viewModelScope.launch {
@@ -93,6 +94,17 @@ class CreateFoodOutflowViewModel(
             }
             is CreateFoodOutflowAction.CommentsFocusChanged -> _state.update {
                 it.copy(comments = it.comments.onFocus(action.focused, commentsValidator))
+            }
+            CreateFoodOutflowAction.OutflowCategoryPickerOpen ->
+                _state.update { it.copy(showOutflowCategoryPicker = true) }
+            CreateFoodOutflowAction.OutflowCategoryPickerDismiss ->
+                _state.update { it.copy(showOutflowCategoryPicker = false) }
+            is CreateFoodOutflowAction.OutflowCategorySelected -> _state.update { current ->
+                current.copy(
+                    outflowCategory = action.category,
+                    outflowCategoryError = null,
+                    showOutflowCategoryPicker = false,
+                )
             }
             CreateFoodOutflowAction.StockPickerOpen -> {
                 _state.update { it.copy(stock = it.stock.copy(showPicker = true)) }
@@ -317,10 +329,13 @@ class CreateFoodOutflowViewModel(
         if (!current.canSubmit) return
         val validated = current.copy(
             occurredAt = current.occurredAt.showError(occurredAtValidator),
+            outflowCategoryError = if (current.outflowCategory == null) {
+                "Elegí el destino del egreso."
+            } else null,
             comments = current.comments.showError(commentsValidator),
             lines = current.lines.map { it.copy(quantity = it.quantity.showError(validatorFor(it))) },
         )
-        val outflow = buildOutflow(validated)
+        val outflow = pendingOutflow ?: buildOutflow(validated)
         if (outflow == null) {
             _state.value = validated
             return
@@ -329,9 +344,11 @@ class CreateFoodOutflowViewModel(
         viewModelScope.launch {
             createFoodOutflow(outflow).fold(
                 onSuccess = {
+                    pendingOutflow = null
                     _state.update {
                         it.copy(
                             isSubmitting = false,
+                            isRetryPending = false,
                             submitError = null,
                             destination = CreateFoodOutflowDestination.Saved,
                         )
@@ -341,6 +358,8 @@ class CreateFoodOutflowViewModel(
                     if (throwable is CancellationException) throw throwable
                     val error = (throwable as? FoodOutflowFailure)?.error
                         ?: FoodOutflowError.Unknown(throwable)
+                    val uncertain = error is FoodOutflowError.Network || error is FoodOutflowError.Unknown
+                    pendingOutflow = if (uncertain) outflow else null
                     if (error is FoodOutflowError.InsufficientStock) {
                         _state.update { state ->
                             state.copy(
@@ -358,6 +377,7 @@ class CreateFoodOutflowViewModel(
                     _state.update {
                         it.copy(
                             isSubmitting = false,
+                            isRetryPending = uncertain,
                             submitError = error.toUserMessage(it.lines),
                         )
                     }
@@ -369,14 +389,17 @@ class CreateFoodOutflowViewModel(
     private fun buildOutflow(state: CreateFoodOutflowState): NewFoodOutflow? {
         val establishment = state.selectedEstablishment ?: return null
         val date = parseDate(state.occurredAt.value) ?: return null
+        val category = state.outflowCategory ?: return null
         if (
-            !state.occurredAt.isValid || !state.comments.isValid ||
+            !state.occurredAt.isValid ||
+            !state.comments.isValid ||
             state.lines.isEmpty() || state.lines.any { !it.quantity.isValid }
         ) return null
         return NewFoodOutflow(
             id = state.outflowId,
             establishmentId = establishment.id,
             occurredAtEpochMillis = occurredAtMillis(date),
+            category = category,
             comments = state.comments.value.trim().takeIf(String::isNotBlank),
             items = state.lines.map {
                 NewFoodOutflowLine(it.stock.foodId, it.quantity.value.trimEnd('.'))

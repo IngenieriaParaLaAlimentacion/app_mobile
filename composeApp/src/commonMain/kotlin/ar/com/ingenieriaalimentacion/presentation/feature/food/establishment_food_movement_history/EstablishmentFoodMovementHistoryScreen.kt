@@ -244,7 +244,13 @@ internal fun MovementRow(
     Column(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         AlListRow(
             title = if (item.direction == EstablishmentFoodMovementDirection.In) "Ingreso" else "Egreso",
-            subtitle = "${formatMovementTime(item.occurredAtMillis)} · ${item.responsible.fullName}",
+            subtitle = buildList {
+                add(formatMovementTime(item.occurredAtMillis))
+                add(item.responsible.fullName)
+                if (item.direction == EstablishmentFoodMovementDirection.Out) {
+                    item.category?.label?.let(::add)
+                }
+            }.joinToString(" · "),
             value = "${item.foodCount} alimento${if (item.foodCount == 1) "" else "s"}",
             leadingIcon = if (item.direction == EstablishmentFoodMovementDirection.In) {
                 Res.drawable.ic_mingcute_package_line

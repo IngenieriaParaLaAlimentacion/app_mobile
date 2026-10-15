@@ -19,6 +19,7 @@ data class EstablishmentFoodMovementSummaryDto(
     @SerialName("food_count") val foodCount: Int,
     @SerialName("origin_type") val originType: String? = null,
     @SerialName("is_recurring") val isRecurring: Boolean? = null,
+    val category: String? = null,
 )
 
 @Serializable
@@ -48,4 +49,5 @@ data class EstablishmentFoodMovementDetailDto(
     val comments: String? = null,
     val responsible: ResponsibleRefDto,
     val items: List<EstablishmentFoodMovementLineDto>,
+    val category: String? = null,
 )

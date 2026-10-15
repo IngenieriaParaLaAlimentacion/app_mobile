@@ -55,6 +55,7 @@ class CreateFoodOutflowViewModel(
     )
     val state = _state.asStateFlow()
     private var stockJob: Job? = null
+    private var pendingOutflow: NewFoodOutflow? = null
 
     init {
         viewModelScope.launch {
@@ -334,7 +335,7 @@ class CreateFoodOutflowViewModel(
             comments = current.comments.showError(commentsValidator),
             lines = current.lines.map { it.copy(quantity = it.quantity.showError(validatorFor(it))) },
         )
-        val outflow = buildOutflow(validated)
+        val outflow = pendingOutflow ?: buildOutflow(validated)
         if (outflow == null) {
             _state.value = validated
             return
@@ -343,9 +344,11 @@ class CreateFoodOutflowViewModel(
         viewModelScope.launch {
             createFoodOutflow(outflow).fold(
                 onSuccess = {
+                    pendingOutflow = null
                     _state.update {
                         it.copy(
                             isSubmitting = false,
+                            isRetryPending = false,
                             submitError = null,
                             destination = CreateFoodOutflowDestination.Saved,
                         )
@@ -355,6 +358,8 @@ class CreateFoodOutflowViewModel(
                     if (throwable is CancellationException) throw throwable
                     val error = (throwable as? FoodOutflowFailure)?.error
                         ?: FoodOutflowError.Unknown(throwable)
+                    val uncertain = error is FoodOutflowError.Network || error is FoodOutflowError.Unknown
+                    pendingOutflow = if (uncertain) outflow else null
                     if (error is FoodOutflowError.InsufficientStock) {
                         _state.update { state ->
                             state.copy(
@@ -372,6 +377,7 @@ class CreateFoodOutflowViewModel(
                     _state.update {
                         it.copy(
                             isSubmitting = false,
+                            isRetryPending = uncertain,
                             submitError = error.toUserMessage(it.lines),
                         )
                     }

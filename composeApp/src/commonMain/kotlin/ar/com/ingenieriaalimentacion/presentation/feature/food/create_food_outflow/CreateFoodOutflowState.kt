@@ -44,6 +44,7 @@ data class CreateFoodOutflowState(
     val stock: AvailableStockState = AvailableStockState(),
     val isOnline: Boolean = true,
     val isSubmitting: Boolean = false,
+    val isRetryPending: Boolean = false,
     val submitError: String? = null,
 ) {
     val commentsCount: String get() = "${comments.value.length}/$MAX_OUTFLOW_COMMENTS"

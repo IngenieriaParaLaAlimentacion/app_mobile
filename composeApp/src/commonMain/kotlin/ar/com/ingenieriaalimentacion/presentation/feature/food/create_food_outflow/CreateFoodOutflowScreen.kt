@@ -114,7 +114,7 @@ private fun OutflowForm(
     scrollState: ScrollState,
     isImeVisible: Boolean,
 ) {
-    val enabled = !state.isSubmitting
+    val enabled = !state.isSubmitting && !state.isRetryPending
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier.fillMaxSize().padding(horizontal = AlTheme.spacing.lg),

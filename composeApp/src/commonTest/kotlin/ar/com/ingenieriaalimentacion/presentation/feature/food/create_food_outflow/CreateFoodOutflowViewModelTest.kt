@@ -320,6 +320,7 @@ class CreateFoodOutflowViewModelTest {
         assertEquals(2, f.outflows.created.size)
         assertEquals(f.outflows.created[0].id, f.outflows.created[1].id)
         assertEquals(f.outflows.created[0], f.outflows.created[1])
+        assertTrue(f.viewModel.state.value.isRetryPending)
         assertEquals(FoodOutflowCategory.Other, f.viewModel.state.value.outflowCategory)
         assertEquals("Comedor barrial", f.viewModel.state.value.comments.value)
         assertTrue(f.viewModel.state.value.lines.isNotEmpty())

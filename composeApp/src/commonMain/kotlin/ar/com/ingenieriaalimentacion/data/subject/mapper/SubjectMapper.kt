@@ -39,6 +39,7 @@ internal fun SubjectSummaryResponse.toDomain(): SubjectSummary = SubjectSummary(
     name = name,
     lastName = lastName,
     sex = sex.toDomain(),
+    birthDate = LocalDate.parse(birthDate),
 )
 
 internal fun PaginatedSubjectsResponse.toDomain(): SubjectPage = SubjectPage(

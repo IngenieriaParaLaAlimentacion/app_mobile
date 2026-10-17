@@ -17,10 +17,11 @@ data class MeasurementState(
     val height: TextFieldState = TextFieldState(),
     val measuredAtDisplay: String = "",            // friendly "ahora" for display (read-only)
     val isSubmitting: Boolean = false,
+    val confirmation: MeasurementConfirmation? = null,
     val submitError: String? = null,
     val successMessage: String? = null,
 ) {
     val canSubmit: Boolean
         get() = subject != null && selectedEstablishment != null &&
-            weight.value.isNotBlank() && height.value.isNotBlank() && !isSubmitting
+            weight.value.isNotBlank() && height.value.isNotBlank() && !isSubmitting && confirmation == null
 }

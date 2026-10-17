@@ -5,18 +5,17 @@ import ar.com.ingenieriaalimentacion.data.measurement.mapper.encodeAlerts
 import ar.com.ingenieriaalimentacion.data.measurement.mapper.toDomain
 import ar.com.ingenieriaalimentacion.data.measurement.mapper.toPendingUpload
 import ar.com.ingenieriaalimentacion.data.measurement.mapper.toRequest
+import ar.com.ingenieriaalimentacion.data.subject.local.SubjectLocalStore
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementUpload
 import ar.com.ingenieriaalimentacion.domain.model.measurement.NewMeasurement
 import ar.com.ingenieriaalimentacion.domain.model.measurement.isEligibleAt
-import ar.com.ingenieriaalimentacion.data.subject.local.SubjectLocalStore
 import ar.com.ingenieriaalimentacion.domain.model.subject.MAX_SYNC_ATTEMPTS
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncSummary
 import ar.com.ingenieriaalimentacion.domain.repository.MeasurementRepository
 import ar.com.ingenieriaalimentacion.domain.util.IdGenerator
-import kotlinx.coroutines.flow.Flow
 import kotlin.time.Duration
-import kotlin.time.Instant
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Offline-first measurement repository: the local DB is the source of truth. [enqueue] writes a
@@ -34,9 +33,8 @@ class MeasurementRepositoryImpl(
 
     override suspend fun enqueue(measurement: NewMeasurement): Result<Unit> = runCatching {
         val nowMs = now()
-        val measuredAt = Instant.fromEpochMilliseconds(nowMs).toString()   // ISO 8601 …Z
         local.insert(
-            measurement.toPendingUpload(id = idGenerator.newId(), measuredAt = measuredAt, now = nowMs),
+            measurement.toPendingUpload(id = idGenerator.newId(), measuredAt = measurement.measuredAt.toString(), now = nowMs),
         )
     }
 

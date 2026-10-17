@@ -10,18 +10,18 @@ import ar.com.ingenieriaalimentacion.domain.usecase.subject.CreateSubjectUseCase
 import ar.com.ingenieriaalimentacion.fake.FakeConnectivityObserver
 import ar.com.ingenieriaalimentacion.fake.FakeSubjectRepository
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
-import kotlinx.serialization.json.Json
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import kotlinx.serialization.json.Json
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CreateSubjectViewModelTest {
@@ -153,6 +153,7 @@ class CreateSubjectViewModelTest {
             assertEquals("Juan", summary.name)
             assertEquals("Pérez", summary.lastName)
             assertEquals(Sex.Male, summary.sex)
+            assertEquals(repo.enqueued.first().birthDate, summary.birthDate)
             // Stays on the form-confirmation path only when nobody is waiting for the subject.
             assertEquals(null, state.successMessage)
             cancelAndIgnoreRemainingEvents()

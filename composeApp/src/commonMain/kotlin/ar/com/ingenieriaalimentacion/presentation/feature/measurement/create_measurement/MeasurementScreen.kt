@@ -23,17 +23,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
+import ar.com.ingenieriaalimentacion.core.design_system.components.dialog.AlConfirmDialog
+import ar.com.ingenieriaalimentacion.core.design_system.components.dialog.AlConfirmTone
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlInput
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlSelectField
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.components.sheet.AlBottomSheet
-import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.components.toast.AlToast
+import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
@@ -77,6 +80,10 @@ fun MeasurementScreen(
     val scrollState = rememberScrollState()
     val isImeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     val sheetState = rememberModalBottomSheetState()
+    val keyboard = LocalSoftwareKeyboardController.current
+    LaunchedEffect(state.confirmation?.token) {
+        if (state.confirmation != null) keyboard?.hide()
+    }
 
     AlScaffold {
         Column(
@@ -117,6 +124,19 @@ fun MeasurementScreen(
                     isImeVisible = isImeVisible,
                 )
             }
+        }
+
+        state.confirmation?.let { confirmation ->
+            AlConfirmDialog(
+                open = true,
+                title = "Revisá las medidas",
+                description = confirmation.description,
+                confirmText = "Confirmar y guardar",
+                cancelText = "Corregir",
+                confirmTone = AlConfirmTone.Neutral,
+                onConfirm = { onAction(MeasurementAction.ConfirmMeasurement(confirmation.token)) },
+                onDismiss = { onAction(MeasurementAction.DismissConfirmation(confirmation.token)) },
+            )
         }
 
         if (state.showEstablishmentPicker) {

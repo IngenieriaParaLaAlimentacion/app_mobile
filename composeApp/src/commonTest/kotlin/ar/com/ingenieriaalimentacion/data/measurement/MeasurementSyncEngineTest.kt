@@ -2,13 +2,12 @@ package ar.com.ingenieriaalimentacion.data.measurement
 
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementUpload
 import ar.com.ingenieriaalimentacion.domain.model.subject.MAX_SYNC_ATTEMPTS
-import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
-import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectUpload
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
+import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectUpload
+import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.domain.util.IdGenerator
 import ar.com.ingenieriaalimentacion.fake.FakeMeasurementLocalStore
 import ar.com.ingenieriaalimentacion.fake.FakeSubjectLocalStore
-import kotlinx.datetime.LocalDate
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -24,11 +23,12 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
-import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.LocalDate
+import kotlinx.serialization.json.Json
 
 class MeasurementSyncEngineTest {
 
@@ -326,5 +326,26 @@ class MeasurementSyncEngineTest {
         assertEquals(SyncState.Failed, store.current("r1")?.syncState)
         assertEquals("El sujeto no se pudo sincronizar.", store.current("r1")?.errorMessage)
         assertEquals(1, summary.failed)
+    }
+
+    @Test
+    fun `enqueue uses prepared instant and repository UUID and queue clock`() = runTest {
+        val captured = kotlin.time.Instant.parse("2026-10-17T00:30:00Z")
+        val subject = ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary(
+            "s", 42, "Ana", "García", Sex.Female, LocalDate(1990, 1, 1),
+        )
+        val draft = ar.com.ingenieriaalimentacion.domain.model.measurement.NewMeasurement(
+            subject, "e", "Escuela", 72.55, 170.25, captured,
+        )
+        currentTime = captured.toEpochMilliseconds() + 86_400_000L
+        assertTrue(repo.enqueue(draft).isSuccess)
+        val row = kotlin.test.assertNotNull(store.current("generated"))
+        assertEquals(captured.toString(), row.measuredAt)
+        assertEquals(currentTime, row.createdAt)
+        assertEquals(currentTime, row.updatedAt)
+        assertEquals("generated", row.localId)
+        assertEquals(72.55, row.weightKg)
+        assertEquals(170.25, row.heightCm)
+        assertEquals(0, apiCalls)
     }
 }

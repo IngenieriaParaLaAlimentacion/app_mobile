@@ -1,9 +1,9 @@
 package ar.com.ingenieriaalimentacion.data.subject
 
-import ar.com.ingenieriaalimentacion.fake.FakeSubjectLocalStore
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectUpload
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
+import ar.com.ingenieriaalimentacion.fake.FakeSubjectLocalStore
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -18,12 +18,12 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
-import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.LocalDate
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.LocalDate
+import kotlinx.serialization.json.Json
 
 class SubjectQueryRepositoryImplTest {
 
@@ -42,7 +42,7 @@ class SubjectQueryRepositoryImplTest {
     """.trimIndent()
 
     private fun remoteSubject(id: String, dni: Int, name: String, lastName: String): String =
-        """{ "id": "$id", "dni": $dni, "name": "$name", "last_name": "$lastName", "sex": "male" }"""
+        """{ "id": "$id", "dni": $dni, "name": "$name", "last_name": "$lastName", "birth_date":"1990-01-01","sex": "male" }"""
 
     private fun respondPage(scope: MockRequestHandleScope, body: String) = scope.respond(
         content = body,

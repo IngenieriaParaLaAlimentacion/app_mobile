@@ -23,13 +23,13 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class SubjectHistoryRepositoryImplTest {
 
@@ -53,7 +53,7 @@ class SubjectHistoryRepositoryImplTest {
         {
             "type": "subject",
             "occurred_at": "2026-06-01T12:00:00Z",
-            "subject": { "id": "$id", "dni": $dni, "name": "$name", "last_name": "$lastName", "sex": "male" }
+            "subject": { "id": "$id", "dni": $dni, "name": "$name", "last_name": "$lastName", "birth_date":"1990-01-01","sex": "male" }
         }
     """.trimIndent()
 

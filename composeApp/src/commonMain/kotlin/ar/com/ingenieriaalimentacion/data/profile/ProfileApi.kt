@@ -9,6 +9,7 @@ import ar.com.ingenieriaalimentacion.data.profile.dto.UpdateProfileRequest
 import ar.com.ingenieriaalimentacion.data.profile.dto.WithdrawEstablishmentsRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
@@ -83,9 +84,13 @@ class ProfileApi(private val client: HttpClient) {
         }
     }
 
-    /** 201 on success; the created request's body is irrelevant to the app. */
+    /**
+     * 201 on success; the created request's body is irrelevant to the app. Nothing is read from
+     * the response, so without `expectSuccess` a 4xx would pass as a success on the authed client.
+     */
     suspend fun notifyEstablishmentAbsence(body: EstablishmentAbsenceRequest) {
         client.post("api/v1/establishments/requests") {
+            expectSuccess = true
             contentType(ContentType.Application.Json)
             setBody(body)
         }

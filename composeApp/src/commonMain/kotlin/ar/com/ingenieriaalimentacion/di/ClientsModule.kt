@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.di
 
+import ar.com.ingenieriaalimentacion.data.recipe.RecipeApi
 import ar.com.ingenieriaalimentacion.data.activity.ActivityApi
 import ar.com.ingenieriaalimentacion.data.auth.AuthApi
 import ar.com.ingenieriaalimentacion.data.establishment.EstablishmentApi
@@ -62,6 +63,7 @@ val clientsModule = module {
     single { SurveyApi(client = get()) }
     single { SurveyResponseApi(client = get()) }
     single { SurveyResponseActivityApi(client = get()) }
+    single { RecipeApi(client = get()) }
     single { FoodCatalogApi(client = get()) }
     single { FoodIntakeApi(client = get()) }
     single { ReceiptIntakeApi(client = get(), json = get()) }

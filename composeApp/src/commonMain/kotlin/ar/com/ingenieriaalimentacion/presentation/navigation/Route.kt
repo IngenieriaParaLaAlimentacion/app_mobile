@@ -6,6 +6,10 @@ import kotlinx.serialization.Serializable
 @Serializable
 sealed class Route {
     @Serializable
+    @SerialName("recipes")
+    data object Recipes : Route()
+
+    @Serializable
     @SerialName("get_started")
     data object GetStarted : Route()
 

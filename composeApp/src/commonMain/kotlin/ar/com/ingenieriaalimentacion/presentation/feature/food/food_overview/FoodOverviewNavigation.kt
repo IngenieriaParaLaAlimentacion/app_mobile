@@ -9,6 +9,7 @@ import ar.com.ingenieriaalimentacion.presentation.feature.food.receipt_food_inta
 import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_outflow.navigateToCreateFoodOutflow
 import ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_food_movement_history.navigateToEstablishmentFoodMovementHistory
 import ar.com.ingenieriaalimentacion.presentation.feature.food.food_stock.navigateToFoodStock
+import ar.com.ingenieriaalimentacion.presentation.feature.food.recipes.navigateToRecipes
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 
 fun NavController.navigateToFoodOverview(navOptions: NavOptions? = null) =
@@ -25,6 +26,7 @@ fun NavGraphBuilder.foodOverviewScreen(navController: NavController) {
 
 internal fun navigate(destination: FoodOverviewDestination, navController: NavController) {
     when (destination) {
+        FoodOverviewDestination.Recipes -> navController.navigateToRecipes()
         FoodOverviewDestination.Stock -> navController.navigateToFoodStock()
         FoodOverviewDestination.Back -> navController.popBackStack()
         FoodOverviewDestination.CreateIntake -> navController.navigateToCreateFoodIntake()

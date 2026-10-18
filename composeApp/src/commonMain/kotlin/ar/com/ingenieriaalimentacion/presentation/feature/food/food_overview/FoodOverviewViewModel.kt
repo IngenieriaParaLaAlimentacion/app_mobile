@@ -49,6 +49,7 @@ class FoodOverviewViewModel(
 
     fun onAction(action: FoodOverviewAction) {
         when (action) {
+            FoodOverviewAction.RecipesClick -> if (_state.value.establishment != null) emit(FoodOverviewDestination.Recipes)
             FoodOverviewAction.BackClick -> emit(FoodOverviewDestination.Back)
             FoodOverviewAction.IntakeClick -> emit(FoodOverviewDestination.CreateIntake)
             FoodOverviewAction.ReceiptIntakeClick ->

@@ -48,6 +48,8 @@ import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import ar.com.ingenieriaalimentacion.presentation.navigation.ESTABLISHMENTS_CHANGED_RESULT
 import ar.com.ingenieriaalimentacion.presentation.navigation.RefreshOnNavResult
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_bowl_line
+import ar.com.ingenieriaalimentacion.presentation.navigation.FOOD_MOVEMENT_CREATED_RESULT
 import ingenieria_alimentacion.composeapp.generated.resources.Res
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_alert_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_check_circle
@@ -81,6 +83,11 @@ fun HomeScreenRoot(
     ) {
         viewModel.reloadEstablishments()
     }
+
+    RefreshOnNavResult(
+        savedStateHandle = LocalOuterNavController.current.currentBackStackEntry?.savedStateHandle,
+        key = FOOD_MOVEMENT_CREATED_RESULT,
+    ) { viewModel.refreshFoodMovements() }
 
     LaunchedEffect(state.destination) {
         state.destination?.let {
@@ -272,6 +279,7 @@ internal val QUICK_ACTIONS = listOf(
     QuickAction(Res.drawable.ic_mingcute_user_3_line, "Sujeto", HomeAction.NewSubjectClick),
     QuickAction(Res.drawable.ic_mingcute_doc_line, "Encuesta", HomeAction.RespondSurveyClick),
     QuickAction(Res.drawable.ic_mingcute_wardrobe_line, "Alimentos", HomeAction.FoodOverviewClick),
+    QuickAction(Res.drawable.ic_mingcute_bowl_line, "Recetas", HomeAction.RecipesClick),
 )
 
 private const val QUICK_ACTION_COLUMNS = 2
@@ -292,7 +300,7 @@ private fun QuickActions(state: HomeState, onAction: (HomeAction) -> Unit) {
                             icon = quickAction.icon,
                             label = quickAction.label,
                             onClick = { onAction(quickAction.action) },
-                            enabled = state.quickActionsEnabled,
+                            enabled = state.quickActionsEnabled && (quickAction.action != HomeAction.RecipesClick || state.currentEstablishment != null),
                         )
                     }
                     repeat(QUICK_ACTION_COLUMNS - row.size) {

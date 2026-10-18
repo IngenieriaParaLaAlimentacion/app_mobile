@@ -6,6 +6,12 @@ import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentAbsenceEr
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentAbsenceNotice
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.NotifyEstablishmentAbsenceUseCase
 import ar.com.ingenieriaalimentacion.fake.FakeProfileRepository
+import ar.com.ingenieriaalimentacion.presentation.feature.establishment.characterization.common.CharacterizationTextField
+import ar.com.ingenieriaalimentacion.presentation.feature.establishment.characterization.common.CharacterizationMultiField
+import ar.com.ingenieriaalimentacion.presentation.feature.establishment.characterization.common.CharacterizationFormAction
+import ar.com.ingenieriaalimentacion.presentation.feature.establishment.characterization.common.CharacterizationCopy
+import ar.com.ingenieriaalimentacion.domain.model.establishment.Meal
+import ar.com.ingenieriaalimentacion.domain.model.establishment.EstablishmentCharacterization
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -46,10 +52,11 @@ class NotifyEstablishmentViewModelTest {
         val repo = FakeProfileRepository()
         val vm = viewModel(repo)
 
-        vm.onAction(NotifyEstablishmentAction.SubmitClick)
+        vm.onAction(NotifyEstablishmentAction.NextClick)
         advanceUntilIdle()
 
         assertEquals(0, repo.notifyAbsenceCount)
+        assertEquals(NotifyEstablishmentStep.Basics, vm.state.value.step)
         assertNull(vm.state.value.destination)
         assertEquals("Ingresá el nombre del comedor.", vm.state.value.name.displayError)
         assertEquals("Ingresá la dirección.", vm.state.value.address.displayError)
@@ -64,10 +71,11 @@ class NotifyEstablishmentViewModelTest {
         val vm = viewModel(repo)
 
         vm.onAction(NotifyEstablishmentAction.NameChanged("Comedor Norte"))
-        vm.onAction(NotifyEstablishmentAction.SubmitClick)
+        vm.onAction(NotifyEstablishmentAction.NextClick)
         advanceUntilIdle()
 
         assertEquals(0, repo.notifyAbsenceCount)
+        assertEquals(NotifyEstablishmentStep.Basics, vm.state.value.step)
         assertNull(vm.state.value.name.displayError)
         assertEquals("Ingresá la dirección.", vm.state.value.address.displayError)
     }
@@ -81,6 +89,7 @@ class NotifyEstablishmentViewModelTest {
         vm.onAction(NotifyEstablishmentAction.AddressChanged(" Calle 123 "))
         vm.onAction(NotifyEstablishmentAction.CityChanged("   "))
         vm.onAction(NotifyEstablishmentAction.ProvinceChanged("Buenos Aires"))
+        vm.onAction(NotifyEstablishmentAction.NextClick)
         vm.onAction(NotifyEstablishmentAction.SubmitClick)
         advanceUntilIdle()
 
@@ -103,6 +112,7 @@ class NotifyEstablishmentViewModelTest {
         val vm = viewModel(repo)
         vm.onAction(NotifyEstablishmentAction.NameChanged("Comedor Norte"))
         vm.onAction(NotifyEstablishmentAction.AddressChanged("Calle 123"))
+        vm.onAction(NotifyEstablishmentAction.NextClick)
 
         vm.state.test {
             assertFalse(awaitItem().isSubmitting) // initial (form already filled)
@@ -128,10 +138,11 @@ class NotifyEstablishmentViewModelTest {
         val vm = viewModel(repo)
 
         vm.onAction(NotifyEstablishmentAction.NameChanged("a".repeat(101)))
-        vm.onAction(NotifyEstablishmentAction.SubmitClick)
+        vm.onAction(NotifyEstablishmentAction.NextClick)
         advanceUntilIdle()
 
         assertEquals(0, repo.notifyAbsenceCount)
+        assertEquals(NotifyEstablishmentStep.Basics, vm.state.value.step)
         assertNull(vm.state.value.destination)
         assertEquals("Máximo 100 caracteres.", vm.state.value.name.displayError)
     }
@@ -147,6 +158,7 @@ class NotifyEstablishmentViewModelTest {
 
         vm.onAction(NotifyEstablishmentAction.NameChanged("Comedor Sur"))
         vm.onAction(NotifyEstablishmentAction.AddressChanged("Calle 123"))
+        vm.onAction(NotifyEstablishmentAction.NextClick)
         vm.onAction(NotifyEstablishmentAction.SubmitClick)
         advanceUntilIdle()
 
@@ -167,6 +179,7 @@ class NotifyEstablishmentViewModelTest {
 
         vm.onAction(NotifyEstablishmentAction.NameChanged("Comedor Norte"))
         vm.onAction(NotifyEstablishmentAction.AddressChanged("Calle 123"))
+        vm.onAction(NotifyEstablishmentAction.NextClick)
         vm.onAction(NotifyEstablishmentAction.SubmitClick)
         advanceUntilIdle()
 
@@ -177,13 +190,14 @@ class NotifyEstablishmentViewModelTest {
     fun `retry after failure clears the previous error`() = runTest(dispatcher) {
         val repo = FakeProfileRepository().apply {
             notifyAbsenceResult = Result.failure(
-                EstablishmentAbsenceFailure(EstablishmentAbsenceError.Validation, null),
+                EstablishmentAbsenceFailure(EstablishmentAbsenceError.Validation(), null),
             )
         }
         val vm = viewModel(repo)
 
         vm.onAction(NotifyEstablishmentAction.NameChanged("Comedor Norte"))
         vm.onAction(NotifyEstablishmentAction.AddressChanged("Calle 123"))
+        vm.onAction(NotifyEstablishmentAction.NextClick)
         vm.onAction(NotifyEstablishmentAction.SubmitClick)
         advanceUntilIdle()
         assertNotNull(vm.state.value.submitError)
@@ -194,6 +208,137 @@ class NotifyEstablishmentViewModelTest {
 
         assertNull(vm.state.value.submitError)
         assertEquals(NotifyEstablishmentDestination.Submitted, vm.state.value.destination)
+    }
+
+    private fun filledViewModel(repo: FakeProfileRepository) = viewModel(repo).apply {
+        onAction(NotifyEstablishmentAction.NameChanged("Comedor Norte"))
+        onAction(NotifyEstablishmentAction.AddressChanged("Calle 123"))
+        onAction(NotifyEstablishmentAction.NextClick)
+    }
+
+    private fun NotifyEstablishmentViewModel.ficha(action: CharacterizationFormAction) =
+        onAction(NotifyEstablishmentAction.Characterization(action))
+
+    @Test
+    fun `next with valid basics moves to the ficha step without sending anything`() = runTest(dispatcher) {
+        val repo = FakeProfileRepository()
+        val vm = filledViewModel(repo)
+        advanceUntilIdle()
+
+        assertEquals(NotifyEstablishmentStep.Characterization, vm.state.value.step)
+        assertEquals(0, repo.notifyAbsenceCount)
+    }
+
+    @Test
+    fun `submit sends the ficha with the request`() = runTest(dispatcher) {
+        val repo = FakeProfileRepository()
+        val vm = filledViewModel(repo)
+
+        vm.ficha(CharacterizationFormAction.OptionToggled(CharacterizationMultiField.Meals, "lunch"))
+        vm.ficha(CharacterizationFormAction.TextChanged(CharacterizationTextField.District, " Moreno "))
+        vm.onAction(NotifyEstablishmentAction.SubmitClick)
+        advanceUntilIdle()
+
+        assertEquals(
+            EstablishmentCharacterization(district = "Moreno", meals = setOf(Meal.Lunch)),
+            repo.lastAbsenceNotice?.characterization,
+        )
+    }
+
+    @Test
+    fun `answer later sends the request without the ficha, even an invalid one`() = runTest(dispatcher) {
+        val repo = FakeProfileRepository()
+        val vm = filledViewModel(repo)
+
+        vm.ficha(CharacterizationFormAction.TextChanged(CharacterizationTextField.ContactEmail, "no-es-mail"))
+        vm.onAction(NotifyEstablishmentAction.AnswerLaterClick)
+        advanceUntilIdle()
+
+        assertEquals(1, repo.notifyAbsenceCount)
+        assertNull(repo.lastAbsenceNotice?.characterization)
+        assertEquals(NotifyEstablishmentDestination.Submitted, vm.state.value.destination)
+    }
+
+    @Test
+    fun `an untouched ficha is sent as no ficha`() = runTest(dispatcher) {
+        val repo = FakeProfileRepository()
+        val vm = filledViewModel(repo)
+
+        vm.onAction(NotifyEstablishmentAction.SubmitClick)
+        advanceUntilIdle()
+
+        assertNull(repo.lastAbsenceNotice?.characterization)
+    }
+
+    @Test
+    fun `an invalid ficha blocks submit and flags it inline`() = runTest(dispatcher) {
+        val repo = FakeProfileRepository()
+        val vm = filledViewModel(repo)
+
+        vm.ficha(CharacterizationFormAction.TextChanged(CharacterizationTextField.ContactEmail, "no-es-mail"))
+        vm.onAction(NotifyEstablishmentAction.SubmitClick)
+        advanceUntilIdle()
+
+        assertEquals(0, repo.notifyAbsenceCount)
+        assertTrue(vm.state.value.hasInvalidCharacterization)
+        assertEquals(
+            CharacterizationCopy.INVALID_EMAIL,
+            vm.state.value.characterization.displayError(CharacterizationTextField.ContactEmail),
+        )
+    }
+
+    @Test
+    fun `back on the ficha step returns to the basics and keeps everything`() = runTest(dispatcher) {
+        val vm = filledViewModel(FakeProfileRepository())
+        vm.ficha(CharacterizationFormAction.TextChanged(CharacterizationTextField.Neighborhood, "Centro"))
+
+        vm.onAction(NotifyEstablishmentAction.BackClick)
+
+        val state = vm.state.value
+        assertEquals(NotifyEstablishmentStep.Basics, state.step)
+        assertNull(state.destination)
+        assertEquals("Comedor Norte", state.name.value)
+        assertEquals("Centro", state.characterization.text(CharacterizationTextField.Neighborhood).value)
+    }
+
+    @Test
+    fun `a 422 on a ficha field flags it and stays on the ficha step`() = runTest(dispatcher) {
+        val repo = FakeProfileRepository().apply {
+            notifyAbsenceResult = Result.failure(
+                EstablishmentAbsenceFailure(EstablishmentAbsenceError.Validation("characterization.district"), null),
+            )
+        }
+        val vm = filledViewModel(repo)
+        vm.ficha(CharacterizationFormAction.TextChanged(CharacterizationTextField.District, "Moreno"))
+
+        vm.onAction(NotifyEstablishmentAction.SubmitClick)
+        advanceUntilIdle()
+
+        val state = vm.state.value
+        assertEquals(NotifyEstablishmentStep.Characterization, state.step)
+        assertEquals("Moreno", state.characterization.text(CharacterizationTextField.District).value)
+        assertEquals(
+            CharacterizationCopy.SERVER_INVALID,
+            state.characterization.displayError(CharacterizationTextField.District),
+        )
+    }
+
+    @Test
+    fun `a 422 on the address goes back to the basics with the address flagged`() = runTest(dispatcher) {
+        val repo = FakeProfileRepository().apply {
+            notifyAbsenceResult = Result.failure(
+                EstablishmentAbsenceFailure(EstablishmentAbsenceError.Validation("formatted_address"), null),
+            )
+        }
+        val vm = filledViewModel(repo)
+
+        vm.onAction(NotifyEstablishmentAction.AnswerLaterClick)
+        advanceUntilIdle()
+
+        val state = vm.state.value
+        assertEquals(NotifyEstablishmentStep.Basics, state.step)
+        assertEquals("Calle 123", state.address.value)
+        assertNotNull(state.address.displayError)
     }
 
     @Test

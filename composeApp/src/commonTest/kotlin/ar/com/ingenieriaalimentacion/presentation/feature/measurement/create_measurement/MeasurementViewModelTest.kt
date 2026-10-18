@@ -411,6 +411,7 @@ class MeasurementViewModelTest {
         vm.state.test {
             awaitState { !it.isLoadingProfile }
             vm.fill("120.7500", subject.copy(birthDate = birth))
+            vm.onAction(MeasurementAction.ObservationChanged("Se verificó la medida"))
             vm.onAction(MeasurementAction.Submit)
             val draft = assertNotNull(awaitState { it.confirmation != null }.confirmation)
             val captured = clock
@@ -418,6 +419,7 @@ class MeasurementViewModelTest {
             vm.onAction(MeasurementAction.ConfirmMeasurement(draft.token))
             val failed = awaitState { it.submitError != null }
             assertEquals("120.7500", failed.weight.value)
+            assertEquals("Se verificó la medida", failed.observation.value)
             assertTrue(repo.persisted.isEmpty())
             assertEquals(0, repo.syncCalls)
             repo.enqueueResult = Result.success(Unit)
@@ -430,6 +432,7 @@ class MeasurementViewModelTest {
             assertEquals(repo.enqueued.first(), repo.enqueued.last())
             assertEquals(captured, repo.persisted.single().measuredAt)
             assertEquals(120.75, repo.persisted.single().weightKg)
+            assertEquals("Se verificó la medida", repo.persisted.single().observation)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -513,4 +516,76 @@ class MeasurementViewModelTest {
             cancelAndIgnoreRemainingEvents()
         }
     }
+    @Test
+    fun `optional observation saves on normal measurements and clears after success`() = runTest(dispatcher) {
+        val repo = FakeMeasurementRepository()
+        val vm = viewModel(repo, approvedProfile())
+        vm.state.test {
+            awaitState { !it.isLoadingProfile }
+            vm.fill("70")
+            vm.onAction(MeasurementAction.ObservationChanged("  Sin calzado.\nMedición repetida.  "))
+            vm.onAction(MeasurementAction.Submit)
+            val saved = awaitState { it.successMessage != null }
+            assertEquals("Sin calzado.\nMedición repetida.", repo.persisted.single().observation)
+            assertEquals("", saved.observation.value)
+            assertNull(saved.confirmation)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `editing observation invalidates confirmation and stale confirm cannot save`() = runTest(dispatcher) {
+        val repo = FakeMeasurementRepository()
+        val vm = viewModel(repo, approvedProfile())
+        vm.state.test {
+            awaitState { !it.isLoadingProfile }
+            vm.fill()
+            vm.onAction(MeasurementAction.ObservationChanged("Nota inicial"))
+            vm.onAction(MeasurementAction.Submit)
+            val original = assertNotNull(awaitState { it.confirmation != null }.confirmation)
+            vm.onAction(MeasurementAction.ObservationChanged("Nota corregida"))
+            awaitState { it.confirmation == null }
+            vm.onAction(MeasurementAction.ConfirmMeasurement(original.token))
+            runCurrent()
+            assertTrue(repo.enqueued.isEmpty())
+            vm.onAction(MeasurementAction.Submit)
+            val updated = assertNotNull(awaitState { it.confirmation != null }.confirmation)
+            assertTrue(updated.token != original.token)
+            vm.onAction(MeasurementAction.DismissConfirmation(updated.token))
+            val dismissed = awaitState { it.confirmation == null }
+            assertEquals("Nota corregida", dismissed.observation.value)
+            vm.onAction(MeasurementAction.Submit)
+            val confirmation = assertNotNull(awaitState { it.confirmation != null }.confirmation)
+            vm.onAction(MeasurementAction.ConfirmMeasurement(confirmation.token))
+            awaitState { it.successMessage != null }
+            assertEquals("Nota corregida", repo.persisted.single().observation)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `observation validation follows blur and blocks oversized submit`() = runTest(dispatcher) {
+        val repo = FakeMeasurementRepository()
+        val vm = viewModel(repo, approvedProfile())
+        vm.state.test {
+            awaitState { !it.isLoadingProfile }
+            vm.fill("70")
+            vm.onAction(MeasurementAction.ObservationFocusChanged(true))
+            vm.onAction(MeasurementAction.ObservationChanged("a".repeat(501)))
+            val editing = awaitState { it.observation.value.length == 501 }
+            assertNull(editing.observation.displayError)
+            vm.onAction(MeasurementAction.ObservationFocusChanged(false))
+            assertEquals("Máximo 500 caracteres.", awaitState { it.observation.displayError != null }.observation.displayError)
+            vm.onAction(MeasurementAction.Submit)
+            runCurrent()
+            assertTrue(repo.enqueued.isEmpty())
+            assertNull(vm.state.value.confirmation)
+            vm.onAction(MeasurementAction.ObservationChanged("a".repeat(500)))
+            vm.onAction(MeasurementAction.Submit)
+            awaitState { it.successMessage != null }
+            assertEquals(500, repo.persisted.single().observation?.length)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
 }

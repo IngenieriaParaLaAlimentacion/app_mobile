@@ -15,6 +15,7 @@ data class MeasurementState(
     val showEstablishmentPicker: Boolean = false,
     val weight: TextFieldState = TextFieldState(),
     val height: TextFieldState = TextFieldState(),
+    val observation: TextFieldState = TextFieldState(),
     val measuredAtDisplay: String = "",            // friendly "ahora" for display (read-only)
     val isSubmitting: Boolean = false,
     val confirmation: MeasurementConfirmation? = null,

@@ -81,4 +81,15 @@ class PrepareMeasurementUseCaseTest {
         val child = adult.copy(birthDate = LocalDate(2018, 1, 1))
         assertTrue(prepare(child, "e", "Escuela", 90.0, 140.0).requiresConfirmation)
     }
+    @Test
+    fun normalizesOptionalObservationAndEnforcesLimit() {
+        assertEquals("Contexto\nsegunda línea", prepare(adult, "e", "Escuela", 70.0, 170.0,
+            "  Contexto\nsegunda línea  ").measurement.observation)
+        assertEquals(null, prepare(adult, "e", "Escuela", 70.0, 170.0, " \n ").measurement.observation)
+        assertEquals(500, prepare(adult, "e", "Escuela", 70.0, 170.0, "a".repeat(500)).measurement.observation?.length)
+        assertFailsWith<IllegalArgumentException> {
+            prepare(adult, "e", "Escuela", 70.0, 170.0, "a".repeat(501))
+        }
+    }
+
 }

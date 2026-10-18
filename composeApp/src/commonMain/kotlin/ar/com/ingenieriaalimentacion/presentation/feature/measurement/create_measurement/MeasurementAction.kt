@@ -4,6 +4,8 @@ import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatu
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
 
 sealed interface MeasurementAction {
+    data class ObservationChanged(val value: String) : MeasurementAction
+    data class ObservationFocusChanged(val focused: Boolean) : MeasurementAction
     data class WeightChanged(val value: String) : MeasurementAction
     data class WeightFocusChanged(val focused: Boolean) : MeasurementAction
     data class HeightChanged(val value: String) : MeasurementAction

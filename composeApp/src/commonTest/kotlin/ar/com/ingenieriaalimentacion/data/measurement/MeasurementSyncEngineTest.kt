@@ -335,7 +335,7 @@ class MeasurementSyncEngineTest {
             "s", 42, "Ana", "García", Sex.Female, LocalDate(1990, 1, 1),
         )
         val draft = ar.com.ingenieriaalimentacion.domain.model.measurement.NewMeasurement(
-            subject, "e", "Escuela", 72.55, 170.25, captured,
+            subject, "e", "Escuela", 72.55, 170.25, captured, observation = "Verificado",
         )
         currentTime = captured.toEpochMilliseconds() + 86_400_000L
         assertTrue(repo.enqueue(draft).isSuccess)
@@ -346,6 +346,31 @@ class MeasurementSyncEngineTest {
         assertEquals("generated", row.localId)
         assertEquals(72.55, row.weightKg)
         assertEquals(170.25, row.heightCm)
+        assertEquals("Verificado", row.observation)
         assertEquals(0, apiCalls)
     }
+    @Test
+    fun `queued observation reaches API unchanged on transient retry`() = runTest {
+        val note = "Se verificó peso y talla.\nSin calzado."
+        store.insert(row("noted").copy(observation = note))
+        val bodies = mutableListOf<String>()
+        responder = { request ->
+            bodies += (request.body as io.ktor.http.content.TextContent).text
+            respondError(HttpStatusCode.InternalServerError)
+        }
+        repo.syncPending()
+        assertEquals(note, store.current("noted")?.observation)
+        currentTime += 60_000L
+        responder = { request ->
+            bodies += (request.body as io.ktor.http.content.TextContent).text
+            respond(successBody("noted"), HttpStatusCode.Created, jsonHeaders())
+        }
+        repo.syncPending()
+        assertEquals(2, bodies.size)
+        assertEquals(bodies.first(), bodies.last())
+        val request = Json.decodeFromString<ar.com.ingenieriaalimentacion.data.measurement.dto.MeasurementRequest>(bodies.last())
+        assertEquals(note, request.observation)
+        assertEquals(SyncState.Synced, store.current("noted")?.syncState)
+    }
+
 }

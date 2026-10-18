@@ -1,0 +1,2 @@
+-- v9 -> v10: preserve optional measurement observations in the offline queue.
+ALTER TABLE PendingMeasurement ADD COLUMN observation TEXT;

@@ -32,6 +32,7 @@ internal fun PendingMeasurement.toDomain(): MeasurementUpload = MeasurementUploa
     alerts = alertsCodec.decodeAlerts(alertsJson),
     createdAt = createdAt,
     updatedAt = updatedAt,
+    observation = observation,
 )
 
 /** Form input → a fresh PENDING upload row with the client-generated [id]. */
@@ -54,6 +55,7 @@ internal fun NewMeasurement.toPendingUpload(id: String, measuredAt: String, now:
         alerts = emptyList(),
         createdAt = now,
         updatedAt = now,
+        observation = observation,
     )
 
 /** Serialize alerts for the `alertsJson` column. */

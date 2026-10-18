@@ -18,12 +18,16 @@ class PrepareMeasurementUseCase(
         establishmentName: String,
         weightKg: Double,
         heightCm: Double,
+        observation: String? = null,
     ): PreparedMeasurement {
         require(weightKg.isFinite() && weightKg > 0.5 && weightKg <= 300.0)
         require(heightCm.isFinite() && heightCm > 20.0 && heightCm <= 250.0)
+        val normalizedObservation = observation?.trim()?.takeIf { it.isNotEmpty() }
+        require(normalizedObservation == null || normalizedObservation.length <= 500)
         val capturedAt = now()
         val measurement = NewMeasurement(
             subject, establishmentId, establishmentName, weightKg, heightCm, measuredAt = capturedAt,
+            observation = normalizedObservation,
         )
         val birthDate = subject.birthDate
         val needsConfirmation = birthDate == null || evaluator.requiresConfirmation(

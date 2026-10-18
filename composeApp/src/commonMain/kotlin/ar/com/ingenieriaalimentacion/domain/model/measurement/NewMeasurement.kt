@@ -11,4 +11,5 @@ data class NewMeasurement(
     val weightKg: Double,
     val heightCm: Double,
     val measuredAt: Instant,
+    val observation: String? = null,
 )

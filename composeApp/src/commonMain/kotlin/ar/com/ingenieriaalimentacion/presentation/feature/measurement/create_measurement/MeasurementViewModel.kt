@@ -53,13 +53,15 @@ class MeasurementViewModel(
         if (_state.value.isSubmitting &&
             action != MeasurementAction.DismissSuccess &&
             action !is MeasurementAction.WeightFocusChanged &&
-            action !is MeasurementAction.HeightFocusChanged
+            action !is MeasurementAction.HeightFocusChanged &&
+            action !is MeasurementAction.ObservationFocusChanged
         ) return
         if (action == MeasurementAction.BackClick && _state.value.confirmation != null) {
             invalidateDraft()
             return
         }
         when (action) {
+            is MeasurementAction.ObservationChanged,
             is MeasurementAction.WeightChanged,
             is MeasurementAction.HeightChanged,
             is MeasurementAction.SubjectSelected,
@@ -91,6 +93,14 @@ class MeasurementViewModel(
 
             is MeasurementAction.HeightFocusChanged ->
                 _state.update { it.copy(height = it.height.onFocus(action.focused, heightValidator)) }
+
+            is MeasurementAction.ObservationChanged ->
+                _state.update {
+                    it.copy(observation = it.observation.onChange(action.value, observationValidator), successMessage = null)
+                }
+
+            is MeasurementAction.ObservationFocusChanged ->
+                _state.update { it.copy(observation = it.observation.onFocus(action.focused, observationValidator)) }
 
             is MeasurementAction.SubjectSelected ->
                 _state.update { it.copy(subject = action.subject, successMessage = null) }
@@ -182,17 +192,18 @@ class MeasurementViewModel(
         val validated = current.copy(
             weight = current.weight.showError(weightValidator),
             height = current.height.showError(heightValidator),
+            observation = current.observation.showError(observationValidator),
             establishmentError = if (current.selectedEstablishment == null) "Elegí el establecimiento." else null,
         )
         _state.value = validated
         val subject = validated.subject ?: return
         val establishment = validated.selectedEstablishment ?: return
-        if (!validated.weight.isValid || !validated.height.isValid) return
+        if (!validated.weight.isValid || !validated.height.isValid || !validated.observation.isValid) return
         val weight = validated.weight.value.toDoubleOrNull() ?: return
         val height = validated.height.value.toDoubleOrNull() ?: return
         val draft = retryDraft?.takeIf { sameForm(it, validated) } ?: MeasurementConfirmation(
             token = ++nextConfirmationToken,
-            prepared = prepareMeasurement(subject, establishment.id, establishment.name, weight, height),
+            prepared = prepareMeasurement(subject, establishment.id, establishment.name, weight, height, validated.observation.value),
             weightText = validated.weight.value,
             heightText = validated.height.value,
         ).also { retryDraft = it }
@@ -215,7 +226,8 @@ class MeasurementViewModel(
         return measurement.subject == state.subject &&
             measurement.establishmentId == state.selectedEstablishment?.id &&
             measurement.establishmentName == state.selectedEstablishment?.name &&
-            draft.weightText == state.weight.value && draft.heightText == state.height.value
+            draft.weightText == state.weight.value && draft.heightText == state.height.value &&
+            measurement.observation == state.observation.value.trim().takeIf { it.isNotEmpty() }
     }
 
     private fun persist(draft: MeasurementConfirmation) {
@@ -231,6 +243,7 @@ class MeasurementViewModel(
                         it.copy(
                             weight = TextFieldState(),
                             height = TextFieldState(),
+                            observation = TextFieldState(),
                             confirmation = null,
                             isSubmitting = false,
                             submitError = null,
@@ -249,6 +262,8 @@ class MeasurementViewModel(
             )
         }
     }
+
+    private val observationValidator: Validator = Rules.of(Rules.maxLength(500, "Máximo 500 caracteres."))
 
     private val weightValidator: Validator = Rules.of(
         Rules.required("Ingresá el peso."),

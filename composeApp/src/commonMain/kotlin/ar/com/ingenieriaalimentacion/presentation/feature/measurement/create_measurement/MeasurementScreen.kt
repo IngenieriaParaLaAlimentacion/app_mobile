@@ -232,6 +232,25 @@ private fun MeasurementForm(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 )
 
+                Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+                    AlInput(
+                        label = "Observación (opcional)",
+                        value = state.observation.value,
+                        onValueChange = { onAction(MeasurementAction.ObservationChanged(it)) },
+                        onFocusChange = { onAction(MeasurementAction.ObservationFocusChanged(it)) },
+                        error = state.observation.displayError,
+                        enabled = !state.isSubmitting,
+                        singleLine = false,
+                        scrollState = scrollState,
+                        isImeVisible = isImeVisible,
+                    )
+                    Text(
+                        text = "${state.observation.value.trim().length}/500",
+                        color = AlTheme.colors.textMuted,
+                        style = AlTheme.typography.caption,
+                    )
+                }
+
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
                         text = "Fecha de medición",

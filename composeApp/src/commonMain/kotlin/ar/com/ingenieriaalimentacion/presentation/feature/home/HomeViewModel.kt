@@ -128,6 +128,16 @@ class HomeViewModel(
 
             HomeAction.FoodOverviewClick ->
                 _state.update { it.copy(destination = HomeDestination.NavigateToFoodOverview) }
+
+            HomeAction.CompleteCharacterizationClick -> _state.update { state ->
+                val establishment = state.currentEstablishment ?: return@update state
+                state.copy(
+                    destination = HomeDestination.NavigateToEditCharacterization(
+                        establishmentId = establishment.id,
+                        establishmentName = establishment.name,
+                    ),
+                )
+            }
         }
     }
 

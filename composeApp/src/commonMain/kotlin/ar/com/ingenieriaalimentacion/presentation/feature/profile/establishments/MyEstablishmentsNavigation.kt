@@ -4,6 +4,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import ar.com.ingenieriaalimentacion.presentation.feature.establishment.characterization.edit_characterization.navigateToEditCharacterization
 import ar.com.ingenieriaalimentacion.presentation.feature.profile.request_establishment.navigateToRequestEstablishment
 import ar.com.ingenieriaalimentacion.presentation.navigation.ESTABLISHMENTS_CHANGED_RESULT
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
@@ -38,5 +39,9 @@ internal fun navigate(
         MyEstablishmentsDestination.Back -> navController.popBackStack()
         MyEstablishmentsDestination.RequestEstablishment ->
             navController.navigateToRequestEstablishment(role = role)
+        is MyEstablishmentsDestination.EditCharacterization -> navController.navigateToEditCharacterization(
+            establishmentId = destination.establishmentId,
+            establishmentName = destination.establishmentName,
+        )
     }
 }

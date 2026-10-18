@@ -6,6 +6,8 @@ import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithdrawa
 
 data class MyEstablishmentsState(
     val mode: EstablishmentLinkMode = EstablishmentLinkMode.RequestAccess,
+    /** Whether approved cards open the ficha; analysts can't save it, so theirs don't. */
+    val canEditCharacterization: Boolean = false,
     val destination: MyEstablishmentsDestination? = null,
     val isLoading: Boolean = true,
     val loadError: Boolean = false,

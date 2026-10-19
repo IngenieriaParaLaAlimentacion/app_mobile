@@ -9,7 +9,9 @@ import ar.com.ingenieriaalimentacion.domain.usecase.auth.ResetPasswordUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.SignInUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.SignOutUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.VerifyEmailUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.establishment.GetEstablishmentCharacterizationUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.establishment.GetEstablishmentsUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.establishment.SaveEstablishmentCharacterizationUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.ConfirmReceiptIntakeUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.CreateFoodIntakeUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.CreateFoodOutflowUseCase
@@ -81,6 +83,8 @@ val useCasesModule = module {
     factory { VerifyEmailUseCase(get()) }
     factory { ObserveSessionStatusUseCase(get()) }
     factory { GetEstablishmentsUseCase(get()) }
+    factory { GetEstablishmentCharacterizationUseCase(get()) }
+    factory { SaveEstablishmentCharacterizationUseCase(characterizations = get(), profile = get()) }
     factory { RegisterFieldWorkerUseCase(get()) }
     factory { CreateSubjectUseCase(get()) }
     factory { GetSubjectsUseCase(get()) }

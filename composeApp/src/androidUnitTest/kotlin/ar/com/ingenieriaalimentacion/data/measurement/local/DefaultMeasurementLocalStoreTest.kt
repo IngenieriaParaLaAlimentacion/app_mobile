@@ -127,7 +127,7 @@ class DefaultMeasurementLocalStoreTest {
     }
 
     @Test
-    fun `v9 queue upgrade preserves existing queued rows with null observation`() = runTest {
+    fun `v10 queue upgrade preserves existing queued rows with null observation`() = runTest {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         driver.execute(null, """
             CREATE TABLE PendingMeasurement (
@@ -143,7 +143,7 @@ class DefaultMeasurementLocalStoreTest {
             INSERT INTO PendingMeasurement VALUES ('old', 's', 'Ana', 'García', 42, 'e', 'Escuela',
                 72.5, 170.0, '2026-06-21T18:30:00Z', 'PENDING', NULL, 0, NULL, NULL, 10, 10)
         """.trimIndent(), 0)
-        AppDatabase.Schema.migrate(driver, 9L, 10L)
+        AppDatabase.Schema.migrate(driver, 10L, 11L)
         val upgraded = DefaultMeasurementLocalStore(AppDatabase(driver).pendingMeasurementQueries,
             now = { time }, dispatcher = Dispatchers.Unconfined)
         val old = upgraded.syncable().single()

@@ -1,6 +1,7 @@
 package ar.com.ingenieriaalimentacion.di
 
 import ar.com.ingenieriaalimentacion.app.AppViewModel
+import ar.com.ingenieriaalimentacion.domain.model.auth.canEditCharacterization
 import ar.com.ingenieriaalimentacion.domain.model.auth.establishmentLinkMode
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.forgot_password.ForgotPasswordViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.login.LoginViewModel
@@ -19,6 +20,7 @@ import ar.com.ingenieriaalimentacion.presentation.feature.get_started.GetStarted
 import ar.com.ingenieriaalimentacion.presentation.feature.home.HomeViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.measurement.create_measurement.MeasurementViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.measurement.uploads.MeasurementUploadsViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.establishment.characterization.edit_characterization.EditCharacterizationViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.profile.edit.EditProfileViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.profile.establishments.MyEstablishmentsViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.profile.notify_establishment.NotifyEstablishmentViewModel
@@ -84,6 +86,7 @@ val viewModelsModule = module {
     viewModel { (route: Route.MyEstablishments) ->
         MyEstablishmentsViewModel(
             mode = establishmentLinkMode(route.role),
+            canEditCharacterization = canEditCharacterization(route.role),
             getMyEstablishments = get(),
             withdrawFromEstablishment = get(),
         )
@@ -96,6 +99,9 @@ val viewModelsModule = module {
     }
     viewModel { (route: Route.VerifyEmail) ->
         VerifyEmailViewModel(route = route, verifyEmail = get())
+    }
+    viewModel { (route: Route.EditCharacterization) ->
+        EditCharacterizationViewModel(route = route, getCharacterization = get(), saveCharacterization = get())
     }
     viewModel { (route: Route.EditProfile) ->
         EditProfileViewModel(route = route, updateMyProfile = get())

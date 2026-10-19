@@ -1,2 +1,3 @@
--- v9 -> v10: preserve optional measurement observations in the offline queue.
-ALTER TABLE PendingMeasurement ADD COLUMN observation TEXT;
+-- v9 -> v10: CachedEstablishment carries the characterization status ("ficha") of each
+-- establishment. Rows cached before it read as NULL until the next /users/me/establishments refresh.
+ALTER TABLE CachedEstablishment ADD COLUMN characterizationStatus TEXT;

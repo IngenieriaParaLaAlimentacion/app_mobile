@@ -16,11 +16,14 @@ import kotlinx.coroutines.launch
 
 class MyEstablishmentsViewModel(
     mode: EstablishmentLinkMode,
+    canEditCharacterization: Boolean,
     private val getMyEstablishments: GetMyEstablishmentsUseCase,
     private val withdrawFromEstablishment: WithdrawFromEstablishmentUseCase,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(MyEstablishmentsState(mode = mode))
+    private val _state = MutableStateFlow(
+        MyEstablishmentsState(mode = mode, canEditCharacterization = canEditCharacterization),
+    )
     val state = _state.asStateFlow()
 
     init {
@@ -40,13 +43,30 @@ class MyEstablishmentsViewModel(
             MyEstablishmentsAction.DismissWithdrawConfirm -> dismissWithdrawConfirm()
             MyEstablishmentsAction.ToastDismissed ->
                 _state.update { it.copy(successMessage = null, withdrawError = null) }
+            is MyEstablishmentsAction.CharacterizationClick -> openCharacterization(action.establishmentId)
         }
     }
 
-    /** Called when RequestEstablishment pops after a successful request/subscription. */
-    fun onEstablishmentsRequested() {
+    /**
+     * Called when RequestEstablishment pops after a successful request/subscription, or the ficha
+     * editor after a save: reload here and let Home know its selector data changed.
+     */
+    fun onEstablishmentsChanged() {
         _state.update { it.copy(establishmentsChanged = true) }
         load()
+    }
+
+    private fun openCharacterization(establishmentId: String) {
+        val establishment = _state.value.establishments.firstOrNull { it.id == establishmentId } ?: return
+        if (!_state.value.canEditCharacterization || establishment.status != EstablishmentStatus.Approved) return
+        _state.update {
+            it.copy(
+                destination = MyEstablishmentsDestination.EditCharacterization(
+                    establishmentId = establishment.id,
+                    establishmentName = establishment.name,
+                ),
+            )
+        }
     }
 
     /** Display order: approved first, then pending, then rejected, then unknown.

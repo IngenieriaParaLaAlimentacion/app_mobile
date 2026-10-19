@@ -2,8 +2,10 @@ package ar.com.ingenieriaalimentacion.presentation.feature.home
 
 import ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlBadgeTone
 import ar.com.ingenieriaalimentacion.domain.model.auth.EstablishmentLinkMode
+import ar.com.ingenieriaalimentacion.domain.model.auth.canEditCharacterization
 import ar.com.ingenieriaalimentacion.domain.model.auth.establishmentLinkMode
 import ar.com.ingenieriaalimentacion.domain.model.auth.requiresApprovedEstablishment
+import ar.com.ingenieriaalimentacion.domain.model.establishment.CharacterizationStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 
 /**
@@ -34,6 +36,14 @@ data class HomeState(
      */
     val quickActionsEnabled: Boolean
         get() = role == null || !requiresApprovedEstablishment(role) || currentEstablishment != null
+
+    /**
+     * "Pendiente de ficha" under the establishment name, for roles that can complete it. Hidden
+     * while the role is unknown, so an analyst never gets a shortcut that ends in a 403.
+     */
+    val showsCharacterizationPending: Boolean
+        get() = currentEstablishment?.characterizationStatus == CharacterizationStatus.Pending &&
+            role?.let(::canEditCharacterization) == true
 
     /** Why the quick actions are disabled, or null when they are enabled. */
     val quickActionsHint: String?

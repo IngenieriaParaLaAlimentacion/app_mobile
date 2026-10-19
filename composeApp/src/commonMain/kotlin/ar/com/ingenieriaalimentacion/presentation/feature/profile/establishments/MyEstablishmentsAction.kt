@@ -9,4 +9,5 @@ sealed interface MyEstablishmentsAction {
     data object ConfirmWithdraw : MyEstablishmentsAction
     data object DismissWithdrawConfirm : MyEstablishmentsAction
     data object ToastDismissed : MyEstablishmentsAction
+    data class CharacterizationClick(val establishmentId: String) : MyEstablishmentsAction
 }

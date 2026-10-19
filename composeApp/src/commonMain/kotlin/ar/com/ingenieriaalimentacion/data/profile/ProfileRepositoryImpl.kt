@@ -1,5 +1,7 @@
 package ar.com.ingenieriaalimentacion.data.profile
 
+import ar.com.ingenieriaalimentacion.data.establishment.characterization.dto.ValidationProblem
+import ar.com.ingenieriaalimentacion.data.establishment.characterization.mapper.toDto
 import ar.com.ingenieriaalimentacion.data.profile.dto.EstablishmentAbsenceRequest
 import ar.com.ingenieriaalimentacion.data.profile.dto.RequestEstablishmentsRequest
 import ar.com.ingenieriaalimentacion.data.profile.dto.UpdateProfileRequest
@@ -17,6 +19,7 @@ import ar.com.ingenieriaalimentacion.domain.model.profile.Profile
 import ar.com.ingenieriaalimentacion.domain.model.profile.ProfileError
 import ar.com.ingenieriaalimentacion.domain.model.profile.UpdateProfile
 import ar.com.ingenieriaalimentacion.domain.repository.ProfileRepository
+import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ResponseException
 import io.ktor.http.HttpStatusCode
@@ -137,6 +140,7 @@ class ProfileRepositoryImpl(
                     formattedAddress = notice.formattedAddress,
                     city = notice.city,
                     province = notice.province,
+                    characterization = notice.characterization?.toDto(),
                 ),
             )
         }.recoverCatching { throw EstablishmentAbsenceFailure(mapAbsenceError(it), it) }
@@ -175,13 +179,15 @@ class ProfileRepositoryImpl(
         else -> EstablishmentWithdrawalError.Unknown(t)
     }
 
-    private fun mapAbsenceError(t: Throwable): EstablishmentAbsenceError = when (t) {
+    private suspend fun mapAbsenceError(t: Throwable): EstablishmentAbsenceError = when (t) {
         is ClientRequestException -> when (t.response.status) {
             HttpStatusCode.Unauthorized -> EstablishmentAbsenceError.Unauthorized
             HttpStatusCode.Forbidden -> EstablishmentAbsenceError.Forbidden
             HttpStatusCode.BadRequest,
             HttpStatusCode.UnprocessableEntity,
-            -> EstablishmentAbsenceError.Validation
+            -> EstablishmentAbsenceError.Validation(
+                field = runCatching { t.response.body<ValidationProblem>() }.getOrNull()?.field,
+            )
 
             else -> EstablishmentAbsenceError.Network
         }

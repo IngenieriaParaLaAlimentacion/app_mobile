@@ -8,7 +8,8 @@ CREATE TABLE CachedEstablishment (
     city             TEXT NOT NULL,
     province         TEXT NOT NULL,
     status           TEXT NOT NULL,   -- 'Approved'|'Pending'|'Rejected'|'Unknown'
-    updatedAt        INTEGER NOT NULL
+    updatedAt        INTEGER NOT NULL,
+    characterizationStatus TEXT       -- 'Pending'|'Complete'|NULL (not reported)
 );
 
 selectAll:
@@ -16,8 +17,8 @@ SELECT * FROM CachedEstablishment;
 
 insert:
 INSERT OR REPLACE INTO CachedEstablishment(id, name, formattedAddress, latitude, longitude,
-    placeId, city, province, status, updatedAt)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    placeId, city, province, status, updatedAt, characterizationStatus)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 deleteAll:
 DELETE FROM CachedEstablishment;

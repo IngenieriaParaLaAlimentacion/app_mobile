@@ -2,6 +2,7 @@ package ar.com.ingenieriaalimentacion.data.profile.local
 
 import ar.com.ingenieriaalimentacion.data.db.CachedEstablishment
 import ar.com.ingenieriaalimentacion.data.db.CachedEstablishmentQueries
+import ar.com.ingenieriaalimentacion.domain.model.establishment.CharacterizationStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import kotlinx.coroutines.CoroutineDispatcher
@@ -38,6 +39,7 @@ class DefaultEstablishmentLocalStore(
                         city = item.city,
                         province = item.province,
                         status = item.status.name,
+                        characterizationStatus = item.characterizationStatus?.name,
                         updatedAt = stamp,
                     )
                 }
@@ -59,6 +61,7 @@ private fun CachedEstablishment.toDomain(): EstablishmentWithStatus = Establishm
     city = city,
     province = province,
     status = status.toEstablishmentStatus(),
+    characterizationStatus = CharacterizationStatus.entries.firstOrNull { it.name == characterizationStatus },
 )
 
 private fun String.toEstablishmentStatus(): EstablishmentStatus =

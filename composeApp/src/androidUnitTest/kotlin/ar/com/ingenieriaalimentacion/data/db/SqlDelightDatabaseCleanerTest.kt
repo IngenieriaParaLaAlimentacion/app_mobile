@@ -67,6 +67,7 @@ class SqlDelightDatabaseCleanerTest {
             province = "Provincia",
             status = "Approved",
             updatedAt = 10L,
+            characterizationStatus = null,
         )
         database.cachedActivityItemQueries.upsert(
             id = "a1",

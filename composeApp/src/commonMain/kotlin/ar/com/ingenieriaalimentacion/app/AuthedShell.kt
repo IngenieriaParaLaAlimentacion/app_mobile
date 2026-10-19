@@ -26,6 +26,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import ar.com.ingenieriaalimentacion.core.design_system.components.navbar.AlBottomNavBar
 import ar.com.ingenieriaalimentacion.core.design_system.components.navbar.AlBottomNavTab
+import ar.com.ingenieriaalimentacion.presentation.feature.establishment.characterization.edit_characterization.navigateToEditCharacterization
 import ar.com.ingenieriaalimentacion.presentation.feature.home.HomeDestination
 import ar.com.ingenieriaalimentacion.presentation.feature.food.food_overview.navigateToFoodOverview
 import ar.com.ingenieriaalimentacion.presentation.feature.history.HistoryHubScreenRoot
@@ -105,6 +106,11 @@ fun AuthedShell(onSignOut: () -> Unit) {
                             HomeDestination.NavigateToSurveyList -> outerNav.navigateToSurveyList()
                             HomeDestination.NavigateToFoodOverview ->
                                 outerNav.navigateToFoodOverview()
+                            is HomeDestination.NavigateToEditCharacterization ->
+                                outerNav.navigateToEditCharacterization(
+                                    establishmentId = destination.establishmentId,
+                                    establishmentName = destination.establishmentName,
+                                )
                         }
                     },
                 )

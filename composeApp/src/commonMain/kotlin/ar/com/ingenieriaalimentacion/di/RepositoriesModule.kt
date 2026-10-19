@@ -8,6 +8,7 @@ import ar.com.ingenieriaalimentacion.data.auth.AuthRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.auth.storage.TokenStoreSessionManager
 import ar.com.ingenieriaalimentacion.data.device.DeviceIdProvider
 import ar.com.ingenieriaalimentacion.data.establishment.EstablishmentRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.establishment.characterization.EstablishmentCharacterizationRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.food.FoodCatalogRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.food.EstablishmentFoodMovementRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.food.FoodIntakeRepositoryImpl
@@ -43,6 +44,7 @@ import ar.com.ingenieriaalimentacion.data.survey.local.SurveyResponseEditLocalSt
 import ar.com.ingenieriaalimentacion.data.survey.local.SurveyResponseLocalStore
 import ar.com.ingenieriaalimentacion.domain.repository.AuthRepository
 import ar.com.ingenieriaalimentacion.domain.repository.EstablishmentRepository
+import ar.com.ingenieriaalimentacion.domain.repository.EstablishmentCharacterizationRepository
 import ar.com.ingenieriaalimentacion.domain.repository.FoodCatalogRepository
 import ar.com.ingenieriaalimentacion.domain.repository.EstablishmentFoodMovementRepository
 import ar.com.ingenieriaalimentacion.domain.repository.FoodIntakeRepository
@@ -87,6 +89,9 @@ val repositoriesModule = module {
         )
     }
     single<EstablishmentRepository> { EstablishmentRepositoryImpl(api = get()) }
+    single<EstablishmentCharacterizationRepository> {
+        EstablishmentCharacterizationRepositoryImpl(api = get())
+    }
     single<RegistrationRepository> { RegistrationRepositoryImpl(api = get()) }
     single<SubjectLocalStore> {
         DefaultSubjectLocalStore(queries = get(), now = { Clock.System.now().toEpochMilliseconds() })

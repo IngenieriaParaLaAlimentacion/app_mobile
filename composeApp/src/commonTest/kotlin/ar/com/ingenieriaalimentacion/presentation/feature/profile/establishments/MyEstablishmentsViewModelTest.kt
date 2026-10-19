@@ -50,9 +50,11 @@ class MyEstablishmentsViewModelTest {
     private fun viewModel(
         repo: FakeProfileRepository,
         mode: EstablishmentLinkMode = EstablishmentLinkMode.RequestAccess,
+        canEditCharacterization: Boolean = true,
     ) =
         MyEstablishmentsViewModel(
             mode = mode,
+            canEditCharacterization = canEditCharacterization,
             getMyEstablishments = GetMyEstablishmentsUseCase(repo),
             withdrawFromEstablishment = WithdrawFromEstablishmentUseCase(repo),
         )
@@ -64,6 +66,43 @@ class MyEstablishmentsViewModelTest {
             val item = awaitItem()
             if (predicate(item)) return item
         }
+    }
+
+    @Test
+    fun `tapping an approved establishment opens its ficha`() = runTest(dispatcher) {
+        val repo = FakeProfileRepository().apply {
+            myEstablishmentsResult = Result.success(listOf(establishment("e1", "Norte", EstablishmentStatus.Approved)))
+        }
+        val vm = viewModel(repo)
+        advanceUntilIdle()
+
+        vm.onAction(MyEstablishmentsAction.CharacterizationClick("e1"))
+
+        assertEquals(
+            MyEstablishmentsDestination.EditCharacterization(establishmentId = "e1", establishmentName = "Norte"),
+            vm.state.value.destination,
+        )
+    }
+
+    @Test
+    fun `a pending link or a role that can't edit never opens the ficha`() = runTest(dispatcher) {
+        val repo = FakeProfileRepository().apply {
+            myEstablishmentsResult = Result.success(
+                listOf(
+                    establishment("e1", "Norte", EstablishmentStatus.Approved),
+                    establishment("e2", "Sur", EstablishmentStatus.Pending),
+                ),
+            )
+        }
+        val vm = viewModel(repo)
+        val analyst = viewModel(repo, canEditCharacterization = false)
+        advanceUntilIdle()
+
+        vm.onAction(MyEstablishmentsAction.CharacterizationClick("e2"))
+        analyst.onAction(MyEstablishmentsAction.CharacterizationClick("e1"))
+
+        assertNull(vm.state.value.destination)
+        assertNull(analyst.state.value.destination)
     }
 
     @Test
@@ -340,12 +379,12 @@ class MyEstablishmentsViewModelTest {
         }
 
     @Test
-    fun `onEstablishmentsRequested reloads and flags the change`() = runTest(dispatcher) {
+    fun `onEstablishmentsChanged reloads and flags the change`() = runTest(dispatcher) {
         val repo = FakeProfileRepository()
         val vm = viewModel(repo)
         advanceUntilIdle()
 
-        vm.onEstablishmentsRequested()
+        vm.onEstablishmentsChanged()
         advanceUntilIdle()
 
         assertEquals(2, repo.getMyEstablishmentsCount)

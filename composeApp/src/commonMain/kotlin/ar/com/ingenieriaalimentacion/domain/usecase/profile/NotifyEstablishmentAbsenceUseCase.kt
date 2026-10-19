@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.domain.usecase.profile
 
+import ar.com.ingenieriaalimentacion.domain.model.establishment.EstablishmentCharacterization
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentAbsenceNotice
 import ar.com.ingenieriaalimentacion.domain.repository.ProfileRepository
 
@@ -8,7 +9,8 @@ import ar.com.ingenieriaalimentacion.domain.repository.ProfileRepository
  * the fields before submitting: values are trimmed and blank optional ones
  * become `null` so the backend never receives empty strings (its validation
  * rejects them). Name and address are required by the backend; the form
- * validates their presence before this use case runs.
+ * validates their presence before this use case runs. A ficha with no answer is sent as no ficha,
+ * the same as "Contestar luego".
  */
 class NotifyEstablishmentAbsenceUseCase(private val repository: ProfileRepository) {
 
@@ -20,6 +22,8 @@ class NotifyEstablishmentAbsenceUseCase(private val repository: ProfileRepositor
         formattedAddress = formattedAddress.trim(),
         city = city.normalized(),
         province = province.normalized(),
+        characterization = characterization?.normalized()
+            ?.takeIf { it != EstablishmentCharacterization.EMPTY },
     )
 
     private fun String?.normalized(): String? = this?.trim()?.takeIf { it.isNotEmpty() }

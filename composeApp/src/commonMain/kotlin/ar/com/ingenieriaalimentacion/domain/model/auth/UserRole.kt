@@ -33,3 +33,11 @@ private val LINKED_FIELD_WORKER_ROLES = setOf(UserRole.ANALYST) + ADMIN_ROLES
  * workers keep their current flow.
  */
 fun requiresApprovedEstablishment(role: String): Boolean = role in LINKED_FIELD_WORKER_ROLES
+
+private val CHARACTERIZATION_EDITOR_ROLES = setOf(UserRole.FIELD_WORKER) + ADMIN_ROLES
+
+/**
+ * Whether the user may edit the characterization ("ficha") of an establishment they are approved
+ * in. Analysts read it but get a 403 on save, so they never see the "Pendiente de ficha" shortcut.
+ */
+fun canEditCharacterization(role: String): Boolean = role in CHARACTERIZATION_EDITOR_ROLES

@@ -35,6 +35,8 @@ import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithdrawalError
 import ar.com.ingenieriaalimentacion.presentation.navigation.ESTABLISHMENT_REQUESTED_RESULT
+import ar.com.ingenieriaalimentacion.presentation.navigation.ESTABLISHMENTS_CHANGED_RESULT
+import ar.com.ingenieriaalimentacion.domain.model.establishment.CharacterizationStatus
 import ar.com.ingenieriaalimentacion.presentation.navigation.RefreshOnNavResult
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 import com.komoui.components.Spinner
@@ -72,7 +74,15 @@ fun MyEstablishmentsScreenRoot(
         savedStateHandle = savedStateHandle,
         key = ESTABLISHMENT_REQUESTED_RESULT,
     ) {
-        viewModel.onEstablishmentsRequested()
+        viewModel.onEstablishmentsChanged()
+    }
+
+    // The ficha editor writes here too after a save, so the "Pendiente de ficha" pill updates.
+    RefreshOnNavResult(
+        savedStateHandle = savedStateHandle,
+        key = ESTABLISHMENTS_CHANGED_RESULT,
+    ) {
+        viewModel.onEstablishmentsChanged()
     }
 
     MyEstablishmentsScreen(state = state, onAction = viewModel::onAction)
@@ -114,6 +124,8 @@ fun MyEstablishmentsScreen(
 
                     else -> MyEstablishmentsContent(
                         mode = state.mode,
+                        canEditCharacterization = state.canEditCharacterization,
+                        onCharacterizationClick = { id -> onAction(MyEstablishmentsAction.CharacterizationClick(id)) },
                         establishments = state.establishments,
                         withdrawError = state.withdrawError,
                         onRequestAccess = { onAction(MyEstablishmentsAction.RequestAccessClick) },
@@ -146,6 +158,8 @@ fun MyEstablishmentsScreen(
 @Composable
 private fun MyEstablishmentsContent(
     mode: EstablishmentLinkMode,
+    canEditCharacterization: Boolean,
+    onCharacterizationClick: (String) -> Unit,
     establishments: List<EstablishmentWithStatus>,
     withdrawError: EstablishmentWithdrawalError?,
     onRequestAccess: () -> Unit,
@@ -180,12 +194,22 @@ private fun MyEstablishmentsContent(
                 verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
             ) {
                 establishments.forEach { establishment ->
+                    // Approved links open the ficha; pending/rejected ones have no access to it yet.
+                    val opensCharacterization =
+                        canEditCharacterization && establishment.status == EstablishmentStatus.Approved
                     AlInfoCard(
                         title = establishment.name,
                         description = establishment.formattedAddress.normalizeAddress(),
+                        onClick = if (opensCharacterization) {
+                            { onCharacterizationClick(establishment.id) }
+                        } else {
+                            null
+                        },
                         trailing = {
                             EstablishmentRowTrailing(
                                 status = establishment.status,
+                                characterizationPending = opensCharacterization &&
+                                    establishment.characterizationStatus == CharacterizationStatus.Pending,
                                 withdrawLabel = copy.withdrawTitle,
                                 onWithdrawClick = { onWithdrawClick(establishment.id) },
                             )
@@ -208,6 +232,7 @@ private fun MyEstablishmentsContent(
 @Composable
 private fun EstablishmentRowTrailing(
     status: EstablishmentStatus,
+    characterizationPending: Boolean,
     withdrawLabel: String,
     onWithdrawClick: () -> Unit,
 ) {
@@ -216,6 +241,7 @@ private fun EstablishmentRowTrailing(
         horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs),
     ) {
         EstablishmentStatusPill(status)
+        if (characterizationPending) AlPill(text = "Pendiente de ficha", tone = AlPillTone.Warning)
         if (status == EstablishmentStatus.Approved || status == EstablishmentStatus.Pending) {
             AlIconButton(
                 icon = Res.drawable.ic_mingcute_exit_door_line,

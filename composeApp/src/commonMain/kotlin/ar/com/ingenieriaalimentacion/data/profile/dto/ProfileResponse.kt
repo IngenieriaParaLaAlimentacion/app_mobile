@@ -25,4 +25,5 @@ data class EstablishmentWithStatusResponse(
     val city: String,
     val province: String,
     val status: String,
+    @SerialName("characterization_status") val characterizationStatus: String? = null,
 )

@@ -9,6 +9,7 @@ import ar.com.ingenieriaalimentacion.presentation.feature.auth.forgot_password.f
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.login.loginScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.reset_password.resetPasswordScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.verify_email.verifyEmailScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.establishment.characterization.edit_characterization.editCharacterizationScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.establishment.select_establishment.selectEstablishmentScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_intake.createFoodIntakeScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.food.receipt_food_intake.receiptFoodIntakeScreen
@@ -63,6 +64,7 @@ fun AppNavHost(
             requestEstablishmentScreen(navController)
             notifyEstablishmentScreen(navController)
             myEstablishmentsScreen(navController)
+            editCharacterizationScreen(navController)
             resetPasswordScreen(navController)
             verifyEmailScreen(navController)
             forgotPasswordScreen(navController)

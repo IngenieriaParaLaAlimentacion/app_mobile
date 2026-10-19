@@ -117,6 +117,9 @@ fun HomeScreen(
                 enabled = state.establishmentOptions.isNotEmpty(),
                 onClick = { onAction(HomeAction.EstablishmentPickerOpen) },
             )
+            if (state.showsCharacterizationPending) {
+                CharacterizationPendingRow(onClick = { onAction(HomeAction.CompleteCharacterizationClick) })
+            }
 
             Column(
                 modifier = Modifier
@@ -201,6 +204,24 @@ private fun EstablishmentTopBar(
             )
         }
     }
+}
+
+/**
+ * "Pendiente de ficha" under the establishment name, with its own tap target so completing the
+ * ficha never opens the establishment picker by mistake.
+ */
+@Composable
+private fun CharacterizationPendingRow(onClick: () -> Unit) {
+    Text(
+        text = "Pendiente de ficha · Completar",
+        style = AlTheme.typography.caption.copy(fontWeight = FontWeight.Medium),
+        color = AlTheme.colors.warning,
+        textAlign = TextAlign.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = AlTheme.spacing.lg, vertical = AlTheme.spacing.xs),
+    )
 }
 
 @Composable

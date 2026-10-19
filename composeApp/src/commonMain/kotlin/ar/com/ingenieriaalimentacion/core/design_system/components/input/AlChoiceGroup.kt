@@ -67,6 +67,51 @@ fun AlChoiceGroup(
     }
 }
 
+/**
+ * Multiple-choice twin of [AlChoiceGroup]: the same chips, each toggled on its own. For short
+ * option lists that read better inline than as an [AlCheckboxGroup] card (e.g. weekdays). [label]
+ * is optional so the group can sit inside a row that already names it.
+ */
+@Composable
+fun AlMultiChoiceGroup(
+    label: String?,
+    options: List<AlChoiceOption>,
+    selectedIds: Set<String>,
+    onToggle: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    error: String? = null,
+    enabled: Boolean = true,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        label?.let { AlFieldLabel(text = it) }
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            options.forEach { option ->
+                ChoiceChip(
+                    label = option.label,
+                    selected = option.id in selectedIds,
+                    enabled = enabled,
+                    hasError = error != null,
+                    onClick = { onToggle(option.id) },
+                )
+            }
+        }
+        error?.let {
+            Text(
+                text = it,
+                color = AlTheme.colors.danger,
+                style = AlTheme.typography.caption,
+            )
+        }
+    }
+}
+
 @Composable
 private fun ChoiceChip(
     label: String,

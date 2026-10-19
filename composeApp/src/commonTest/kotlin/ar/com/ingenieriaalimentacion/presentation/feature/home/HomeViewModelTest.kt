@@ -1,11 +1,10 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.home
 
-import ar.com.ingenieriaalimentacion.domain.usecase.food.GetFoodMovementHistoryPageUseCase
-
 import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.di.AppScope
+import ar.com.ingenieriaalimentacion.domain.model.establishment.CharacterizationStatus
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovement
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementDirection
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
@@ -16,6 +15,7 @@ import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseSummary
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseTarget
+import ar.com.ingenieriaalimentacion.domain.usecase.food.GetFoodMovementHistoryPageUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.ObserveFoodMovementsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.ObserveMeasurementsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
@@ -69,7 +69,11 @@ class HomeViewModelTest {
         establishments = null,
     )
 
-    private fun establishment(id: String, status: EstablishmentStatus = EstablishmentStatus.Approved) =
+    private fun establishment(
+        id: String,
+        status: EstablishmentStatus = EstablishmentStatus.Approved,
+        characterizationStatus: CharacterizationStatus? = null,
+    ) =
         EstablishmentWithStatus(
             id = id,
             name = "Escuela $id",
@@ -80,6 +84,7 @@ class HomeViewModelTest {
             city = "Ciudad",
             province = "Provincia",
             status = status,
+            characterizationStatus = characterizationStatus,
         )
 
     private fun viewModel(
@@ -135,6 +140,44 @@ class HomeViewModelTest {
             assertEquals("a", loaded.currentEstablishment?.id)
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun `a pending ficha shows the shortcut, which opens the editor for the current establishment`() =
+        runTest(dispatcher) {
+            val profileRepo = FakeProfileRepository().apply {
+                meResult = Result.success(profile("field_worker"))
+                myEstablishmentsResult = Result.success(
+                    listOf(establishment("a", characterizationStatus = CharacterizationStatus.Pending)),
+                )
+                currentEstablishmentId = "a"
+            }
+            val vm = viewModel(profileRepo = profileRepo)
+
+            vm.state.test {
+                awaitState { it.showsCharacterizationPending }
+                vm.onAction(HomeAction.CompleteCharacterizationClick)
+                assertEquals(
+                    HomeDestination.NavigateToEditCharacterization(establishmentId = "a", establishmentName = "Escuela a"),
+                    awaitState { it.destination != null }.destination,
+                )
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `the ficha shortcut stays hidden for analysts and for a complete ficha`() = runTest(dispatcher) {
+        val pending = establishment("a", characterizationStatus = CharacterizationStatus.Pending)
+        val state = HomeState(currentEstablishment = pending, role = "field_worker")
+
+        assertTrue(state.showsCharacterizationPending)
+        assertFalse(state.copy(role = "analyst").showsCharacterizationPending)
+        assertFalse(state.copy(role = null).showsCharacterizationPending)
+        assertFalse(
+            state.copy(
+                currentEstablishment = pending.copy(characterizationStatus = CharacterizationStatus.Complete),
+            ).showsCharacterizationPending,
+        )
     }
 
     @Test

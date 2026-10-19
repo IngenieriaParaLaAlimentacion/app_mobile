@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.profile.mapper
 
+import ar.com.ingenieriaalimentacion.data.establishment.characterization.mapper.toCharacterizationStatus
 import ar.com.ingenieriaalimentacion.data.profile.dto.AvailableEstablishmentResponse
 import ar.com.ingenieriaalimentacion.data.profile.dto.EstablishmentWithStatusResponse
 import ar.com.ingenieriaalimentacion.data.profile.dto.PaginatedAvailableResponse
@@ -29,6 +30,7 @@ internal fun EstablishmentWithStatusResponse.toDomain(): EstablishmentWithStatus
     city = city,
     province = province,
     status = status.toEstablishmentStatus(),
+    characterizationStatus = characterizationStatus.toCharacterizationStatus(),
 )
 
 internal fun AvailableEstablishmentResponse.toDomain(): AvailableEstablishment = AvailableEstablishment(

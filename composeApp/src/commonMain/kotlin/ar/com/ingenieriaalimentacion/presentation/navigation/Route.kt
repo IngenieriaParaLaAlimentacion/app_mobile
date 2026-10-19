@@ -143,6 +143,11 @@ sealed class Route {
     @SerialName("my_establishments")
     data class MyEstablishments(val role: String) : Route()
 
+    /** View and edit an approved establishment's ficha; [establishmentName] titles the screen. */
+    @Serializable
+    @SerialName("edit_characterization")
+    data class EditCharacterization(val establishmentId: String, val establishmentName: String) : Route()
+
     @Serializable
     @SerialName("authed_shell")
     data object AuthedShell : Route()

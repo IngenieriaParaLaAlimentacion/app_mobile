@@ -1,7 +1,7 @@
 package ar.com.ingenieriaalimentacion.core.design_system.components.dialog
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -44,7 +44,10 @@ fun AlConfirmDialog(
         title = { Text(title) },
         description = { Text(description) },
         actions = {
-            Row(horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs),
+                verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs),
+            ) {
                 AlButton(
                     onClick = onDismiss,
                     enabled = !loading,

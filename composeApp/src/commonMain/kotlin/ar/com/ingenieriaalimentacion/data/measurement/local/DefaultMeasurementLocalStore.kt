@@ -49,6 +49,7 @@ class DefaultMeasurementLocalStore(
             alertsJson = null,
             createdAt = upload.createdAt,
             updatedAt = upload.updatedAt,
+            observation = upload.observation,
         )
     }
 

@@ -15,7 +15,8 @@ CREATE TABLE PendingMeasurement (
     bmi               REAL,                          -- server-computed, set on SYNCED
     alertsJson        TEXT,                          -- serialized List<ClinicalAlert>, set on SYNCED
     createdAt         INTEGER NOT NULL,              -- epoch millis
-    updatedAt         INTEGER NOT NULL
+    updatedAt         INTEGER NOT NULL,
+    observation       TEXT
 );
 
 CREATE INDEX PendingMeasurement_state ON PendingMeasurement(syncState);
@@ -23,8 +24,8 @@ CREATE INDEX PendingMeasurement_state ON PendingMeasurement(syncState);
 insert:
 INSERT INTO PendingMeasurement(localId, subjectId, subjectName, subjectLastName, subjectDni,
     establishmentId, establishmentName, weightKg, heightCm, measuredAt, syncState, errorMessage,
-    attemptCount, bmi, alertsJson, createdAt, updatedAt)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    attemptCount, bmi, alertsJson, createdAt, updatedAt, observation)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectAll:
 SELECT * FROM PendingMeasurement ORDER BY createdAt DESC;

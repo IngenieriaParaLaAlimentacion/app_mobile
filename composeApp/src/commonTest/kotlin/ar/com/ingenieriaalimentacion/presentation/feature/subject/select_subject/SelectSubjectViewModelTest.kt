@@ -7,6 +7,12 @@ import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectPage
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.GetSubjectsUseCase
 import ar.com.ingenieriaalimentacion.fake.FakeSubjectQueryRepository
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -15,21 +21,15 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.serialization.json.Json
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SelectSubjectViewModelTest {
 
     private val dispatcher = StandardTestDispatcher()
 
-    private val ana = SubjectSummary("1", 30111222, "Ana", "Pérez", Sex.Female)
-    private val luis = SubjectSummary("2", 28999888, "Luis", "Gómez", Sex.Male)
-    private val marta = SubjectSummary("3", 27000111, "Marta", "Díaz", Sex.Female)
+    private val ana = SubjectSummary("1", 30111222, "Ana", "Pérez", Sex.Female, birthDate = kotlinx.datetime.LocalDate(1990, 1, 1))
+    private val luis = SubjectSummary("2", 28999888, "Luis", "Gómez", Sex.Male, birthDate = kotlinx.datetime.LocalDate(1990, 1, 1))
+    private val marta = SubjectSummary("3", 27000111, "Marta", "Díaz", Sex.Female, birthDate = kotlinx.datetime.LocalDate(1990, 1, 1))
 
     @BeforeTest
     fun setup() {

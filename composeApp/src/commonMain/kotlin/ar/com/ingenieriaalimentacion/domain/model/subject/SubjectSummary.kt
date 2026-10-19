@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.domain.model.subject
 
+import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -9,4 +10,5 @@ data class SubjectSummary(
     val name: String,
     val lastName: String,
     val sex: Sex,
+    val birthDate: LocalDate? = null,
 )

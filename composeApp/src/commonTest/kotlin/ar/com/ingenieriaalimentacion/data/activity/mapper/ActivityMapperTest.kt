@@ -3,12 +3,12 @@ package ar.com.ingenieriaalimentacion.data.activity.mapper
 import ar.com.ingenieriaalimentacion.data.activity.dto.PaginatedActivityResponse
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlinx.serialization.json.Json
 
 class ActivityMapperTest {
 
@@ -18,7 +18,7 @@ class ActivityMapperTest {
         {
             "type": "subject",
             "occurred_at": "2026-06-01T12:00:00Z",
-            "subject": { "id": "subj-1", "dni": 42, "name": "Ana", "last_name": "García", "sex": "female" }
+            "subject": { "id": "subj-1", "dni": 42, "name": "Ana", "last_name": "García", "birth_date":"1990-01-01","sex": "female" }
         }
     """.trimIndent()
 

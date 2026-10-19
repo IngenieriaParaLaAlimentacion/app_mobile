@@ -13,7 +13,7 @@ import ar.com.ingenieriaalimentacion.domain.model.subject.NewSubject
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.CreateSubjectUseCase
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
-import kotlinx.serialization.json.Json
+import kotlin.time.Clock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import kotlin.time.Clock
+import kotlinx.serialization.json.Json
 
 class CreateSubjectViewModel(
     private val route: Route.CreateSubject,
@@ -140,6 +140,7 @@ class CreateSubjectViewModel(
                             name = newSubject.name,
                             lastName = newSubject.lastName,
                             sex = newSubject.sex,
+                        birthDate = newSubject.birthDate,
                         )
                         _state.update {
                             it.copy(

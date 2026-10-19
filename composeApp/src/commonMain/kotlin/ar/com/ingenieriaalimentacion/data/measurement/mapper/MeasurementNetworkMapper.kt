@@ -13,6 +13,7 @@ internal fun MeasurementUpload.toRequest(): MeasurementRequest = MeasurementRequ
     weightKg = weightKg,
     heightCm = heightCm,
     measuredAt = measuredAt,
+    observation = observation,
 )
 
 /** Response alert DTO → domain. */

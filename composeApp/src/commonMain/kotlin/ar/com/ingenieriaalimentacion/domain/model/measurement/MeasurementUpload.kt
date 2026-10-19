@@ -25,6 +25,7 @@ data class MeasurementUpload(
     val alerts: List<ClinicalAlert>,
     val createdAt: Long,
     val updatedAt: Long,
+    val observation: String? = null,
 )
 
 /**

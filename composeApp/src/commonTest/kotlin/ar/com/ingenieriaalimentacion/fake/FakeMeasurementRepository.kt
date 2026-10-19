@@ -4,12 +4,14 @@ import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementUpload
 import ar.com.ingenieriaalimentacion.domain.model.measurement.NewMeasurement
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncSummary
 import ar.com.ingenieriaalimentacion.domain.repository.MeasurementRepository
+import kotlin.time.Duration
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlin.time.Duration
 
 class FakeMeasurementRepository : MeasurementRepository {
     val enqueued = mutableListOf<NewMeasurement>()
+    val persisted = mutableListOf<NewMeasurement>()
+    @kotlin.concurrent.Volatile var syncCalls = 0
     val retried = mutableListOf<String>()
     val deleted = mutableListOf<String>()
     var enqueueResult: Result<Unit> = Result.success(Unit)
@@ -18,12 +20,16 @@ class FakeMeasurementRepository : MeasurementRepository {
 
     override suspend fun enqueue(measurement: NewMeasurement): Result<Unit> {
         enqueued += measurement
+        if (enqueueResult.isSuccess) persisted += measurement
         return enqueueResult
     }
 
     override fun observeUploads(): Flow<List<MeasurementUpload>> = uploads
 
-    override suspend fun syncPending(): SyncSummary = syncSummary
+    override suspend fun syncPending(): SyncSummary {
+        syncCalls++
+        return syncSummary
+    }
 
     override suspend fun retry(localId: String): Result<Unit> {
         retried += localId

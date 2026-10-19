@@ -53,6 +53,7 @@ class SqlDelightDatabaseCleanerTest {
             attemptCount = 0L,
             bmi = null,
             alertsJson = null,
+            observation = null,
             createdAt = 10L,
             updatedAt = 10L,
         )

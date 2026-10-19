@@ -15,19 +15,19 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
-import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 
 class SubjectApiTest {
 
     private val pageBody = """
         {
           "items": [
-            { "id": "1", "dni": 30111222, "name": "Ana", "last_name": "Pérez", "sex": "female" },
-            { "id": "2", "dni": 28999888, "name": "Luis", "last_name": "Gómez", "sex": "male" }
+            { "id": "1", "dni": 30111222, "name": "Ana", "last_name": "Pérez", "birth_date":"1990-01-01","sex": "female" },
+            { "id": "2", "dni": 28999888, "name": "Luis", "last_name": "Gómez", "birth_date":"1990-01-01","sex": "male" }
           ],
           "total": 5,
           "page": 1,

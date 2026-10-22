@@ -9,9 +9,10 @@ enum class FoodIntakeOrigin(val wireValue: String, val label: String) {
     @SerialName("provincial_government") ProvincialGovernment("provincial_government", "Gobierno provincial"),
     @SerialName("municipal_government") MunicipalGovernment("municipal_government", "Gobierno municipal"),
     @SerialName("private_company") PrivateCompany("private_company", "Empresa privada"),
-    @SerialName("foundation") Foundation("foundation", "Fundación"),
-    @SerialName("social_organization") SocialOrganization("social_organization", "Organización social"),
+    @SerialName("foundation") Foundation("foundation", "Fundación / ONG"),
     @SerialName("church") Church("church", "Iglesia"),
+    @SerialName("private_donation") PrivateDonation("private_donation", "Donación particular"),
+    @SerialName("collection_event") CollectionEvent("collection_event", "Colecta / evento"),
     @SerialName("other") Other("other", "Otro"),
     ;
 

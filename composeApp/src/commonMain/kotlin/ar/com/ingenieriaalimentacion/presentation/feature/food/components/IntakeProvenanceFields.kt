@@ -50,6 +50,7 @@ fun IntakeProvenanceFields(
                 segments = listOf("Único", "Recurrente"),
                 selectedIndex = when (isRecurring) { false -> 0; true -> 1; null -> -1 },
                 onSelect = { if (enabled) onRecurrenceSelected(it == 1) },
+                emphasizeSelected = true,
             )
             recurrenceError?.let {
                 Text(it, style = AlTheme.typography.caption, color = AlTheme.colors.danger)

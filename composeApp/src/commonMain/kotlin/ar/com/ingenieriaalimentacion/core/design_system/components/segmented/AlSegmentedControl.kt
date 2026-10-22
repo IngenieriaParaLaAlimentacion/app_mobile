@@ -1,6 +1,7 @@
 package ar.com.ingenieriaalimentacion.core.design_system.components.segmented
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
@@ -29,6 +30,10 @@ import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
  * and [ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlStatusBadge]
  * (clip + tokenized container/foreground); no new tokens.
  *
+ * With [emphasizeSelected] the selected segment also gets an accent border and a heavier label, so
+ * the choice does not rest on the fill colour alone. Use it where picking the wrong segment is easy
+ * to miss, such as a required either/or answer in a form.
+ *
  * Segments size to their own label and the track scrolls horizontally when they do not fit. That
  * is what keeps four Spanish labels — Sujetos | Mediciones | Encuestas | Alimentos — legible on a
  * narrow phone: they overflow into a scroll instead of wrapping or being abbreviated.
@@ -44,6 +49,7 @@ fun AlSegmentedControl(
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    emphasizeSelected: Boolean = false,
 ) {
     val gap = AlTheme.spacing.xs
     val inset = AlTheme.spacing.xs
@@ -61,12 +67,20 @@ fun AlSegmentedControl(
             content = {
                 segments.forEachIndexed { index, label ->
                     val selected = index == selectedIndex
+                    val shape = RoundedCornerShape(AlTheme.corners.sm)
                     Box(
                         modifier = Modifier
                             .widthIn(min = SEGMENT_MIN_WIDTH)
-                            .clip(RoundedCornerShape(AlTheme.corners.sm))
+                            .clip(shape)
                             .background(
                                 if (selected) AlTheme.colors.accentContainer else Color.Transparent,
+                            )
+                            .then(
+                                if (selected && emphasizeSelected) {
+                                    Modifier.border(SELECTED_BORDER_WIDTH, AlTheme.colors.accent, shape)
+                                } else {
+                                    Modifier
+                                },
                             )
                             .clickable { onSelect(index) }
                             .padding(horizontal = AlTheme.spacing.sm, vertical = AlTheme.spacing.sm),
@@ -77,7 +91,11 @@ fun AlSegmentedControl(
                             // `label`, not `body`: a tab is a control, not content, and the
                             // weight — not the size — is what carries the selection.
                             style = AlTheme.typography.label.copy(
-                                fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
+                                fontWeight = when {
+                                    selected && emphasizeSelected -> FontWeight.Bold
+                                    selected -> FontWeight.Medium
+                                    else -> FontWeight.Normal
+                                },
                             ),
                             color = if (selected) AlTheme.colors.accent else AlTheme.colors.textMuted,
                         )
@@ -122,3 +140,5 @@ fun AlSegmentedControl(
 
 /** Wide enough that a short label ("Sujetos") still reads as a tab next to a long one. */
 private val SEGMENT_MIN_WIDTH = 84.dp
+
+private val SELECTED_BORDER_WIDTH = 1.5.dp

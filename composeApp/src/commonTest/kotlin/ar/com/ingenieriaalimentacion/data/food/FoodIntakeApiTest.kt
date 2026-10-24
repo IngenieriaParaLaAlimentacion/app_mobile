@@ -62,11 +62,11 @@ class FoodIntakeApiTest {
     fun `shared command mapper carries typed origin and false recurrence`() {
         val command = NewFoodIntake(
             id = "intake-1", establishmentId = "e1", receivedAtEpochMillis = 0L,
-            comments = null, originType = FoodIntakeOrigin.SocialOrganization,
+            comments = null, originType = FoodIntakeOrigin.CollectionEvent,
             isRecurring = false, items = listOf(NewFoodIntakeLine("f1", "1")),
         )
         val body = command.toRequest("2026-09-06T12:00:00Z")
-        assertEquals("social_organization", body.originType)
+        assertEquals("collection_event", body.originType)
         assertEquals(false, body.isRecurring)
         assertEquals("manual", body.source)
     }

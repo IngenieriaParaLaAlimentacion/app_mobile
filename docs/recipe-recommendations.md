@@ -6,7 +6,7 @@ against current approved links, so restored navigation cannot pin a stale scope.
 
 The form sends only establishment id, a strict positive integer up to 10000,
 and meal type. Generation runs online with a longer request timeout, retains
-input after errors, and shows two or three backend proposals. Recipes include
+input after errors, and aims for two or three backend proposals and can show one valid alternative. Recipes include
 exact stock-unit quantities, preparation, nutritional percentages, GAPA groups,
 cultural inspiration and explicit energy/nutritional shortfalls. Indicators are
 returned by the backend; the client only formats them for display.
@@ -66,3 +66,7 @@ unchanged.
 Unit tests cover request bodies and decimals, domain errors, pagination, offline
 and scope gating, confirmation, shortages, preview invalidation and stable reuse
 ids through screen recreation and retry.
+
+Availability warnings `recipes/cultural-unavailable` and
+`recipes/fewer-alternatives` are displayed separately from missing nutrient data.
+A single valid recipe remains selectable; warnings do not disable confirmation.

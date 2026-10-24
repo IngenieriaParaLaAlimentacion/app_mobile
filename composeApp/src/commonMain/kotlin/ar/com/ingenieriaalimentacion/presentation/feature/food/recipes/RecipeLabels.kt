@@ -14,7 +14,8 @@ internal fun recipeNumber(value: Double): String =
 internal fun recipeDate(value: String, zone: TimeZone = TimeZone.currentSystemDefault()): String =
     runCatching {
         Instant.parse(value).toLocalDateTime(zone).date.toString()
-    }.getOrDefault(value.substringBefore('T'))
+    }
+    .getOrDefault(value.substringBefore('T'))
 
 internal fun mealLabel(value: String) =
     MealType.entries.firstOrNull { it.wireValue == value }?.label ?: value
@@ -84,3 +85,27 @@ internal fun recipeErrorMessage(error: RecipeError, ingredients: List<RecipeIngr
             "No alcanza el stock de ${food?.name ?: "un alimento de la receta"}: hay $available y se necesitan $requested. No se registró la salida."
         }
     }
+
+internal fun recipeWarningMessages(warnings: List<String>): List<String> = buildList {
+    if ("recipes/cultural-unavailable" in warnings) {
+        add("No se obtuvo una receta con inspiración cultural del establecimiento.")
+    }
+    if ("recipes/fewer-alternatives" in warnings) {
+        add(
+            "Se obtuvieron menos alternativas de las esperadas. Podés usar las recetas disponibles."
+        )
+    }
+    val nutritionWarnings = warnings.filterNot {
+        it == "recipes/cultural-unavailable" || it == "recipes/fewer-alternatives"
+    }
+    if (nutritionWarnings.any { it.contains("conversion", ignoreCase = true) }) {
+        add(
+            "Algunos alimentos no se usaron porque falta su equivalencia en gramos. Los indicadores pueden ser parciales."
+        )
+    }
+    if (nutritionWarnings.any { !it.contains("conversion", ignoreCase = true) }) {
+        add(
+            "Faltan datos de composición de algunos alimentos. Los indicadores nutricionales pueden ser parciales."
+        )
+    }
+}

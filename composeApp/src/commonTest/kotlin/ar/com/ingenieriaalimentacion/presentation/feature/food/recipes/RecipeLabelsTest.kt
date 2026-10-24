@@ -37,4 +37,36 @@ class RecipeLabelsTest {
             recipeDate("2026-10-18T02:00:00Z", TimeZone.of("America/Argentina/Buenos_Aires")),
         )
     }
+
+    @Test
+    fun `availability warnings are not mislabeled as nutrient data gaps`() {
+        val messages =
+            recipeWarningMessages(
+                listOf("recipes/cultural-unavailable", "recipes/fewer-alternatives")
+            )
+        assertEquals(2, messages.size)
+        assertTrue(messages.any { it.contains("inspiración cultural") })
+        assertTrue(messages.any { it.contains("menos alternativas") })
+        assertTrue(messages.none { it.contains("composición") })
+    }
+
+    @Test
+    fun `partial availability retains real nutrition warnings`() {
+        val messages =
+            recipeWarningMessages(
+                listOf(
+                    "recipes/fewer-alternatives",
+                    "1 food(s) have no value for folato_efd, counted as 0",
+                    "no conversion to grams",
+                )
+            )
+        assertEquals(3, messages.size)
+        assertTrue(messages.any { it.contains("equivalencia") })
+        assertTrue(messages.any { it.contains("composición") })
+    }
+
+    @Test
+    fun `no warnings produces no warning banners`() {
+        assertEquals(emptyList(), recipeWarningMessages(emptyList()))
+    }
 }

@@ -355,16 +355,8 @@ internal fun RecipeCard(recipe: RecipeProposal, actions: (@Composable () -> Unit
                     color = AlTheme.colors.warning,
                 )
             }
-            if (recipe.warnings.isNotEmpty()) {
-                val missingConversion =
-                    recipe.warnings.any { it.contains("conversion", ignoreCase = true) }
-                AlInlineBanner(
-                    if (missingConversion)
-                        "Algunos alimentos no se usaron porque falta su equivalencia en gramos. Los indicadores pueden ser parciales."
-                    else
-                        "Faltan datos de composición de algunos alimentos. Los indicadores nutricionales pueden ser parciales.",
-                    variant = AlBannerVariant.Warning,
-                )
+            recipeWarningMessages(recipe.warnings).forEach { message ->
+                AlInlineBanner(message, variant = AlBannerVariant.Warning)
             }
             AlSectionLabel("Ingredientes · cantidades totales")
             recipe.ingredients.forEach { ingredient ->

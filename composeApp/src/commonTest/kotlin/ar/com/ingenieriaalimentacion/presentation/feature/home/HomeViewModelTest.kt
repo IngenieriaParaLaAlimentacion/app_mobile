@@ -1,10 +1,10 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.home
 
-import ar.com.ingenieriaalimentacion.domain.model.establishment.CharacterizationStatus
 import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.di.AppScope
+import ar.com.ingenieriaalimentacion.domain.model.establishment.CharacterizationStatus
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovement
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementDirection
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
@@ -15,6 +15,7 @@ import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseSummary
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseTarget
+import ar.com.ingenieriaalimentacion.domain.usecase.food.GetFoodMovementHistoryPageUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.ObserveFoodMovementsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.ObserveMeasurementsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
@@ -96,6 +97,7 @@ class HomeViewModelTest {
     ): HomeViewModel {
         val coordinator = SyncCoordinator(emptyList(), connectivity, AppScope())
         return HomeViewModel(
+            getFoodMovementHistory = GetFoodMovementHistoryPageUseCase(foodMovementRepo),
             observeSubjectUploads = ObserveSubjectUploadsUseCase(subjectRepo),
             observeMeasurements = ObserveMeasurementsUseCase(measurementRepo),
             observeSurveyResponseUploads = ObserveSurveyResponseUploadsUseCase(surveyResponseRepo),
@@ -333,12 +335,12 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `quick actions expose exactly the four home entry points`() {
+    fun `quick actions expose the five home entry points`() {
         assertEquals(
-            listOf("Medición", "Sujeto", "Encuesta", "Alimentos"),
+            listOf("Medición", "Sujeto", "Encuesta", "Alimentos", "Recetas"),
             QUICK_ACTIONS.map { it.label },
         )
-        assertEquals(HomeAction.FoodOverviewClick, QUICK_ACTIONS.last().action)
+        assertEquals(HomeAction.RecipesClick, QUICK_ACTIONS.last().action)
     }
 
     @Test
@@ -403,4 +405,30 @@ class HomeViewModelTest {
         assertNull(vm.state.value.currentEstablishment)
         assertEquals(listOf("b"), vm.state.value.establishmentOptions.map { it.id })
     }
+    @Test
+    fun `recipes requires an approved selected establishment`() = runTest(dispatcher) {
+        val repo = FakeProfileRepository().apply {
+            meResult = Result.success(profile("field_worker"))
+            myEstablishmentsResult = Result.success(listOf(establishment("a")))
+        }
+        val vm = viewModel(profileRepo = repo)
+        advanceUntilIdle()
+        vm.onAction(HomeAction.RecipesClick)
+        assertNull(vm.state.value.destination)
+        vm.onAction(HomeAction.EstablishmentSelected(establishment("a")))
+        advanceUntilIdle()
+        vm.onAction(HomeAction.RecipesClick)
+        assertEquals(HomeDestination.NavigateToRecipes, vm.state.value.destination)
+    }
+
+    @Test
+    fun `successful recipe return refreshes the shared food movement cache`() = runTest(dispatcher) {
+        val movements = FakeFoodMovementHistoryRepository()
+        val vm = viewModel(profileRepo = FakeProfileRepository(), foodMovementRepo = movements)
+        advanceUntilIdle()
+        vm.refreshFoodMovements()
+        advanceUntilIdle()
+        assertEquals(listOf(1 to 20), movements.requestedPages)
+    }
+
 }

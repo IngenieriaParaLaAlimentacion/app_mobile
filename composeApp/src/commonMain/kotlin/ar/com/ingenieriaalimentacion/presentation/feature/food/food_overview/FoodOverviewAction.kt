@@ -3,6 +3,7 @@ package ar.com.ingenieriaalimentacion.presentation.feature.food.food_overview
 import ar.com.ingenieriaalimentacion.domain.model.food.StockSortOrder
 
 sealed interface FoodOverviewAction {
+    data object RecipesClick : FoodOverviewAction
     data object BackClick : FoodOverviewAction
     data object IntakeClick : FoodOverviewAction
     data object ReceiptIntakeClick : FoodOverviewAction

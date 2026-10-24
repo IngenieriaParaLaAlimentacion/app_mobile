@@ -32,6 +32,7 @@ import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_edit.surveyResponseEditScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_form.surveyResponseFormScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_number_fix.surveyResponseNumberFixScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.food.recipes.recipesScreen
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 
 @Composable
@@ -50,6 +51,7 @@ fun AppNavHost(
             selectEstablishmentScreen(navController)
             createSubjectScreen(navController)
             createMeasurementScreen(navController)
+            recipesScreen(navController)
             foodOverviewScreen(navController)
             createFoodIntakeScreen(navController)
             receiptFoodIntakeScreen(navController)

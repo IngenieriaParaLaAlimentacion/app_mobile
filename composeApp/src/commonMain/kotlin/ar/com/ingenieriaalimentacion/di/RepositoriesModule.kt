@@ -2,6 +2,8 @@ package ar.com.ingenieriaalimentacion.di
 
 import ar.com.ingenieriaalimentacion.data.activity.local.ActivityLocalStore
 import ar.com.ingenieriaalimentacion.data.activity.local.DefaultActivityLocalStore
+import ar.com.ingenieriaalimentacion.data.recipe.RecipeRepositoryImpl
+import ar.com.ingenieriaalimentacion.domain.repository.RecipeRepository
 import ar.com.ingenieriaalimentacion.data.auth.AuthRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.auth.storage.TokenStoreSessionManager
 import ar.com.ingenieriaalimentacion.data.device.DeviceIdProvider
@@ -71,6 +73,7 @@ import org.koin.dsl.module
 import kotlin.time.Clock
 
 val repositoriesModule = module {
+    single<RecipeRepository> { RecipeRepositoryImpl(get()) }
     single<Json>(named("auth")) {
         Json { ignoreUnknownKeys = true; isLenient = true; encodeDefaults = true }
     }

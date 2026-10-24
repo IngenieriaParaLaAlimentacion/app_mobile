@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import ar.com.ingenieriaalimentacion.data.network.connectivity.ConnectivityObserver
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
+import ar.com.ingenieriaalimentacion.domain.usecase.food.GetFoodMovementHistoryPageUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.ObserveFoodMovementsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.ObserveMeasurementsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
@@ -30,6 +31,7 @@ class HomeViewModel(
     observeMeasurements: ObserveMeasurementsUseCase,
     observeSurveyResponseUploads: ObserveSurveyResponseUploadsUseCase,
     observeFoodMovements: ObserveFoodMovementsUseCase,
+    private val getFoodMovementHistory: GetFoodMovementHistoryPageUseCase,
     private val getMyProfile: GetMyProfileUseCase,
     private val getMyEstablishments: GetMyEstablishmentsUseCase,
     private val getCurrentEstablishment: GetCurrentEstablishmentUseCase,
@@ -106,6 +108,9 @@ class HomeViewModel(
 
     fun onAction(action: HomeAction) {
         when (action) {
+            HomeAction.RecipesClick -> if (_state.value.currentEstablishment?.status == EstablishmentStatus.Approved) {
+                _state.update { it.copy(destination = HomeDestination.NavigateToRecipes) }
+            }
             HomeAction.NewMeasurementClick ->
                 _state.update { it.copy(destination = HomeDestination.NavigateToCreateMeasurement) }
             HomeAction.NewSubjectClick ->
@@ -139,6 +144,10 @@ class HomeViewModel(
                 )
             }
         }
+    }
+
+    fun refreshFoodMovements() {
+        viewModelScope.launch { getFoodMovementHistory(page = 1, pageSize = 20) }
     }
 
     fun clearDestination() {

@@ -132,6 +132,9 @@ private fun FoodOverviewContent(
     ) {
         item { OverviewActions(onAction) }
         item {
+            AlButton(modifier = Modifier.gutter().fillMaxWidth().padding(top = AlTheme.spacing.sm), onClick = { onAction(FoodOverviewAction.RecipesClick) }, variant = AlButtonVariant.Outline) { Text("Recetas con el stock disponible") }
+        }
+        item {
             OverviewSectionHeading(
                 text = "Stock actual",
                 modifier = Modifier.gutter().padding(top = AlTheme.spacing.lg),

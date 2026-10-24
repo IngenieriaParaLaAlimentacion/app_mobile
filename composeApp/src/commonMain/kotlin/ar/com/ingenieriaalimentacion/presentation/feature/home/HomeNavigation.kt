@@ -15,6 +15,7 @@ import ar.com.ingenieriaalimentacion.presentation.feature.food.food_overview.nav
 import ar.com.ingenieriaalimentacion.presentation.feature.measurement.create_measurement.navigateToCreateMeasurement
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.create_subject.navigateToCreateSubject
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_list.navigateToSurveyList
+import ar.com.ingenieriaalimentacion.presentation.feature.food.recipes.navigateToRecipes
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 
 fun NavController.navigateToHome(navOptions: NavOptions? = null) =
@@ -35,6 +36,7 @@ internal fun navigate(
     navController: NavController,
 ) {
     when (destination) {
+        HomeDestination.NavigateToRecipes -> navController.navigateToRecipes()
         HomeDestination.Back -> navController.popBackStack()
         HomeDestination.NavigateToCreateSubject -> navController.navigateToCreateSubject()
         HomeDestination.NavigateToCreateMeasurement -> navController.navigateToCreateMeasurement()

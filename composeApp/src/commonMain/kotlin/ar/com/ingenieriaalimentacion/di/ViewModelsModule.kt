@@ -1,5 +1,7 @@
 package ar.com.ingenieriaalimentacion.di
 
+import androidx.lifecycle.SavedStateHandle
+import ar.com.ingenieriaalimentacion.presentation.feature.food.recipes.RecipesViewModel
 import ar.com.ingenieriaalimentacion.app.AppViewModel
 import ar.com.ingenieriaalimentacion.domain.model.auth.canEditCharacterization
 import ar.com.ingenieriaalimentacion.domain.model.auth.establishmentLinkMode
@@ -43,6 +45,9 @@ import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
 val viewModelsModule = module {
+    viewModel { (savedState: SavedStateHandle) ->
+        RecipesViewModel(repository = get(), resolveCurrentEstablishment = get(), connectivity = get(), ids = get(), savedState = savedState)
+    }
     viewModelOf(::AppViewModel)
     viewModelOf(::GetStartedViewModel)
     viewModel {
@@ -51,6 +56,7 @@ val viewModelsModule = module {
             observeMeasurements = get(),
             observeSurveyResponseUploads = get(),
             observeFoodMovements = get(),
+            getFoodMovementHistory = get(),
             getMyProfile = get(),
             getMyEstablishments = get(),
             getCurrentEstablishment = get(),

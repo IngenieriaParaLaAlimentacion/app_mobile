@@ -59,7 +59,9 @@ class RecipesViewModel(
         when (action) {
             RecipesAction.BackClick ->
                 if (!_state.value.isSubmitting) {
-                    if (_state.value.detail != null)
+                    if (_state.value.selectedProposalId != null)
+                        _state.update { it.copy(selectedProposalId = null, screenError = null) }
+                    else if (_state.value.detail != null)
                         _state.update {
                             it.copy(detail = null, reusePreview = null, screenError = null)
                         }
@@ -86,12 +88,21 @@ class RecipesViewModel(
                     savedState["recipe_meal"] = action.meal.wireValue
                     _state.update { it.copy(mealType = action.meal) }
                 }
+            RecipesAction.EditRequest -> if (_state.value.canEdit) {
+                _state.update { it.copy(isEditingRequest = true) }
+            }
+            is RecipesAction.ShowProposal -> if (!_state.value.isBusy &&
+                _state.value.request?.proposals?.any { it.id == action.proposalId } == true
+            ) {
+                _state.update { it.copy(selectedProposalId = action.proposalId) }
+            }
             RecipesAction.Generate -> generate()
             is RecipesAction.TabSelected ->
                 if (!_state.value.isBusy) {
                     _state.update {
                         it.copy(
                             tab = action.tab,
+                            selectedProposalId = null,
                             detail = null,
                             reusePreview = null,
                             screenError = null,
@@ -171,14 +182,14 @@ class RecipesViewModel(
         val establishment = current.establishment ?: return
         val count = current.children.value.toIntOrNull() ?: return
         _state.update {
-            it.copy(isGenerating = true, request = null, screenError = null, successMessage = null)
+            it.copy(isGenerating = true, request = null, selectedProposalId = null, screenError = null, successMessage = null)
         }
         viewModelScope.launch {
             repository
                 .generate(establishment.id, count, current.mealType)
                 .fold(
                     onSuccess = { result ->
-                        _state.update { it.copy(isGenerating = false, request = result) }
+                        _state.update { it.copy(isGenerating = false, request = result, isEditingRequest = false) }
                     },
                     onFailure = { failure ->
                         _state.update {
@@ -387,7 +398,7 @@ class RecipesViewModel(
                                     else request
                                 },
                             successMessage =
-                                "Receta elegida. La salida se registró y el stock se actualizó.",
+                                "Preparación registrada. Se descontaron los ingredientes del stock.",
                             mutationVersion = it.mutationVersion + 1,
                         )
                     }

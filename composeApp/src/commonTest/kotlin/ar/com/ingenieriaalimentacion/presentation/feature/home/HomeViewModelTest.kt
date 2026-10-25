@@ -335,12 +335,12 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `quick actions expose the five home entry points`() {
+    fun `quick actions keep recipes inside the food entry point`() {
         assertEquals(
-            listOf("Medición", "Sujeto", "Encuesta", "Alimentos", "Recetas"),
+            listOf("Medición", "Sujeto", "Encuesta", "Alimentos"),
             QUICK_ACTIONS.map { it.label },
         )
-        assertEquals(HomeAction.RecipesClick, QUICK_ACTIONS.last().action)
+        assertEquals(HomeAction.FoodOverviewClick, QUICK_ACTIONS.last().action)
     }
 
     @Test
@@ -405,22 +405,6 @@ class HomeViewModelTest {
         assertNull(vm.state.value.currentEstablishment)
         assertEquals(listOf("b"), vm.state.value.establishmentOptions.map { it.id })
     }
-    @Test
-    fun `recipes requires an approved selected establishment`() = runTest(dispatcher) {
-        val repo = FakeProfileRepository().apply {
-            meResult = Result.success(profile("field_worker"))
-            myEstablishmentsResult = Result.success(listOf(establishment("a")))
-        }
-        val vm = viewModel(profileRepo = repo)
-        advanceUntilIdle()
-        vm.onAction(HomeAction.RecipesClick)
-        assertNull(vm.state.value.destination)
-        vm.onAction(HomeAction.EstablishmentSelected(establishment("a")))
-        advanceUntilIdle()
-        vm.onAction(HomeAction.RecipesClick)
-        assertEquals(HomeDestination.NavigateToRecipes, vm.state.value.destination)
-    }
-
     @Test
     fun `successful recipe return refreshes the shared food movement cache`() = runTest(dispatcher) {
         val movements = FakeFoodMovementHistoryRepository()

@@ -1,6 +1,16 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.food.recipes
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.backhandler.BackHandler
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TextButton
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -49,20 +59,38 @@ fun RecipesScreenRoot(
     RecipesScreen(state, viewModel::onAction)
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun RecipesScreen(state: RecipesState, onAction: (RecipesAction) -> Unit) {
+    val proposal = state.request?.proposals?.firstOrNull { it.id == state.selectedProposalId }
+    val listScroll = rememberScrollState()
+    val detailScroll = rememberScrollState()
+    val scrollState = if (state.detail != null || proposal != null) detailScroll else listScroll
+    LaunchedEffect(state.selectedProposalId, state.detail?.requestId) {
+        detailScroll.scrollTo(0)
+    }
+    LaunchedEffect(state.tab, state.request?.id) {
+        listScroll.scrollTo(0)
+    }
+    BackHandler(enabled = state.detail != null || proposal != null || state.isSubmitting) {
+        onAction(RecipesAction.BackClick)
+    }
     AlScaffold {
         Column(Modifier.fillMaxSize()) {
             AlBackTopAppBar(
-                title = if (state.detail != null) "Receta elegida" else "Recetas",
+                title = when {
+                    state.detail != null -> "Volver a preparar"
+                    proposal != null -> "Detalle de receta"
+                    else -> "Recetas con tu stock"
+                },
                 onBackClick = { onAction(RecipesAction.BackClick) },
             )
             Column(
                 Modifier.fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(scrollState)
                     .imePadding()
                     .padding(AlTheme.spacing.md),
-                verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.md),
+                verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg),
             ) {
                 when {
                     state.isLoading -> Spinner()
@@ -75,12 +103,12 @@ fun RecipesScreen(state: RecipesState, onAction: (RecipesAction) -> Unit) {
                     else -> {
                         Text(
                             state.establishment?.name.orEmpty(),
-                            style = AlTheme.typography.subtitle,
+                            style = AlTheme.typography.caption,
                             color = AlTheme.colors.textBase,
                         )
                         if (!state.isOnline)
                             AlInlineBanner(
-                                "Necesitás conexión para generar recetas, elegir una o volver a cocinarla.",
+                                "Necesitás conexión para buscar recetas o registrar una preparación.",
                                 variant = AlBannerVariant.Warning,
                             )
                         state.successMessage?.let { AlInlineBanner(it) }
@@ -107,29 +135,38 @@ fun RecipesScreen(state: RecipesState, onAction: (RecipesAction) -> Unit) {
                                     "Volvé a seleccionar el establecimiento de la confirmación pendiente en Inicio."
                                 )
                         }
-                        if (state.detail != null) {
-                            HistoryDetail(state, onAction)
-                        } else {
-                            Row(horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
-                                RecipesTab.entries.forEach { tab ->
-                                    AlButton(
-                                        onClick = { onAction(RecipesAction.TabSelected(tab)) },
-                                        enabled = !state.isBusy,
-                                        variant =
-                                            if (state.tab == tab) AlButtonVariant.Default
-                                            else AlButtonVariant.Outline,
-                                        modifier = Modifier.weight(1f),
-                                    ) {
-                                        Text(
-                                            if (tab == RecipesTab.Generate) "Generar"
-                                            else "Historial"
+                        when {
+                            state.detail != null -> HistoryDetail(state, onAction)
+                            proposal != null -> {
+                                RecipeCard(proposal) {
+                                    RegistrationAction(
+                                        enabled = state.canEdit && state.isOnline &&
+                                            state.request?.selection == null &&
+                                            state.request?.id !in state.blockedRequestIds,
+                                        registered = state.request?.selection?.proposalId == proposal.id,
+                                        onClick = { onAction(RecipesAction.Choose(proposal.id)) },
+                                    )
+                                }
+                            }
+                            else -> {
+                                TabRow(
+                                    selectedTabIndex = state.tab.ordinal,
+                                    containerColor = AlTheme.colors.surfaceBase,
+                                    contentColor = AlTheme.colors.accent,
+                                ) {
+                                    RecipesTab.entries.forEach { tab ->
+                                        Tab(
+                                            selected = state.tab == tab,
+                                            onClick = { onAction(RecipesAction.TabSelected(tab)) },
+                                            enabled = !state.isBusy,
+                                            text = { Text(if (tab == RecipesTab.Generate) "Propuestas" else "Historial", style = AlTheme.typography.label) },
                                         )
                                     }
                                 }
-                            }
-                            when (state.tab) {
-                                RecipesTab.Generate -> GenerateContent(state, onAction)
-                                RecipesTab.History -> HistoryContent(state, onAction)
+                                when (state.tab) {
+                                    RecipesTab.Generate -> GenerateContent(state, onAction)
+                                    RecipesTab.History -> HistoryContent(state, onAction)
+                                }
                             }
                         }
                     }
@@ -139,10 +176,10 @@ fun RecipesScreen(state: RecipesState, onAction: (RecipesAction) -> Unit) {
         state.confirmation?.let { confirmation ->
             AlConfirmDialog(
                 open = true,
-                title = "¿Cocinar esta receta?",
+                title = "¿Registrar esta preparación?",
                 description =
-                    "${confirmation.name}, para ${confirmation.portions} chicos. Al confirmar se registrará una salida y se descontarán los ingredientes del stock.",
-                confirmText = "Confirmar y registrar salida",
+                    "${confirmation.name}\nPara ${confirmation.portions} chicos en ${state.establishment?.name.orEmpty()}.\n\nSe registrará una salida y se descontarán los ingredientes del stock.",
+                confirmText = "Confirmar y descontar stock",
                 confirmTone = AlConfirmTone.Neutral,
                 loading = state.isSubmitting,
                 onConfirm = { onAction(RecipesAction.Confirm) },
@@ -154,266 +191,298 @@ fun RecipesScreen(state: RecipesState, onAction: (RecipesAction) -> Unit) {
 
 @Composable
 private fun GenerateContent(state: RecipesState, onAction: (RecipesAction) -> Unit) {
-    AlInput(
-        value = state.children.value,
-        onValueChange = { onAction(RecipesAction.ChildrenChanged(it)) },
-        label = "¿Cuántos chicos comen hoy?",
-        required = true,
-        enabled = state.canEdit,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        error = state.children.displayError,
-        onFocusChange = { onAction(RecipesAction.ChildrenFocusChanged(it)) },
-    )
-    AlSectionLabel("Tipo de comida")
-    MealType.entries.chunked(2).forEach { meals ->
-        Row(horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
-            meals.forEach { meal ->
-                AlButton(
-                    onClick = { onAction(RecipesAction.MealSelected(meal)) },
+    val request = state.request
+    if (state.isEditingRequest || request == null) {
+        AlCard(Modifier.fillMaxWidth()) {
+            Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg)) {
+                Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+                    Text("¿Qué vamos a preparar?", style = AlTheme.typography.title, color = AlTheme.colors.textBase)
+                    Text("Buscamos recetas con los alimentos disponibles en tu establecimiento.", style = AlTheme.typography.body, color = AlTheme.colors.textMuted)
+                }
+                AlInput(
+                    value = state.children.value,
+                    onValueChange = { onAction(RecipesAction.ChildrenChanged(it)) },
+                    label = "¿Cuántos chicos comen hoy?",
+                    required = true,
                     enabled = state.canEdit,
-                    variant =
-                        if (state.mealType == meal) AlButtonVariant.Default
-                        else AlButtonVariant.Outline,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(meal.label)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    error = state.children.displayError,
+                    onFocusChange = { onAction(RecipesAction.ChildrenFocusChanged(it)) },
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+                    AlSectionLabel("Tipo de comida")
+                    MealType.entries.chunked(2).forEach { meals ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+                            meals.forEach { meal ->
+                                androidx.compose.material3.FilterChip(
+                                    selected = state.mealType == meal,
+                                    onClick = { onAction(RecipesAction.MealSelected(meal)) },
+                                    enabled = state.canEdit,
+                                    label = { Text(meal.label, style = AlTheme.typography.label) },
+                                    modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                                )
+                            }
+                        }
+                    }
+                }
+                AlButton(
+                    onClick = { onAction(RecipesAction.Generate) },
+                    enabled = state.canGenerate,
+                    loading = state.isGenerating,
+                    fullWidth = true,
+                ) { Text("Buscar recetas") }
+            }
+        }
+    } else {
+        AlCard(Modifier.fillMaxWidth()) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
+            ) {
+                Column(Modifier.align(Alignment.CenterVertically), verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
+                    AlSectionLabel("Tu búsqueda")
+                    Text("${mealLabel(request.mealType)} · ${request.childrenCount} chicos", style = AlTheme.typography.bodyStrong, color = AlTheme.colors.textBase)
+                }
+                TextButton(onClick = { onAction(RecipesAction.EditRequest) }, enabled = state.canEdit) {
+                    Text("Cambiar", color = AlTheme.colors.accent)
                 }
             }
         }
     }
-    AlButton(
-        onClick = { onAction(RecipesAction.Generate) },
-        enabled = state.canGenerate,
-        loading = state.isGenerating,
-        fullWidth = true,
-    ) {
-        Text("Buscar propuestas")
+    if (state.isGenerating) {
+        Text("Estamos preparando las propuestas. Puede tardar unos minutos.", style = AlTheme.typography.body, color = AlTheme.colors.textMuted)
     }
-    if (state.isGenerating)
-        Text(
-            "Estamos preparando las propuestas. Puede tardar unos minutos.",
-            style = AlTheme.typography.body,
-            color = AlTheme.colors.textMuted,
-        )
-    state.request?.let { request ->
-        if (request.selection != null)
-            AlInlineBanner("Ya elegiste una receta de este pedido. Podés verla en el historial.")
-        request.proposals.forEach { recipe ->
-            RecipeCard(recipe) {
-                AlButton(
-                    onClick = { onAction(RecipesAction.Choose(recipe.id)) },
-                    enabled =
-                        state.canEdit &&
-                            state.isOnline &&
-                            request.selection == null &&
-                            request.id !in state.blockedRequestIds,
-                    fullWidth = true,
-                ) {
-                    Text(
-                        if (request.selection?.proposalId == recipe.id) "Elegida"
-                        else "Elegir esta receta"
-                    )
-                }
+    request?.let {
+        Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+            Text("Propuestas para hoy", style = AlTheme.typography.title, color = AlTheme.colors.textBase)
+            Text("${request.proposals.size} ${if (request.proposals.size == 1) "opción" else "opciones"} para comparar. Consultar una receta no modifica el stock.", style = AlTheme.typography.body, color = AlTheme.colors.textMuted)
+            if (state.isEditingRequest) {
+                Text("Estas propuestas corresponden a ${mealLabel(request.mealType).lowercase()} para ${request.childrenCount} chicos. Buscá nuevamente para aplicar los cambios.", style = AlTheme.typography.caption, color = AlTheme.colors.textMuted)
             }
+        }
+        if (request.selection != null) {
+            AlInlineBanner("La preparación ya está registrada. Podés volver a prepararla desde el historial.")
+        }
+        request.proposals.forEach { recipe ->
+            RecipeSummaryCard(recipe, registered = request.selection?.proposalId == recipe.id) {
+                onAction(RecipesAction.ShowProposal(recipe.id))
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecipeSummaryCard(recipe: RecipeProposal, registered: Boolean, onClick: () -> Unit) {
+    AlCard(Modifier.fillMaxWidth()) {
+        Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.md)) {
+            RecipeHeading(recipe, compact = true)
+            val observations = recipe.unmetConstraints.size + recipeWarningMessages(recipe.warnings).size
+            if (observations > 0) {
+                Text(
+                    "Revisar $observations ${if (observations == 1) "observación" else "observaciones"} antes de preparar",
+                    style = AlTheme.typography.bodyStrong,
+                    color = AlTheme.colors.warning,
+                )
+            }
+            if (registered) Text("Preparación registrada", style = AlTheme.typography.label, color = AlTheme.colors.accent)
+            AlButton(onClick = onClick, fullWidth = true, variant = AlButtonVariant.Outline) { Text("Ver receta") }
         }
     }
 }
 
 @Composable
 private fun HistoryContent(state: RecipesState, onAction: (RecipesAction) -> Unit) {
-    Text("Recetas elegidas", style = AlTheme.typography.title, color = AlTheme.colors.textBase)
-    AlButton(
-        onClick = { onAction(RecipesAction.ReloadHistory) },
-        enabled = state.isOnline && !state.isHistoryLoading,
-        variant = AlButtonVariant.Outline,
-    ) {
-        Text("Actualizar")
+    Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+        Text("Preparaciones registradas", style = AlTheme.typography.title, color = AlTheme.colors.textBase)
+        Text("Consultá lo que prepararon y ajustá las cantidades para volver a cocinarlo.", style = AlTheme.typography.body, color = AlTheme.colors.textMuted)
+        TextButton(
+            onClick = { onAction(RecipesAction.ReloadHistory) },
+            enabled = state.isOnline && !state.isHistoryLoading,
+        ) { Text("Actualizar historial", color = AlTheme.colors.accent) }
     }
     state.historyError?.let {
         AlInlineBanner(recipeErrorMessage(it, emptyList()), variant = AlBannerVariant.Danger)
     }
-    if (state.history.isEmpty() && !state.isHistoryLoading)
+    if (state.history.isEmpty() && !state.isHistoryLoading && state.historyError == null) {
         Text(
-            "Todavía no hay recetas elegidas para este establecimiento.",
+            "Todavía no hay preparaciones registradas. Buscá una receta en Propuestas para empezar.",
             style = AlTheme.typography.body,
             color = AlTheme.colors.textMuted,
         )
+    }
     state.history.forEach { request ->
-        request.proposals.forEach { proposal ->
+        request.proposals.filter { it.id == request.selection?.proposalId }.forEach { proposal ->
             AlCard(Modifier.fillMaxWidth()) {
-                Text(
-                    proposal.name,
-                    style = AlTheme.typography.subtitle,
-                    color = AlTheme.colors.textBase,
-                )
-                Text(
-                    "${proposal.portions} porciones · ${mealLabel(request.mealType)} · ${recipeDate(request.createdAt)}",
-                    style = AlTheme.typography.caption,
-                    color = AlTheme.colors.textMuted,
-                )
-                AlButton(
-                    onClick = { onAction(RecipesAction.ShowRecipe(request.id, proposal.id)) },
-                    enabled = state.canEdit,
-                    variant = AlButtonVariant.Outline,
-                ) {
-                    Text("Ver receta")
+                Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.md)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
+                        Text(proposal.name, style = AlTheme.typography.subtitle, color = AlTheme.colors.textBase)
+                        Text(
+                            "${proposal.portions} porciones · ${mealLabel(request.mealType)} · ${recipeDate(request.createdAt)}",
+                            style = AlTheme.typography.caption,
+                            color = AlTheme.colors.textMuted,
+                        )
+                    }
+                    AlButton(
+                        onClick = { onAction(RecipesAction.ShowRecipe(request.id, proposal.id)) },
+                        enabled = state.canEdit,
+                        fullWidth = true,
+                        variant = AlButtonVariant.Outline,
+                    ) { Text("Ver receta") }
                 }
             }
         }
     }
     if (state.isHistoryLoading) Spinner()
-    if (state.historyHasMore)
+    if (state.historyHasMore) {
         AlButton(
             onClick = { onAction(RecipesAction.LoadMoreHistory) },
             enabled = state.isOnline && !state.isHistoryLoading,
             variant = AlButtonVariant.Outline,
             fullWidth = true,
-        ) {
-            Text("Cargar más recetas")
-        }
+        ) { Text("Cargar más recetas") }
+    }
 }
 
 @Composable
 private fun HistoryDetail(state: RecipesState, onAction: (RecipesAction) -> Unit) {
     val detail = state.detail ?: return
-    RecipeCard(detail.proposal)
-    AlSectionLabel("Volver a cocinar")
-    AlInput(
-        value = state.reuseChildren.value,
-        onValueChange = { onAction(RecipesAction.ReuseChildrenChanged(it)) },
-        label = "Cantidad de chicos de hoy",
-        required = true,
-        enabled = state.canEdit,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        error = state.reuseChildren.displayError,
-        onFocusChange = { onAction(RecipesAction.ReuseChildrenFocusChanged(it)) },
-    )
-    AlButton(
-        onClick = { onAction(RecipesAction.PreviewReuse) },
-        enabled = state.canPreviewReuse,
-        loading = state.isPreviewing,
-        fullWidth = true,
-        variant = AlButtonVariant.Outline,
-    ) {
-        Text("Ver cantidades para hoy")
+    AlCard(Modifier.fillMaxWidth()) {
+        Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.md)) {
+            Text("Ajustar para hoy", style = AlTheme.typography.subtitle, color = AlTheme.colors.textBase)
+            AlInput(
+                value = state.reuseChildren.value,
+                onValueChange = { onAction(RecipesAction.ReuseChildrenChanged(it)) },
+                label = "¿Cuántos chicos comen hoy?",
+                required = true,
+                enabled = state.canEdit,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                error = state.reuseChildren.displayError,
+                onFocusChange = { onAction(RecipesAction.ReuseChildrenFocusChanged(it)) },
+            )
+            AlButton(
+                onClick = { onAction(RecipesAction.PreviewReuse) },
+                enabled = state.canPreviewReuse,
+                loading = state.isPreviewing,
+                fullWidth = true,
+                variant = AlButtonVariant.Outline,
+            ) { Text("Calcular cantidades para hoy") }
+        }
     }
-    state.reusePreview?.let { preview ->
-        AlSectionLabel("Vista previa para hoy")
+    Text(
+        if (state.reusePreview != null) "Cantidades actualizadas para hoy. Todavía no se descontó stock."
+        else "Cantidades de la preparación anterior. Calculá las de hoy antes de registrar.",
+        style = AlTheme.typography.body,
+        color = AlTheme.colors.textMuted,
+    )
+    RecipeCard(state.reusePreview ?: detail.proposal) {
+        if (state.reusePreview != null) {
+            RegistrationAction(
+                enabled = state.canEdit && state.isOnline,
+                onClick = { onAction(RecipesAction.ConfirmReuse) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun RecipeHeading(recipe: RecipeProposal, compact: Boolean = false) {
+    Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
+        Text(recipe.name, style = if (compact) AlTheme.typography.subtitle else AlTheme.typography.title, color = AlTheme.colors.textBase)
+        Text("${recipe.portions} porciones · ${recipe.ingredients.size} ingredientes", style = AlTheme.typography.caption, color = AlTheme.colors.textMuted)
+        recipe.culturalIdentity?.let { identity ->
+            Text(
+                when (identity) {
+                    "paraguayan" -> "Inspiración paraguaya"
+                    "bolivian" -> "Inspiración boliviana"
+                    else -> "Inspiración cultural: $identity"
+                },
+                style = AlTheme.typography.caption,
+                color = AlTheme.colors.accent,
+            )
+        }
+    }
+}
+
+@Composable
+private fun RegistrationAction(enabled: Boolean, registered: Boolean = false, onClick: () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
         Text(
-            "Todavía no se descontó ningún alimento del stock.",
+            if (registered) "Esta preparación ya se registró. Para repetirla, usá el historial."
+            else "Al confirmar, se registrará una salida y se descontarán los ingredientes del stock.",
             style = AlTheme.typography.caption,
             color = AlTheme.colors.textMuted,
         )
-        RecipeCard(preview) {
-            AlButton(
-                onClick = { onAction(RecipesAction.ConfirmReuse) },
-                enabled = state.canEdit && state.isOnline,
-                fullWidth = true,
-            ) {
-                Text("Cocinar esta receta")
-            }
+        AlButton(onClick = onClick, enabled = enabled && !registered, fullWidth = true) {
+            Text(if (registered) "Preparación registrada" else "Registrar preparación")
         }
     }
 }
 
 @Composable
 internal fun RecipeCard(recipe: RecipeProposal, actions: (@Composable () -> Unit)? = null) {
-    var expanded by rememberSaveable(recipe.id) { mutableStateOf(false) }
+    var nutritionExpanded by rememberSaveable(recipe.id) { mutableStateOf(false) }
     AlCard(Modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
-            Text(recipe.name, style = AlTheme.typography.title, color = AlTheme.colors.textBase)
-            Text(
-                "${recipe.portions} porciones",
-                style = AlTheme.typography.data,
-                color = AlTheme.colors.textMuted,
-            )
-            recipe.culturalIdentity?.let { identity ->
-                Text(
-                    when (identity) {
-                        "paraguayan" -> "Inspiración paraguaya"
-                        "bolivian" -> "Inspiración boliviana"
-                        else -> "Inspiración cultural: $identity"
-                    },
-                    style = AlTheme.typography.caption,
-                    color = AlTheme.colors.accent,
-                )
-            }
-            Text(
-                "Energía: ${recipeNumber(recipe.energyKcal)} de ${recipeNumber(recipe.targetEnergyKcal)} kcal previstas",
-                style = AlTheme.typography.dataSmall,
-                color = AlTheme.colors.textBase,
-            )
-            if (recipe.unmetConstraints.isNotEmpty())
-                AlInlineBanner(
-                    "Esta propuesta no alcanza todos los objetivos. Revisá los faltantes antes de elegirla.",
-                    variant = AlBannerVariant.Warning,
-                )
-            recipe.unmetConstraints.forEach { shortfall ->
-                Text(
-                    shortfallMessage(shortfall),
-                    style = AlTheme.typography.caption,
-                    color = AlTheme.colors.warning,
-                )
-            }
-            recipeWarningMessages(recipe.warnings).forEach { message ->
-                AlInlineBanner(message, variant = AlBannerVariant.Warning)
-            }
-            AlSectionLabel("Ingredientes · cantidades totales")
-            recipe.ingredients.forEach { ingredient ->
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(
-                        ingredient.name,
-                        modifier = Modifier.weight(1f),
-                        style = AlTheme.typography.body,
-                        color = AlTheme.colors.textBase,
-                    )
-                    Text(
-                        formatQuantityWithUnit(ingredient.quantity, ingredient.unit),
-                        style = AlTheme.typography.dataSmall,
-                        color = AlTheme.colors.textBase,
-                    )
+        Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg)) {
+            RecipeHeading(recipe)
+            val observations = recipe.unmetConstraints.map(::shortfallMessage) + recipeWarningMessages(recipe.warnings)
+            if (observations.isNotEmpty()) {
+                Column(
+                    Modifier.fillMaxWidth()
+                        .background(AlTheme.colors.warningContainer, RoundedCornerShape(AlTheme.corners.md))
+                        .padding(AlTheme.spacing.md),
+                    verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
+                ) {
+                    Text("Antes de preparar", style = AlTheme.typography.bodyStrong, color = AlTheme.colors.warning)
+                    observations.forEach { Text("• $it", style = AlTheme.typography.body, color = AlTheme.colors.textBase) }
                 }
             }
-            AlButton(
-                onClick = { expanded = !expanded },
-                variant = AlButtonVariant.Outline,
-                fullWidth = true,
-            ) {
-                Text(
-                    if (expanded) "Ocultar preparación y nutrientes"
-                    else "Ver preparación y nutrientes"
-                )
+            Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.md)) {
+                Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
+                    Text("Ingredientes", style = AlTheme.typography.subtitle, color = AlTheme.colors.textBase)
+                    Text("Cantidades totales para ${recipe.portions} porciones", style = AlTheme.typography.caption, color = AlTheme.colors.textMuted)
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+                    recipe.ingredients.forEach { ingredient ->
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.md)) {
+                            Text(ingredient.name, modifier = Modifier.weight(1f), style = AlTheme.typography.body, color = AlTheme.colors.textBase)
+                            Text(formatQuantityWithUnit(ingredient.quantity, ingredient.unit), modifier = Modifier.widthIn(max = 140.dp), textAlign = TextAlign.End, style = AlTheme.typography.dataSmall, color = AlTheme.colors.textBase)
+                        }
+                    }
+                }
             }
-            if (expanded) {
-                AlSectionLabel("Preparación")
+            Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.md)) {
+                Text("Preparación", style = AlTheme.typography.subtitle, color = AlTheme.colors.textBase)
                 recipe.steps.forEachIndexed { index, step ->
-                    Text(
-                        "${index + 1}. $step",
-                        style = AlTheme.typography.body,
-                        color = AlTheme.colors.textBase,
-                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+                        Text("${index + 1}.", modifier = Modifier.width(24.dp), style = AlTheme.typography.dataSmall, color = AlTheme.colors.accent)
+                        Text(step, modifier = Modifier.weight(1f), style = AlTheme.typography.body, color = AlTheme.colors.textBase)
+                    }
                 }
-                AlSectionLabel("Adecuación por nutriente")
-                Text(
-                    "Porcentaje respecto de la referencia nutricional por 1.000 kcal para chicos de 7 a 9 años.",
-                    style = AlTheme.typography.caption,
-                    color = AlTheme.colors.textMuted,
-                )
-                recipe.nutrientAdequacyPercent.forEach { (name, percent) ->
-                    NutrientRow(nutrientLabel(name), percent)
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.md)) {
+                AlButton(onClick = { nutritionExpanded = !nutritionExpanded }, variant = AlButtonVariant.Outline, fullWidth = true) {
+                    Text(if (nutritionExpanded) "Ocultar información nutricional" else "Ver información nutricional")
                 }
-                AlSectionLabel("Distribución de macronutrientes")
-                recipe.macronutrientPercent.forEach { (name, percent) ->
-                    NutrientRow(nutrientLabel(name), percent)
+                if (nutritionExpanded) {
+                    Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+                        AlSectionLabel("Energía")
+                        Text("${recipeNumber(recipe.energyKcal)} de ${recipeNumber(recipe.targetEnergyKcal)} kcal previstas", style = AlTheme.typography.dataSmall, color = AlTheme.colors.textBase)
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+                        AlSectionLabel("Adecuación por nutriente")
+                        Text("Porcentaje respecto de la referencia nutricional por 1.000 kcal para chicos de 7 a 9 años.", style = AlTheme.typography.caption, color = AlTheme.colors.textMuted)
+                        recipe.nutrientAdequacyPercent.forEach { (name, percent) -> NutrientRow(nutrientLabel(name), percent) }
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+                        AlSectionLabel("Distribución de macronutrientes")
+                        recipe.macronutrientPercent.forEach { (name, percent) -> NutrientRow(nutrientLabel(name), percent) }
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+                        AlSectionLabel("Grupos de alimentos cubiertos")
+                        Text(recipe.gapaGroups.joinToString(" · ") { gapaLabel(it) }.ifEmpty { "Sin grupos identificados" }, style = AlTheme.typography.body, color = AlTheme.colors.textBase)
+                    }
                 }
-                AlSectionLabel("Grupos de alimentos cubiertos")
-                Text(
-                    recipe.gapaGroups
-                        .joinToString(" · ") { gapaLabel(it) }
-                        .ifEmpty { "Sin grupos identificados" },
-                    style = AlTheme.typography.body,
-                    color = AlTheme.colors.textBase,
-                )
             }
             actions?.invoke()
         }
@@ -422,13 +491,9 @@ internal fun RecipeCard(recipe: RecipeProposal, actions: (@Composable () -> Unit
 
 @Composable
 private fun NutrientRow(label: String, percent: Double) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, style = AlTheme.typography.body, color = AlTheme.colors.textBase)
-        Text(
-            "${recipeNumber(percent)} %",
-            style = AlTheme.typography.dataSmall,
-            color = AlTheme.colors.textBase,
-        )
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.md)) {
+        Text(label, modifier = Modifier.weight(1f), style = AlTheme.typography.body, color = AlTheme.colors.textBase)
+        Text("${recipeNumber(percent)} %", style = AlTheme.typography.dataSmall, color = AlTheme.colors.textBase)
     }
 }
 
@@ -451,7 +516,7 @@ private fun RecipeErrorBanner(
             ) {
                 Text("Ver historial")
             }
-        } else {
+        } else if (state.selectedProposalId == null) {
             AlButton(
                 onClick = { onAction(RecipesAction.Generate) },
                 enabled = state.canGenerate,

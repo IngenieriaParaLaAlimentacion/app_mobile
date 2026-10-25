@@ -34,6 +34,10 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.AlErrorState
 import ar.com.ingenieriaalimentacion.core.design_system.components.EmptyState
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButtonVariant
+import ar.com.ingenieriaalimentacion.core.design_system.components.card.AlCard
+import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
+import ingenieria_alimentacion.composeapp.generated.resources.Res
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_bowl_line
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlDateSeparator
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.components.sheet.AlBottomSheet
@@ -130,9 +134,22 @@ private fun FoodOverviewContent(
         // which already close themselves with a hairline, leaving a gap above a row's text and
         // none below its divider. Rows stack flush so the dividers carry the rhythm.
     ) {
+        item { OverviewSectionHeading("Movimientos de alimentos", Modifier.gutter().padding(bottom = AlTheme.spacing.md)) }
         item { OverviewActions(onAction) }
         item {
-            AlButton(modifier = Modifier.gutter().fillMaxWidth().padding(top = AlTheme.spacing.sm), onClick = { onAction(FoodOverviewAction.RecipesClick) }, variant = AlButtonVariant.Outline) { Text("Recetas con el stock disponible") }
+            OverviewSectionHeading("Planificar comidas", Modifier.gutter().padding(top = AlTheme.spacing.xl, bottom = AlTheme.spacing.md))
+            Box(Modifier.gutter()) {
+                AlCard(modifier = Modifier.fillMaxWidth(), contentPadding = 0.dp) {
+                    AlListRow(
+                        title = "Recetas con tu stock",
+                        subtitle = "Propuestas con los alimentos disponibles",
+                        leadingIcon = Res.drawable.ic_mingcute_bowl_line,
+                        leadingIconTint = AlTheme.colors.accent,
+                        showDivider = false,
+                        onClick = { onAction(FoodOverviewAction.RecipesClick) },
+                    )
+                }
+            }
         }
         item {
             OverviewSectionHeading(

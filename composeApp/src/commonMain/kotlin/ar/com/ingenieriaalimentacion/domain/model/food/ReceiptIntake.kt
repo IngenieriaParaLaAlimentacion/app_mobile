@@ -13,7 +13,6 @@ data class ReceiptLine(
     val proposedUnit: FoodUnit?,
     val rawQuantity: String?,
     val rawUnitText: String?,
-    val needsReview: Boolean,
 )
 
 enum class ReceiptSource { Photo, ManualFallback }

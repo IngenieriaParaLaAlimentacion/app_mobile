@@ -69,4 +69,21 @@ class RecipeLabelsTest {
     fun `no warnings produces no warning banners`() {
         assertEquals(emptyList(), recipeWarningMessages(emptyList()))
     }
+
+    @Test
+    fun `AI failures have distinct Spanish messages`() {
+        assertEquals(
+            "Se alcanzó el límite del servicio de IA. Intentá generar las recetas más tarde. Podés seguir usando el historial.",
+            recipeErrorMessage(RecipeError.AiQuotaExhausted, emptyList()),
+        )
+        assertEquals(
+            "El servicio de IA no está disponible. Intentá generar las recetas más tarde. Podés seguir usando el historial.",
+            recipeErrorMessage(RecipeError.AiUnavailable, emptyList()),
+        )
+        assertEquals(
+            "Alcanzaste el límite de solicitudes. Esperá antes de volver a generar recetas.",
+            recipeErrorMessage(RecipeError.RateLimited, emptyList()),
+        )
+    }
+
 }

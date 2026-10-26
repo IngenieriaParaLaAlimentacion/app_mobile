@@ -114,4 +114,17 @@ class ReceiptIntakeApiTest {
         val client = api { throw CancellationException("cancelled") }
         assertFailsWith<CancellationException> { client.propose("e1", photo) }
     }
+    @Test fun nonemptyProposalDecodesWithoutReviewFlag() = runTest {
+        val client = api {
+            respond("""{"establishment_id":"e1","lines":[{
+              "description":"Arroz","food":{"id":"f1","name":"Arroz"},
+              "quantity":"1.250","unit":"kilogramos",
+              "raw_quantity":1.250,"raw_unit_text":"kg"
+            }]}""", HttpStatusCode.OK, jsonHeaders())
+        }
+        val line = client.propose("e1", photo).lines.single()
+        assertEquals("Arroz", line.description)
+        assertEquals("1.250", line.quantity?.content)
+    }
+
 }

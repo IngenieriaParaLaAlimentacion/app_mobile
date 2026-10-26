@@ -70,6 +70,12 @@ sealed interface RecipeError {
 
     data object GenerationFailed : RecipeError
 
+    data object AiQuotaExhausted : RecipeError
+
+    data object AiUnavailable : RecipeError
+
+    data object RateLimited : RecipeError
+
     data object Network : RecipeError
 
     data class InsufficientStock(val foodId: String, val requested: String, val available: String) :

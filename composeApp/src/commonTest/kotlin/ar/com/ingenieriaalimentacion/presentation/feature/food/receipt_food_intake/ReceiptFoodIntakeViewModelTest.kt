@@ -94,7 +94,7 @@ class ReceiptFoodIntakeViewModelTest {
         vm.onAction(ReceiptFoodIntakeAction.RecurrenceSelected(recurring))
     }
 
-    private fun matchedLine() = ReceiptLine("Arroz", "f1", null, null, "500", "g", true)
+    private fun matchedLine() = ReceiptLine("Arroz", "f1", null, null, "500", "g")
 
     @Test fun safePrefillStillRequiresExplicitReview() = runTest(dispatcher) {
         val f = fixture()
@@ -269,4 +269,48 @@ class ReceiptFoodIntakeViewModelTest {
         assertEquals("La imagen es demasiado grande para procesarla. Elegí otra foto.",
             f.vm.state.value.error)
     }
+
+    @Test fun unmatchedOrInvalidLinesCannotBeConfirmed() = runTest(dispatcher) {
+        val f = fixture()
+        f.repo.proposal = Result.success(
+            ReceiptProposal("e1", listOf(matchedLine().copy(matchedFoodId = null)), null)
+        )
+        advanceUntilIdle()
+        f.vm.pick()
+        f.vm.onAction(ReceiptFoodIntakeAction.Analyze)
+        advanceUntilIdle()
+        val id = f.vm.state.value.lines.single().id
+        selectChoices(f.vm)
+        f.vm.onAction(ReceiptFoodIntakeAction.LineConfirmed(id))
+        f.vm.onAction(ReceiptFoodIntakeAction.Submit)
+        assertFalse(f.vm.state.value.lines.single().reviewed)
+        assertTrue(f.repo.confirms.isEmpty())
+        f.vm.onAction(ReceiptFoodIntakeAction.FoodPicked(id, food))
+        advanceUntilIdle()
+        f.vm.onAction(ReceiptFoodIntakeAction.QuantityChanged(id, "0"))
+        f.vm.onAction(ReceiptFoodIntakeAction.LineConfirmed(id))
+        f.vm.onAction(ReceiptFoodIntakeAction.Submit)
+        assertFalse(f.vm.state.value.lines.single().reviewed)
+        assertTrue(f.repo.confirms.isEmpty())
+    }
+
+    @Test fun editingFoodOrQuantityInvalidatesReview() = runTest(dispatcher) {
+        val f = fixture()
+        f.repo.proposal = Result.success(ReceiptProposal("e1", listOf(matchedLine()), null))
+        advanceUntilIdle()
+        f.vm.pick()
+        f.vm.onAction(ReceiptFoodIntakeAction.Analyze)
+        advanceUntilIdle()
+        val id = f.vm.state.value.lines.single().id
+        f.vm.onAction(ReceiptFoodIntakeAction.LineConfirmed(id))
+        assertTrue(f.vm.state.value.lines.single().reviewed)
+        f.vm.onAction(ReceiptFoodIntakeAction.QuantityChanged(id, "2"))
+        assertFalse(f.vm.state.value.lines.single().reviewed)
+        f.vm.onAction(ReceiptFoodIntakeAction.LineConfirmed(id))
+        assertTrue(f.vm.state.value.lines.single().reviewed)
+        f.vm.onAction(ReceiptFoodIntakeAction.FoodPicked(id, food))
+        advanceUntilIdle()
+        assertFalse(f.vm.state.value.lines.single().reviewed)
+    }
+
 }

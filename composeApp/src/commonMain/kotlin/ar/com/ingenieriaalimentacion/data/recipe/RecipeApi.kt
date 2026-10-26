@@ -2,6 +2,9 @@ package ar.com.ingenieriaalimentacion.data.recipe
 
 import ar.com.ingenieriaalimentacion.data.food.dto.FoodOutflowProblem
 import ar.com.ingenieriaalimentacion.data.food.dto.INSUFFICIENT_STOCK_TYPE
+import ar.com.ingenieriaalimentacion.data.network.AI_QUOTA_EXHAUSTED_TYPE
+import ar.com.ingenieriaalimentacion.data.network.AI_UNAVAILABLE_TYPE
+import ar.com.ingenieriaalimentacion.data.network.RATE_LIMITED_TYPE
 import ar.com.ingenieriaalimentacion.domain.model.recipe.RecipeError
 import ar.com.ingenieriaalimentacion.domain.model.recipe.RecipeFailure
 import io.ktor.client.HttpClient
@@ -77,6 +80,13 @@ class RecipeApi(private val client: HttpClient) {
                     }
                 val error =
                     when (response.status.value) {
+                        429 -> when (problem?.type) {
+                            AI_QUOTA_EXHAUSTED_TYPE -> RecipeError.AiQuotaExhausted
+                            RATE_LIMITED_TYPE -> RecipeError.RateLimited
+                            else -> RecipeError.Network
+                        }
+                        503 -> if (problem?.type == AI_UNAVAILABLE_TYPE) RecipeError.AiUnavailable
+                            else RecipeError.Network
                         401 -> RecipeError.Unauthorized
                         403 -> RecipeError.AccessDenied
                         404 -> RecipeError.NotFound

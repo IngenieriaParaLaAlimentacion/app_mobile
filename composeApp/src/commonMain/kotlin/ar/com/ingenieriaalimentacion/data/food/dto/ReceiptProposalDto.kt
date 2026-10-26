@@ -19,5 +19,4 @@ data class ReceiptLineDto(
     val unit: String? = null,
     @SerialName("raw_quantity") val rawQuantity: JsonPrimitive? = null,
     @SerialName("raw_unit_text") val rawUnitText: String? = null,
-    @SerialName("needs_review") val needsReview: Boolean,
 )

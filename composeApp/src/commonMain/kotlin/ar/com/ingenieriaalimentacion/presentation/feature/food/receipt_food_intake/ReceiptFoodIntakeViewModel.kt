@@ -410,11 +410,5 @@ private fun Throwable.userMessage(): String = when ((this as? ReceiptFailure)?.k
     ReceiptError.FoodNotFound -> "Un alimento ya no está en el catálogo. Revisá las líneas."
     ReceiptError.InvalidData -> "Revisá la fecha, los alimentos y las cantidades."
     ReceiptError.Unauthorized -> "Tu sesión venció. Volvé a ingresar."
-    ReceiptError.AiQuotaExhausted ->
-        "Se alcanzó el límite del servicio de IA. Intentá más tarde o cargá el recibo manualmente con esta foto."
-    ReceiptError.AiUnavailable ->
-        "El servicio de IA no está disponible. Intentá más tarde o cargá el recibo manualmente con esta foto."
-    ReceiptError.RateLimited ->
-        "Alcanzaste el límite de solicitudes. Esperá antes de volver a analizar el recibo."
     ReceiptError.Retryable, null -> "No se pudo completar. Reintentá con este mismo recibo."
 }

@@ -20,7 +20,6 @@ enum class ReceiptSource { Photo, ManualFallback }
 enum class ReceiptError {
     InvalidImage, SourceTooLarge, TooLarge, MismatchedContent, InvalidData, AccessDenied,
     EstablishmentNotFound, FoodNotFound, Unauthorized, Retryable,
-    AiQuotaExhausted, AiUnavailable, RateLimited,
 }
 
 class ReceiptFailure(val kind: ReceiptError, cause: Throwable? = null) : Exception(kind.name, cause)

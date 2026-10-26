@@ -270,36 +270,6 @@ class ReceiptFoodIntakeViewModelTest {
             f.vm.state.value.error)
     }
 
-    @Test fun aiFailuresKeepPhotoAndManualEntryAvailableWithoutRetry() = runTest(dispatcher) {
-        val cases = listOf(
-            ReceiptError.AiQuotaExhausted to "límite del servicio de IA",
-            ReceiptError.AiUnavailable to "servicio de IA no está disponible",
-            ReceiptError.RateLimited to "límite de solicitudes",
-        )
-        for ((error, copy) in cases) {
-            val f = fixture()
-            f.repo.proposal = Result.failure(ReceiptFailure(error))
-            advanceUntilIdle()
-            f.vm.pick()
-            val intakeId = f.vm.state.value.intakeId
-            f.vm.onAction(ReceiptFoodIntakeAction.Analyze)
-            advanceUntilIdle()
-            assertEquals(ReceiptStep.Preview, f.vm.state.value.step)
-            assertTrue(f.vm.state.value.error.orEmpty().contains(copy))
-            assertSame(photo, f.vm.previewPhoto())
-            assertEquals(intakeId, f.vm.state.value.intakeId)
-            assertEquals(1, f.repo.proposals.size)
-            assertTrue(f.repo.confirms.isEmpty())
-            f.vm.onAction(ReceiptFoodIntakeAction.ManualFallback)
-            advanceUntilIdle()
-            assertEquals(ReceiptStep.Review, f.vm.state.value.step)
-            assertEquals(ReceiptSource.ManualFallback, f.vm.state.value.source)
-            assertEquals(intakeId, f.vm.state.value.intakeId)
-            assertSame(photo, f.vm.previewPhoto())
-            assertEquals(1, f.repo.proposals.size)
-        }
-    }
-
     @Test fun unmatchedOrInvalidLinesCannotBeConfirmed() = runTest(dispatcher) {
         val f = fixture()
         f.repo.proposal = Result.success(

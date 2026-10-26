@@ -54,7 +54,8 @@ stock shortages map to distinct Spanish messages. AI failures retain generation
 input and require an explicit retry. History, choice and reuse do not invoke AI.
 Receipt proposals no longer depend on `needs_review`; each proposed line must
 still be explicitly reviewed locally before confirmation. An unavailable receipt
-analyzer preserves manual entry with the captured photo. No offline outflow is queued.
+analyzer returns an empty proposal with manual-entry guidance and opens the
+review form directly with the captured photo. No offline outflow is queued.
 
 ## Verification
 

@@ -39,6 +39,8 @@ data class RecipesState(
     val isHistoryLoading: Boolean = false,
     val historyError: RecipeError? = null,
     val detail: RecipeDetail? = null,
+    val selectedProposalId: String? = null,
+    val isEditingRequest: Boolean = true,
     val reuseChildren: TextFieldState = TextFieldState(),
     val reusePreview: RecipeProposal? = null,
     val isPreviewing: Boolean = false,

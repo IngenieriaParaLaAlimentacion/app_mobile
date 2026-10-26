@@ -15,6 +15,10 @@ sealed interface RecipesAction {
 
     data object Generate : RecipesAction
 
+    data object EditRequest : RecipesAction
+
+    data class ShowProposal(val proposalId: String) : RecipesAction
+
     data class TabSelected(val tab: RecipesTab) : RecipesAction
 
     data object ReloadHistory : RecipesAction

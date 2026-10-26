@@ -169,6 +169,32 @@ class RecipesViewModelTest {
         }
 
     @Test
+    fun `viewing a proposal and going back never mutates stock or loses results`() = runTest(dispatcher) {
+        val repo = FakeRecipes(request)
+        val vm = viewModel(repo)
+        advanceUntilIdle()
+        vm.fill()
+        vm.onAction(RecipesAction.Generate)
+        advanceUntilIdle()
+        assertFalse(vm.state.value.isEditingRequest)
+        vm.onAction(RecipesAction.ShowProposal("missing"))
+        assertNull(vm.state.value.selectedProposalId)
+        vm.onAction(RecipesAction.ShowProposal("p-1"))
+        assertEquals("p-1", vm.state.value.selectedProposalId)
+        assertNull(vm.state.value.confirmation)
+        assertTrue(repo.choices.isEmpty())
+        vm.onAction(RecipesAction.BackClick)
+        assertNull(vm.state.value.selectedProposalId)
+        assertNull(vm.state.value.destination)
+        assertEquals(request, vm.state.value.request)
+        vm.onAction(RecipesAction.EditRequest)
+        vm.onAction(RecipesAction.ChildrenChanged("45"))
+        assertTrue(vm.state.value.isEditingRequest)
+        assertEquals(30, vm.state.value.request?.childrenCount)
+        assertTrue(repo.choices.isEmpty())
+    }
+
+    @Test
     fun `no approved selection or no connection prevents generation`() =
         runTest(dispatcher) {
             for ((online, currentId) in listOf(false to "e-1", true to null)) {

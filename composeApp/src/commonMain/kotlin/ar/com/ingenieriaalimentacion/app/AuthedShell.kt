@@ -36,7 +36,6 @@ import ar.com.ingenieriaalimentacion.presentation.feature.profile.view.ProfileSc
 import ar.com.ingenieriaalimentacion.presentation.feature.profile.view.navigateProfile
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.create_subject.navigateToCreateSubject
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_list.navigateToSurveyList
-import ar.com.ingenieriaalimentacion.presentation.feature.food.recipes.navigateToRecipes
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 
 @Composable
@@ -89,7 +88,6 @@ fun AuthedShell(onSignOut: () -> Unit) {
                 HomeScreenRoot(
                     navigate = { destination ->
                         when (destination) {
-                            HomeDestination.NavigateToRecipes -> outerNav.navigateToRecipes()
                             HomeDestination.Back -> outerNav.popBackStack()
                             HomeDestination.NavigateToCreateSubject ->
                                 outerNav.navigateToCreateSubject()

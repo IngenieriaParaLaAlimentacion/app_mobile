@@ -108,9 +108,6 @@ class HomeViewModel(
 
     fun onAction(action: HomeAction) {
         when (action) {
-            HomeAction.RecipesClick -> if (_state.value.currentEstablishment?.status == EstablishmentStatus.Approved) {
-                _state.update { it.copy(destination = HomeDestination.NavigateToRecipes) }
-            }
             HomeAction.NewMeasurementClick ->
                 _state.update { it.copy(destination = HomeDestination.NavigateToCreateMeasurement) }
             HomeAction.NewSubjectClick ->

@@ -15,7 +15,7 @@ class ReceiptIntakeMapperTest {
           "establishment_id":"e1", "lines":[{
             "description":"Arroz 0.500 g", "food":{"id":"f1","name":"Arroz"},
             "quantity":null, "unit":null, "raw_quantity":0.500,
-            "raw_unit_text":"g", "needs_review":true
+            "raw_unit_text":"g"
           }], "message":null
         }""")
         val line = dto.toDomain().lines.single()
@@ -29,7 +29,7 @@ class ReceiptIntakeMapperTest {
         val dto = json.decodeFromString<ReceiptProposalDto>("""{
           "establishment_id":"e1", "lines":[{
             "description":"Aceite", "quantity":1.250, "unit":"cajas",
-            "raw_quantity":null, "raw_unit_text":null, "needs_review":true
+            "raw_quantity":null, "raw_unit_text":null
           }]
         }""")
         val line = dto.toDomain().lines.single()
@@ -40,9 +40,19 @@ class ReceiptIntakeMapperTest {
     @Test fun mapsKnownUnit() {
         val dto = json.decodeFromString<ReceiptProposalDto>("""{
           "establishment_id":"e1", "lines":[{
-            "description":"Leche", "unit":"litros", "needs_review":true
+            "description":"Leche", "unit":"litros"
           }]
         }""")
         assertEquals(FoodUnit.Litros, dto.toDomain().lines.single().proposedUnit)
     }
+
+    @Test fun acceptsLegacyExtraReviewFlag() {
+        val dto = json.decodeFromString<ReceiptProposalDto>("""{
+          "establishment_id":"e1","lines":[{
+            "description":"Arroz","needs_review":false
+          }]
+        }""")
+        assertEquals("Arroz", dto.toDomain().lines.single().description)
+    }
+
 }

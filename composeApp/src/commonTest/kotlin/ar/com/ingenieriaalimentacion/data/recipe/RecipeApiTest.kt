@@ -172,4 +172,47 @@ class RecipeApiTest {
             assertEquals(expected, assertIs<RecipeFailure>(result.exceptionOrNull()).error)
         }
     }
+
+    @Test
+    fun `AI errors preserve canonical discriminator without retry`() = runTest {
+        val cases = listOf(
+            Triple(HttpStatusCode.TooManyRequests, "/errors/ai/quota-exhausted", RecipeError.AiQuotaExhausted),
+            Triple(HttpStatusCode.TooManyRequests, "/errors/rate-limited", RecipeError.RateLimited),
+            Triple(HttpStatusCode.ServiceUnavailable, "/errors/ai/unavailable", RecipeError.AiUnavailable),
+            Triple(HttpStatusCode.TooManyRequests, "/errors/unknown", RecipeError.Network),
+            Triple(HttpStatusCode.ServiceUnavailable, "/errors/unknown", RecipeError.Network),
+            Triple(HttpStatusCode.BadGateway, "/errors/recipes/generation-failed", RecipeError.GenerationFailed),
+        )
+        for ((status, type, expected) in cases) {
+            var calls = 0
+            val result = api {
+                calls++
+                respond("""{"type":"$type","detail":"private provider prose"}""", status,
+                    headersOf(HttpHeaders.ContentType to listOf("application/problem+json"),
+                        HttpHeaders.RetryAfter to listOf("12")))
+            }.generate(GenerateRecipeDto("e", 30, "lunch"))
+            assertEquals(expected, assertIs<RecipeFailure>(result.exceptionOrNull()).error)
+            assertEquals(1, calls)
+        }
+    }
+
+    @Test
+    fun `malformed AI error body keeps generic fallback`() = runTest {
+        for (status in listOf(HttpStatusCode.TooManyRequests, HttpStatusCode.ServiceUnavailable)) {
+            val result = api { respond("not json", status, jsonHeaders) }
+                .generate(GenerateRecipeDto("e", 30, "lunch"))
+            assertEquals(RecipeError.Network, assertIs<RecipeFailure>(result.exceptionOrNull()).error)
+        }
+    }
+
+    @Test
+    fun `cancellation while reading AI problem propagates`() = runTest {
+        val channel = io.ktor.utils.io.ByteChannel()
+        channel.cancel(CancellationException("cancelled body"))
+        assertFailsWith<CancellationException> {
+            api { respond(channel, HttpStatusCode.TooManyRequests, jsonHeaders) }
+                .generate(GenerateRecipeDto("e", 30, "lunch"))
+        }
+    }
+
 }

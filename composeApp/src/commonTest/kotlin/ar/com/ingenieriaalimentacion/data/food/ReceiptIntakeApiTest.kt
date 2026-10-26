@@ -103,10 +103,16 @@ class ReceiptIntakeApiTest {
             Triple(HttpStatusCode.Unauthorized, "", ReceiptError.Unauthorized),
             Triple(HttpStatusCode.NotFound, "/errors/food-not-found", ReceiptError.FoodNotFound),
             Triple(HttpStatusCode.BadGateway, "", ReceiptError.Retryable),
+            Triple(HttpStatusCode.TooManyRequests, "/errors/ai/quota-exhausted", ReceiptError.AiQuotaExhausted),
+            Triple(HttpStatusCode.TooManyRequests, "/errors/rate-limited", ReceiptError.RateLimited),
+            Triple(HttpStatusCode.ServiceUnavailable, "/errors/ai/unavailable", ReceiptError.AiUnavailable),
+            Triple(HttpStatusCode.TooManyRequests, "/errors/unknown", ReceiptError.Retryable),
+            Triple(HttpStatusCode.ServiceUnavailable, "/errors/unknown", ReceiptError.Retryable),
         )
         for ((status, type, expected) in cases) {
             val client = api { respond("""{"type":"$type"}""", status, problemHeaders()) }
             assertEquals(expected, assertFailsWith<ReceiptFailure> { client.confirm(request, photo) }.kind)
+            assertEquals(expected, assertFailsWith<ReceiptFailure> { client.propose("e1", photo) }.kind)
         }
     }
 
@@ -114,4 +120,47 @@ class ReceiptIntakeApiTest {
         val client = api { throw CancellationException("cancelled") }
         assertFailsWith<CancellationException> { client.propose("e1", photo) }
     }
+
+    @Test fun nonemptyProposalDecodesWithoutReviewFlag() = runTest {
+        val client = api {
+            respond("""{"establishment_id":"e1","lines":[{
+              "description":"Arroz","food":{"id":"f1","name":"Arroz"},
+              "quantity":"1.250","unit":"kilogramos",
+              "raw_quantity":1.250,"raw_unit_text":"kg"
+            }]}""", HttpStatusCode.OK, jsonHeaders())
+        }
+        val line = client.propose("e1", photo).lines.single()
+        assertEquals("Arroz", line.description)
+        assertEquals("1.250", line.quantity?.content)
+    }
+
+    @Test fun malformedProblemsRemainRetryable() = runTest {
+        for (status in listOf(HttpStatusCode.TooManyRequests, HttpStatusCode.ServiceUnavailable)) {
+            val client = api { respond("not json", status, problemHeaders()) }
+            assertEquals(ReceiptError.Retryable,
+                assertFailsWith<ReceiptFailure> { client.propose("e1", photo) }.kind)
+        }
+    }
+
+    @Test fun quotaRetryHeaderDoesNotResubmit() = runTest {
+        var calls = 0
+        val client = api {
+            calls++
+            respond("""{"type":"/errors/ai/quota-exhausted","detail":"private provider prose"}""",
+                HttpStatusCode.TooManyRequests, headersOf(
+                    HttpHeaders.ContentType to listOf("application/problem+json"),
+                    HttpHeaders.RetryAfter to listOf("12")))
+        }
+        assertEquals(ReceiptError.AiQuotaExhausted,
+            assertFailsWith<ReceiptFailure> { client.propose("e1", photo) }.kind)
+        assertEquals(1, calls)
+    }
+
+    @Test fun cancellationWhileReadingProblemPropagates() = runTest {
+        val channel = io.ktor.utils.io.ByteChannel()
+        channel.cancel(CancellationException("cancelled body"))
+        val client = api { respond(channel, HttpStatusCode.TooManyRequests, problemHeaders()) }
+        assertFailsWith<CancellationException> { client.propose("e1", photo) }
+    }
+
 }

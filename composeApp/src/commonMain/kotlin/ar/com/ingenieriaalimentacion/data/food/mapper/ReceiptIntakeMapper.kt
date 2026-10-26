@@ -21,7 +21,6 @@ internal fun ReceiptProposalDto.toDomain() = ReceiptProposal(
             },
             rawQuantity = line.rawQuantity?.content,
             rawUnitText = line.rawUnitText,
-            needsReview = line.needsReview,
         )
     },
     message = message,

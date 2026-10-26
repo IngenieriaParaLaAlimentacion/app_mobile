@@ -75,6 +75,12 @@ internal fun recipeErrorMessage(error: RecipeError, ingredients: List<RecipeIngr
             "Revisá la cantidad de chicos y el tipo de comida e intentá de nuevo."
         RecipeError.GenerationFailed ->
             "No pudimos generar las recetas. Reintentá sin cambiar los datos ingresados."
+        RecipeError.AiQuotaExhausted ->
+            "Se alcanzó el límite del servicio de IA. Intentá generar las recetas más tarde. Podés seguir usando el historial."
+        RecipeError.AiUnavailable ->
+            "El servicio de IA no está disponible. Intentá generar las recetas más tarde. Podés seguir usando el historial."
+        RecipeError.RateLimited ->
+            "Alcanzaste el límite de solicitudes. Esperá antes de volver a generar recetas."
         RecipeError.Network -> "No pudimos comprobar la respuesta. Revisá la conexión y reintentá."
         is RecipeError.InsufficientStock -> {
             val food = ingredients.firstOrNull { it.foodId == error.foodId }

@@ -4,6 +4,9 @@ import ar.com.ingenieriaalimentacion.data.food.dto.FOOD_NOT_FOUND_TYPE
 import ar.com.ingenieriaalimentacion.data.food.dto.FoodIntakeProblem
 import ar.com.ingenieriaalimentacion.data.food.dto.FoodIntakeRequest
 import ar.com.ingenieriaalimentacion.data.food.dto.ReceiptProposalDto
+import ar.com.ingenieriaalimentacion.data.network.AI_QUOTA_EXHAUSTED_TYPE
+import ar.com.ingenieriaalimentacion.data.network.AI_UNAVAILABLE_TYPE
+import ar.com.ingenieriaalimentacion.data.network.RATE_LIMITED_TYPE
 import ar.com.ingenieriaalimentacion.domain.model.food.ReceiptError
 import ar.com.ingenieriaalimentacion.domain.model.food.ReceiptFailure
 import ar.com.ingenieriaalimentacion.domain.model.food.ReceiptPhoto
@@ -17,6 +20,7 @@ import io.ktor.client.request.forms.formData
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -52,8 +56,21 @@ class ReceiptIntakeApi(private val client: HttpClient, private val json: Json) {
     }
 
     private suspend fun HttpResponse.toReceiptFailure(): ReceiptFailure {
-        val type = runCatching { body<FoodIntakeProblem>().type }.getOrNull()
+        val type = try {
+            body<FoodIntakeProblem>().type
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Exception) {
+            null
+        }
         val kind = when (status.value) {
+            429 -> when (type) {
+                AI_QUOTA_EXHAUSTED_TYPE -> ReceiptError.AiQuotaExhausted
+                RATE_LIMITED_TYPE -> ReceiptError.RateLimited
+                else -> ReceiptError.Retryable
+            }
+            503 -> if (type == AI_UNAVAILABLE_TYPE) ReceiptError.AiUnavailable
+                else ReceiptError.Retryable
             401 -> ReceiptError.Unauthorized
             403 -> ReceiptError.AccessDenied
             404 -> if (type == FOOD_NOT_FOUND_TYPE) ReceiptError.FoodNotFound else ReceiptError.EstablishmentNotFound

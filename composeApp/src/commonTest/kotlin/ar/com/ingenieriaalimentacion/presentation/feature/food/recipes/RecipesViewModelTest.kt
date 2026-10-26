@@ -199,18 +199,29 @@ class RecipesViewModelTest {
     @Test
     fun `model failure keeps input for explicit retry`() =
         runTest(dispatcher) {
-            val repo = FakeRecipes(request).apply { generateError = RecipeError.GenerationFailed }
-            val vm = viewModel(repo)
-            advanceUntilIdle()
-            vm.fill()
-            vm.onAction(RecipesAction.Generate)
-            advanceUntilIdle()
-            assertEquals("30", vm.state.value.children.value)
-            assertEquals(RecipeError.GenerationFailed, vm.state.value.screenError)
-            repo.generateError = null
-            vm.onAction(RecipesAction.Generate)
-            advanceUntilIdle()
-            assertEquals(2, repo.generations.size)
+            val errors = listOf(
+                RecipeError.GenerationFailed,
+                RecipeError.AiQuotaExhausted,
+                RecipeError.AiUnavailable,
+                RecipeError.RateLimited,
+            )
+            for (error in errors) {
+                val repo = FakeRecipes(request).apply { generateError = error }
+                val vm = viewModel(repo)
+                advanceUntilIdle()
+                vm.fill()
+                vm.onAction(RecipesAction.Generate)
+                advanceUntilIdle()
+                assertEquals("30", vm.state.value.children.value)
+                assertEquals(MealType.Lunch, vm.state.value.mealType)
+                assertEquals(error, vm.state.value.screenError)
+                assertEquals(1, repo.generations.size)
+                repo.generateError = null
+                vm.onAction(RecipesAction.Generate)
+                advanceUntilIdle()
+                assertEquals(2, repo.generations.size)
+                assertNotNull(vm.state.value.request)
+            }
         }
 
     @Test

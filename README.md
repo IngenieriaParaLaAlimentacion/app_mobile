@@ -2,6 +2,10 @@
 
 Compose Multiplatform app (Android + iOS).
 
+## Manual de usuario
+
+[HTML](docs/manual-usuario/index.html) · [PDF](docs/manual-usuario/manual.pdf) · [Fuentes editables](docs/manual-usuario/README.md).
+
 ## Requirements
 
 - JDK 21 (Gradle uses it; `JAVA_HOME` is set automatically by `./scripts/compile.sh`)

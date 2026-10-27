@@ -1,0 +1,13 @@
+{
+  "name": "ipa-app-user-manual",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "render": "python3 render.py",
+    "pdf": "node export-pdf.mjs",
+    "verify": "python3 verify.py"
+  },
+  "dependencies": {
+    "playwright": "1.61.1"
+  }
+}

@@ -39,4 +39,3 @@ Cuando aparece **Editar**, corregí los campos necesarios y elegí **Guardar cam
 ![Detalle de una respuesta sincronizada en la app](assets/app-encuesta-detalle.png)
 
 ![Formulario para corregir una respuesta y guardar los cambios](assets/app-encuesta-editar.png)
-

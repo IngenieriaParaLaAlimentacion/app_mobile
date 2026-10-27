@@ -38,4 +38,3 @@ El [inventario](inventario.json) conserva las pantallas de esta plataforma, los 
 Las capturas Android verifican pantallas y varios recorridos con persistencia: medición sin conexión y sincronización, encuestas e ingresos/egresos. No constituyen una prueba exhaustiva de todas las validaciones y permisos.
 
 El análisis automático de recibos presentó una incompatibilidad entre el backend y el campo obligatorio `needs_review` de la app. Se documentó y comprobó la alternativa de carga manual con foto. Recetas y recibos usaron respuestas fijas del modelo y almacenamiento local de demostración; no se validaron Gemini, extracción óptica real ni R2. La entrega de correos y notificaciones externas queda pendiente. iOS no se ejecutó ni se capturó en esta edición.
-

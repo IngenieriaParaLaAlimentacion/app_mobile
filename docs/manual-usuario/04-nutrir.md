@@ -151,4 +151,3 @@ Android puede solicitar permiso para mostrar notificaciones después de iniciar 
 Al abrir uno de esos avisos, la app selecciona el establecimiento indicado y abre su stock. Comprobá el comedor, revisá los últimos movimientos y registrá las salidas reales que correspondan. Abrir una notificación no crea un movimiento ni modifica las existencias.
 
 Si no recibís avisos, podés consultar y actualizar la información desde **Alimentos**. La entrega de notificaciones no se verificó con el proveedor externo en esta edición.
-

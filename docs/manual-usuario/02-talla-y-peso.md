@@ -78,4 +78,3 @@ En **Historial**, seleccioná el tipo de carga y revisá sus estados. Una person
 No borres datos de la aplicación ni la reinstales para resolver una carga pendiente. Si el error persiste, comunicá al equipo qué registro y qué mensaje aparecen.
 
 La acción **Eliminar** de un historial local requiere especial cuidado: quitar una carga del teléfono no es un procedimiento para borrar una medición ya registrada en el sistema. No elimines una carga pendiente que todavía necesitás enviar.
-

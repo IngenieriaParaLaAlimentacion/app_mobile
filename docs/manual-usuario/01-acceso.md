@@ -88,4 +88,3 @@ Para salir, elegí **Cerrar sesión** y confirmá. Antes de cambiar de cuenta o 
 **Cerrar sesión voluntariamente borra los datos locales de la app, incluidas las cargas que todavía no se sincronizaron.** Esperá a que terminen de subir antes de confirmar. Si la sesión venció, volvé a ingresar y revisá las cargas pendientes.
 
 ![Confirmación para cerrar sesión; Cancelar permite volver sin salir](assets/app-cerrar-sesion.png)
-

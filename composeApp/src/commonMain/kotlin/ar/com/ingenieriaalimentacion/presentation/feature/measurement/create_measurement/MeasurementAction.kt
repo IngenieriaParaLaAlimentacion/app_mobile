@@ -2,8 +2,16 @@ package ar.com.ingenieriaalimentacion.presentation.feature.measurement.create_me
 
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
 
 sealed interface MeasurementAction {
+    data object MeasurementDatePickerOpen : MeasurementAction
+    data object MeasurementDatePickerDismiss : MeasurementAction
+    data class MeasurementDateSelected(val date: LocalDate) : MeasurementAction
+    data object MeasurementTimePickerOpen : MeasurementAction
+    data object MeasurementTimePickerDismiss : MeasurementAction
+    data class MeasurementTimeSelected(val time: LocalTime) : MeasurementAction
     data class ObservationChanged(val value: String) : MeasurementAction
     data class ObservationFocusChanged(val focused: Boolean) : MeasurementAction
     data class WeightChanged(val value: String) : MeasurementAction

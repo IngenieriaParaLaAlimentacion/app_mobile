@@ -4,11 +4,11 @@ import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.MeasurementAlertEvaluator
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.PrepareMeasurementUseCase
-import kotlinx.datetime.LocalDate
-import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertFalse
+import kotlin.time.Instant
+import kotlinx.datetime.LocalDate
 
 class MeasurementConfirmationTest {
     private val prepare = PrepareMeasurementUseCase(MeasurementAlertEvaluator()) {
@@ -23,6 +23,8 @@ class MeasurementConfirmationTest {
         val text = MeasurementConfirmation(1, prepared, "120.7500", "160.25").description
         assertContains(text, "Peso: 120,7500 kg")
         assertContains(text, "Talla: 160,25 cm")
+        assertContains(text, "Fecha: 16/10/2026")
+        assertContains(text, "Hora: 21:30 (Argentina)")
         assertContains(text, "generarían una alerta")
     }
 

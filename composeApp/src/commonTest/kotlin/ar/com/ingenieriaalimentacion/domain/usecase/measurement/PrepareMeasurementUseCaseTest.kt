@@ -2,15 +2,15 @@ package ar.com.ingenieriaalimentacion.domain.usecase.measurement
 
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
-import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Instant
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 class PrepareMeasurementUseCaseTest {
     private val captured = Instant.parse("2026-10-17T00:30:00Z")
@@ -90,6 +90,48 @@ class PrepareMeasurementUseCaseTest {
         assertFailsWith<IllegalArgumentException> {
             prepare(adult, "e", "Escuela", 70.0, 170.0, "a".repeat(501))
         }
+    }
+
+    @Test
+    fun acceptsExplicitPastInstant() {
+        val selected = Instant.parse("2024-05-02T13:45:00Z")
+        assertEquals(selected, prepare(adult, "e", "Escuela", 72.5, 175.0, measuredAt = selected).measurement.measuredAt)
+    }
+
+    @Test
+    fun rejectsFutureArgentinaDateButAllowsLaterTimeToday() {
+        assertFailsWith<FutureMeasurementDateException> {
+            prepare(adult, "e", "Escuela", 72.5, 175.0, measuredAt = Instant.parse("2026-10-17T03:00:00Z"))
+        }
+        val laterToday = Instant.parse("2026-10-17T02:59:00Z")
+        assertEquals(laterToday, prepare(adult, "e", "Escuela", 72.5, 175.0, measuredAt = laterToday).measurement.measuredAt)
+    }
+
+    @Test
+    fun explicitSelectedInstantControlsAgeRatherThanCurrentClockOrArgentinaDay() {
+        val current = Instant.parse("2026-10-18T12:00:00Z")
+        val evaluator = MeasurementAlertEvaluator()
+        val useCase = PrepareMeasurementUseCase(evaluator) { current }
+        val boundary = adult.copy(birthDate = LocalDate(2007, 9, 17))
+        val childDate = Instant.parse("2026-10-16T23:00:00Z")
+        val child = useCase(boundary, "e", "Escuela", 104.0, 200.0, measuredAt = childDate)
+        assertEquals(evaluator.requiresConfirmation(26.0, boundary.sex, boundary.birthDate!!, LocalDate(2026, 10, 16)), child.requiresConfirmation)
+        assertFalse(child.requiresConfirmation)
+        assertTrue(useCase(boundary, "e", "Escuela", 104.0, 200.0).requiresConfirmation)
+        val utcNextDay = useCase(boundary, "e", "Escuela", 104.0, 200.0,
+            measuredAt = Instant.parse("2026-10-17T01:30:00Z"))
+        assertTrue(utcNextDay.requiresConfirmation)
+    }
+
+    @Test
+    fun readsClockOnceForDefaultAndExplicitMeasurement() {
+        var clockReads = 0
+        val useCase = PrepareMeasurementUseCase(MeasurementAlertEvaluator()) { clockReads++; captured }
+        assertEquals(captured, useCase(adult, "e", "Escuela", 70.0, 170.0).measurement.measuredAt)
+        assertEquals(1, clockReads)
+        val selected = Instant.parse("2024-05-02T13:45:00Z")
+        assertEquals(selected, useCase(adult, "e", "Escuela", 70.0, 170.0, measuredAt = selected).measurement.measuredAt)
+        assertEquals(2, clockReads)
     }
 
 }

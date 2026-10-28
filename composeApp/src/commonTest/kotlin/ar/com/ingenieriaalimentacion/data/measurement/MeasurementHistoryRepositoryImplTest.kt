@@ -22,12 +22,13 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
-import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 class MeasurementHistoryRepositoryImplTest {
 
@@ -213,4 +214,24 @@ class MeasurementHistoryRepositoryImplTest {
 
         assertTrue(result.isFailure)
     }
+    @Test
+    fun `backdated pending entry stays behind newer measurement despite latest queue timestamps`() = runTest {
+        val queue = FakeMeasurementLocalStore().apply {
+            insert(queuedUpload("past").copy(
+                measuredAt = "2024-05-02T13:45:00Z", createdAt = 9000L, updatedAt = 9999L,
+            ))
+            insert(queuedUpload("recent", state = SyncState.Synced).copy(
+                measuredAt = "2024-05-03T13:45:00Z", createdAt = 1L, updatedAt = 1L,
+            ))
+        }
+        val cache = FakeActivityLocalStore()
+        val activityApi = api { respondPage(this, page(remoteMeasurementItem("past"))) }
+        val repo = MeasurementHistoryRepositoryImpl(activityApi, cache, queue, testJson)
+        repo.loadPage(page = 1, pageSize = 20).getOrThrow()
+        val entries = repo.observeLocalMerged().first()
+        assertEquals(listOf("recent", "past"), entries.map { it.id })
+        assertEquals("2024-05-02T13:45:00Z", entries.last().measuredAt)
+        assertEquals(SyncState.Pending, entries.last().syncState)
+    }
+
 }

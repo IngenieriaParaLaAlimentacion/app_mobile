@@ -17,6 +17,7 @@ keystore.properties
 *.keystore
 # Firebase App Distribution config (contains project identifiers)
 firebase.properties
+GoogleService-Info.plist
 
 # Per-flavor google-services.json under composeApp/src/{tst,prod}/ are committed;
 # a module-level copy is never read (flavor files take precedence), so keep it out.

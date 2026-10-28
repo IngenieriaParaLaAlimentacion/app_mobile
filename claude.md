@@ -268,9 +268,12 @@ Both flavors currently claim the same `ingenieriaalimentacion://` deep-link sche
 installed Android shows a chooser. Suffixing the tst scheme requires the tst backend to emit the
 suffixed reset-password link first — otherwise password reset breaks silently.
 
-iOS has no environment split yet — there is no Xcode project checked in (`iosApp/` holds only
-Swift sources). When one exists, mirror `../extra`: per-env build configurations backed by
-xcconfig, with a build phase mapping `$CONFIGURATION` to `-PtargetEnvironment`.
+iOS has a checked-in Xcode project at `iosApp/iosApp.xcodeproj`. Shared schemes
+`iosApp-tst` and `iosApp-prod` select DebugTst/ReleaseTst and DebugProd/ReleaseProd.
+`iosApp/Configuration/{Tst,Prod}.xcconfig` sets `APP_ENVIRONMENT` and distinct bundle IDs;
+`scripts/build-ios-framework.sh` passes that environment to Gradle explicitly. Custom
+configurations set `KOTLIN_FRAMEWORK_BUILD_TYPE` to Debug or Release. Build environments
+sequentially. Simulator builds do not need an Apple account; see `docs/ios-desarrollo-local.md`.
 
 ## Git workflow
 

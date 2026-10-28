@@ -6,7 +6,7 @@ Compose Multiplatform app (Android + iOS).
 
 - JDK 21 (Gradle uses it; `JAVA_HOME` is set automatically by `./scripts/compile.sh`)
 - Android Studio with Kotlin Multiplatform plugin
-- Xcode 15+ for iOS
+- Xcode with an iOS Simulator runtime (local iOS build verified with Xcode 26.3)
 
 ## Setup
 
@@ -28,7 +28,16 @@ so the two never share the offline queue or the stored session.
 Build one environment per Gradle invocation — requesting both at once fails fast, because
 only one environment can be baked into the generated config. See CLAUDE.md for the details.
 
-iOS has no environment split yet, and no Xcode project is checked in.
+iOS: open `iosApp/iosApp.xcodeproj`, select `iosApp-tst` or `iosApp-prod`, and run on an
+iPhone Simulator. No Apple account is needed for the simulator. The schemes select the
+backend environment explicitly; `tst` requires `api_url_tst` in `local.properties`.
+See [local iOS development](docs/ios-desarrollo-local.md) for setup and unsigned CLI builds.
+
+## Handoff and distribution
+
+- [Traspaso de la app mobile y alternativas de distribución](docs/traspaso-app-mobile.md) — current delivery, account handoff, Android/iOS options, costs, and optional store publication.
+- [Cómo instalar la app de prueba](docs/guia-instalacion-testers.md) — Android installation and updates through Firebase App Distribution.
+- [Compilar y ejecutar iOS sin una cuenta Apple](docs/ios-desarrollo-local.md) — Xcode schemes, simulator builds, and validation scope.
 
 ## Architecture
 

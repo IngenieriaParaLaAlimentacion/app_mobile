@@ -30,6 +30,21 @@ only one environment can be baked into the generated config. See CLAUDE.md for t
 
 iOS has no environment split yet, and no Xcode project is checked in.
 
+## Tests
+
+GitHub Actions runs `commonTest` and `androidUnitTest` on the Android JVM target
+for pull requests and pushes to `develop` and `main`. The **CI** workflow
+also supports manual runs and uploads HTML and JUnit XML reports, including on test
+failure. It does not require backend credentials, release signing, or an emulator.
+
+To run the same suite locally (JDK 21 and Android SDK required):
+
+```bash
+./gradlew :composeApp:testProdDebugUnitTest -PtargetEnvironment=prod --no-daemon
+```
+
+This suite does not run iOS simulator tests or UI tests.
+
 ## Architecture
 
 Clean Architecture + MVVM with Koin for DI and jetbrains-navigation-compose for navigation.

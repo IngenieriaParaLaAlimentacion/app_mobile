@@ -8,23 +8,21 @@ Android se descarga por Firebase App Distribution. El equipo administra el servi
 
 Para iOS se entrega el proyecto de Xcode. Todavía no hay una descarga disponible para usuarios. Falta elegir el canal, contratar la membresía Apple, configurar la firma y validar la versión que se distribuirá.
 
-El cliente puede mantener Firebase para Android y elegir cómo distribuir iOS. También puede publicar en Google Play y App Store si decide asumir el costo de las cuentas y su mantenimiento. El pago permite acceder a esos servicios. La publicación exige además preparar la app y su ficha, y pasar las revisiones de cada tienda. La descarga puede ser gratuita para los usuarios.
+La publicación en Google Play y App Store queda a elección del cliente. Los costos de las cuentas figuran en la sección 2 y los pasos de publicación, en la sección 8.
 
 ## 2. Costos de distribución y publicación
 
 | Concepto | Arancel de referencia | Qué cubre |
 | --- | --- | --- |
-| Firebase App Distribution | Sin cargo por el servicio | Distribución de versiones de prueba. Otros productos de Firebase pueden cobrar sus servicios |
+| Firebase App Distribution | Sin cargo | Distribución de versiones de prueba |
 | Google Play Console | USD 25, pago único | Cuenta para publicar y gestionar apps en Google Play |
-| Apple Developer Program | USD 99 por año o precio local | Distribución con TestFlight, App Store y Ad Hoc |
+| Apple Developer Program | USD 99 por año | Distribución con TestFlight, App Store y Ad Hoc |
 
 Fuentes: [precios de Firebase](https://firebase.google.com/pricing), [registro de Play Console](https://support.google.com/googleplay/android-developer/answer/6112435?hl=en) e [inscripción al programa de Apple](https://developer.apple.com/programs/enroll/).
 
-El importe final depende de la región, la moneda, los impuestos y el medio de pago. Estos aranceles no cubren desarrollo, equipos, backend, soporte ni servicios de compilación. La venta de contenido o servicios dentro de la app puede tener cargos adicionales.
-
 ### Posible exención del arancel de Apple
 
-Las instituciones educativas acreditadas, entidades gubernamentales y organizaciones sin fines de lucro pueden solicitar una exención. Apple evalúa la entidad, los acuerdos de apps pagas y la venta de bienes o servicios digitales. Si aprueba la solicitud, la entidad se inscribe en el programa sin pagar el arancel. La solicitud puede presentarse durante el alta y la entidad confirma que sigue cumpliendo los requisitos en cada renovación anual. [Exención del arancel de Apple](https://developer.apple.com/help/account/membership/fee-waivers).
+Las instituciones educativas acreditadas, entidades gubernamentales y organizaciones sin fines de lucro pueden solicitar la exención al inscribirse. Si Apple la aprueba, la cuenta queda sin arancel. La entidad confirma que sigue cumpliendo los requisitos en cada renovación anual. [Exención del arancel de Apple](https://developer.apple.com/help/account/membership/fee-waivers).
 
 ## 3. Alternativas investigadas para Android
 
@@ -39,7 +37,7 @@ Las instituciones educativas acreditadas, entidades gubernamentales y organizaci
 
 Fuentes: [Firebase para Android](https://firebase.google.com/docs/app-distribution/android/distribute-console), [creación de una app en Play](https://support.google.com/googleplay/android-developer/answer/9859152?hl=en), [canales de prueba de Play](https://support.google.com/googleplay/android-developer/answer/9845334?hl=en), [distribución alternativa Android](https://developer.android.com/distribute/marketing-tools/alternative-distribution) y [apps privadas empresariales](https://developers.google.com/android/work/play/emm-api/private-apps).
 
-La publicación privada desde una consola EMM puede crear la cuenta de Managed Google Play sin cobrar el registro de USD 25. Esa cuenta no habilita la publicación pública gratuita. El servicio EMM o MDM puede tener sus propios costos. [Publicación privada mediante EMM](https://developers.google.com/android/work/play/emm-api/private-apps).
+La publicación privada desde una consola EMM puede crear la cuenta de Managed Google Play sin cobrar el registro de USD 25. [Publicación privada mediante EMM](https://developers.google.com/android/work/play/emm-api/private-apps).
 
 ### Vigencia y límites de Firebase
 
@@ -89,7 +87,7 @@ Una Custom App está disponible solo para las organizaciones designadas en Apple
 
 Apple informa distribución alternativa en Brasil, Japón y la Unión Europea, con condiciones distintas en cada región. Este canal no cubre la distribución general en Argentina. [Disponibilidad regional](https://support.apple.com/en-us/118110). En la Unión Europea, la distribución web de apps nativas exige autorización, notarización y un dominio registrado en App Store Connect. [Distribución web en la UE](https://developer.apple.com/support/web-distribution-eu/).
 
-Una web o PWA permite atender usuarios desde el navegador, pero requiere desarrollar o validar sus funciones móviles y offline por separado. La entrega de esta app nativa no incluye una PWA.
+La opción web o PWA requiere desarrollar o validar por separado las funciones móviles y offline de esta app.
 
 ## 5. Cuentas, accesos y materiales incluidos en el traspaso
 
@@ -215,11 +213,7 @@ Antes de publicar, el equipo prueba la actualización desde Firebase a Play en d
 5. Subir la versión final, completar las declaraciones y solicitar la revisión. El modo no listado requiere una solicitud adicional. [Solicitud de app no listada](https://developer.apple.com/support/unlisted-app-distribution/).
 6. Comprobar la descarga y la actualización con una cuenta de usuario y entregar el enlace definitivo.
 
-Cada proveedor determina la fecha de aprobación después de sus verificaciones y revisiones.
-
 ### Mantenimiento posterior
-
-El mantenimiento incluye soporte de la app, nuevas versiones, compatibilidad con Android e iOS, actualización de SDKs, backend y enlaces de acceso. El acta identifica a los responsables de cada servicio y registra sus permisos de administración.
 
 El titular renueva la membresía Apple cada año. Si vence, Apple retira la app de nuevas descargas e impide enviar actualizaciones. Las instalaciones existentes siguen funcionando. [Renovación de Apple](https://developer.apple.com/help/account/membership/renewal/). El administrador de pruebas también mantiene las compilaciones de TestFlight y las descargas de Firebase dentro de sus plazos de vigencia.
 
@@ -235,7 +229,6 @@ El titular renueva la membresía Apple cada año. Si vence, Apple retira la app 
 | Pruebas iOS | Elección entre TestFlight y Firebase Ad Hoc pendiente. Ninguno está habilitado |
 | Publicación Google Play | A elección del cliente. Cuenta y responsable pendientes |
 | Publicación App Store | A elección del cliente. Membresía o exención y preparación de iOS pendientes |
-| Entidad cliente y titulares de las cuentas | Pendientes de identificación en el acta |
 
 ### Registro de recepción
 
@@ -243,7 +236,6 @@ El acta identifica las cuentas, los materiales, los responsables y los accesos. 
 
 | Dato | Registro |
 | --- | --- |
-| Institución o equipo cliente | Pendiente |
 | Responsables del equipo saliente y del cliente | Pendiente |
 | Correo del Gmail dedicado | Pendiente |
 | Recuperación y verificación en dos pasos bajo control del cliente | Pendiente de verificar |

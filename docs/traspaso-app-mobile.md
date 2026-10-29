@@ -143,20 +143,18 @@ El proyecto también incluye el plugin de Firebase para publicar desde Gradle. E
 
 `firebase.properties` contiene un único `appId` para las compilaciones `release`. Antes de cada subida, el administrador comprueba que ese valor corresponda al paquete del APK. Para operar los dos entornos, Firebase necesita el registro de ambas apps Android y la configuración del App ID de cada una.
 
-## 7. Cómo completar iOS y habilitar sus descargas
+## 7. Cómo habilitar las descargas de iOS
 
-### Preparación de la versión de entrega
+### Qué incluye la entrega
 
-El proyecto [iosApp.xcodeproj](../iosApp/iosApp.xcodeproj/project.pbxproj) contiene los esquemas `iosApp-tst` e `iosApp-prod`, con entornos y Bundle IDs separados. Ambos utilizan la configuración de API compartida con Android.
+La entrega incluye el proyecto de iOS, la separación entre pruebas y producción y la configuración del acceso al backend que usa Android. Esa preparación ya está hecha.
 
-Para habilitar las descargas de iOS:
+### Qué falta para distribuirla
 
-1. Elegir el canal de distribución y registrar la cuenta Apple del cliente.
-2. Definir las versiones de iOS soportadas y validar la app en dispositivos de destino.
-3. Confirmar los Bundle ID, el nombre y la versión. Completar los íconos y configurar la firma con el equipo Apple. Incorporar el `GoogleService-Info.plist` de cada entorno y configurar APNs para notificaciones. Probar los enlaces de verificación y recuperación en iOS.
-4. Verificar las URLs y las configuraciones Release antes de generar el archivo de distribución. La fase de compilación pasa `-PtargetEnvironment=tst` o `prod` según el esquema. Los entornos se compilan por separado porque comparten la configuración Kotlin generada.
-5. Validar autenticación, persistencia de sesión, base local, operaciones offline y sincronización, navegación y comportamiento al volver del segundo plano.
-6. Crear el archivo de distribución y subirlo al canal elegido. Comprobar la instalación y la actualización con una cuenta del cliente.
+1. El cliente elige el canal de distribución entre las alternativas de la sección 4.
+2. El cliente registra su cuenta Apple y paga la membresía o solicita la exención.
+3. Con esa cuenta, el equipo técnico completa la preparación de la versión para distribuir, configura las notificaciones y realiza las pruebas de funcionamiento en iPhone.
+4. El equipo técnico sube la versión al canal elegido, tramita la revisión correspondiente y entrega el enlace de descarga o la invitación.
 
 ### Descarga mediante TestFlight
 
@@ -182,7 +180,7 @@ Antes de publicar, el equipo prueba la actualización desde Firebase a Play en d
 ### App Store
 
 1. Inscribir al cliente en el Apple Developer Program y solicitar la exención si corresponde. Identificar al titular, Account Holder, y al responsable de renovar la membresía.
-2. Completar y validar la implementación iOS de la sección 7.
+2. Preparar la versión para distribución y completar las pruebas indicadas en la sección 7.
 3. Elegir entre app pública, no listada o Custom App según el público. Preparar la ficha, capturas, contacto de soporte y acceso del revisor.
 4. Comprobar la política de privacidad en la app y en la ficha. Si la app permite crear cuentas, Apple también exige que el usuario pueda eliminarlas desde la app. [Directrices de App Review](https://developer.apple.com/app-store/review/guidelines/).
 5. Subir la versión final, completar las declaraciones y solicitar la revisión. El modo no listado requiere una solicitud adicional. [Solicitud de app no listada](https://developer.apple.com/support/unlisted-app-distribution/).

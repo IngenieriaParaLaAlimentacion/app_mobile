@@ -1,7 +1,6 @@
 package ar.com.ingenieriaalimentacion.di
 
 import androidx.lifecycle.SavedStateHandle
-import ar.com.ingenieriaalimentacion.presentation.feature.food.recipes.RecipesViewModel
 import ar.com.ingenieriaalimentacion.app.AppViewModel
 import ar.com.ingenieriaalimentacion.domain.model.auth.canEditCharacterization
 import ar.com.ingenieriaalimentacion.domain.model.auth.establishmentLinkMode
@@ -9,20 +8,21 @@ import ar.com.ingenieriaalimentacion.presentation.feature.auth.forgot_password.F
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.login.LoginViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.reset_password.ResetPasswordViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.verify_email.VerifyEmailViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.establishment.characterization.edit_characterization.EditCharacterizationViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.establishment.select_establishment.SelectEstablishmentViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_intake.CreateFoodIntakeViewModel
-import ar.com.ingenieriaalimentacion.presentation.feature.food.receipt_food_intake.ReceiptFoodIntakeViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_outflow.CreateFoodOutflowViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_food_movement_detail.EstablishmentFoodMovementDetailViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_food_movement_history.EstablishmentFoodMovementHistoryViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.food.food_movement_history.FoodMovementHistoryViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.food.food_overview.FoodOverviewViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.food.food_stock.FoodStockViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.food.receipt_food_intake.ReceiptFoodIntakeViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.food.recipes.RecipesViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.get_started.GetStartedViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.home.HomeViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.measurement.create_measurement.MeasurementViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.measurement.uploads.MeasurementUploadsViewModel
-import ar.com.ingenieriaalimentacion.presentation.feature.establishment.characterization.edit_characterization.EditCharacterizationViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.profile.edit.EditProfileViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.profile.establishments.MyEstablishmentsViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.profile.notify_establishment.NotifyEstablishmentViewModel
@@ -71,7 +71,16 @@ val viewModelsModule = module {
     viewModel { (route: Route.CreateSubject) ->
         CreateSubjectViewModel(route = route, createSubject = get(), syncCoordinator = get())
     }
-    viewModelOf(::MeasurementViewModel)
+    viewModel {
+        MeasurementViewModel(
+            createMeasurement = get(),
+            getMyEstablishments = get(),
+            getCurrentEstablishment = get(),
+            syncCoordinator = get(),
+            prepareMeasurement = get(),
+            now = { Clock.System.now() },
+        )
+    }
     viewModelOf(::CreateFoodIntakeViewModel)
     viewModelOf(::ReceiptFoodIntakeViewModel)
     viewModelOf(::CreateFoodOutflowViewModel)

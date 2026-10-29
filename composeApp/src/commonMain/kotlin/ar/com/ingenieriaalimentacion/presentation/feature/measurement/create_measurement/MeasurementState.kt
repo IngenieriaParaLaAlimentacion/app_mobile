@@ -3,6 +3,8 @@ package ar.com.ingenieriaalimentacion.presentation.feature.measurement.create_me
 import ar.com.ingenieriaalimentacion.core.validation.TextFieldState
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
 
 data class MeasurementState(
     val destination: MeasurementDestination? = null,
@@ -16,7 +18,11 @@ data class MeasurementState(
     val weight: TextFieldState = TextFieldState(),
     val height: TextFieldState = TextFieldState(),
     val observation: TextFieldState = TextFieldState(),
-    val measuredAtDisplay: String = "",            // friendly "ahora" for display (read-only)
+    val measuredDateTime: LocalDateTime? = null,
+    val measurementDateError: String? = null,
+    val latestAllowedMeasurementDate: LocalDate? = null,
+    val showMeasurementDatePicker: Boolean = false,
+    val showMeasurementTimePicker: Boolean = false,
     val isSubmitting: Boolean = false,
     val confirmation: MeasurementConfirmation? = null,
     val submitError: String? = null,
@@ -24,5 +30,7 @@ data class MeasurementState(
 ) {
     val canSubmit: Boolean
         get() = subject != null && selectedEstablishment != null &&
-            weight.value.isNotBlank() && height.value.isNotBlank() && !isSubmitting && confirmation == null
+            measuredDateTime != null && measurementDateError == null &&
+            weight.value.isNotBlank() && height.value.isNotBlank() && !isSubmitting && confirmation == null &&
+            !showMeasurementDatePicker && !showMeasurementTimePicker
 }

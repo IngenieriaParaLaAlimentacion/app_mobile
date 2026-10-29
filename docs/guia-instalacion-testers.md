@@ -1,6 +1,8 @@
 # Cómo instalar la app de prueba (Ingeniería en Alimentación)
 
-Esta guía es para las personas que van a probar la app antes de que esté disponible en Google Play. Como todavía no está publicada en la tienda, la instalación se hace por **Firebase App Distribution**, una herramienta de Google pensada justamente para este tipo de pruebas. Es un método oficial y seguro, aunque el celular te va a pedir un par de confirmaciones que no está acostumbrado a pedir cuando instalás algo desde Play Store. Es normal, seguí los pasos y no debería haber problema.
+Esta guía es para las personas que van a probar la app antes de que esté disponible en Google Play. Como todavía no está publicada en la tienda, la instalación se hace por **Firebase App Distribution**, una herramienta oficial de Google para distribuir versiones de prueba. El celular puede pedirte permiso para instalar desde el navegador. Descargá únicamente la versión indicada por el equipo responsable.
+
+Para administrar las cuentas, continuar la distribución o evaluar la publicación en las tiendas, consultá el [documento de traspaso](traspaso-app-mobile.md).
 
 Vas a necesitar:
 - Un celular Android.
@@ -65,10 +67,9 @@ En algún momento del proceso puede aparecer un cartel ofreciendo descargar una 
 
 Antes de instalar, el teléfono puede tardar unos segundos "escaneando la app" (Play Protect). Es automático, no tenés que hacer nada, solo esperar.
 
-En algunos casos puede aparecer un cartel diciendo algo como **"App no reconocida"** o **"Es posible que esta app no sea segura"**, con un botón chico que dice **"Más detalles"**. Esto pasa porque la app todavía no pasó por Google Play (no porque tenga un problema real) — cualquier app instalada fuera de la tienda muestra este mismo aviso.
+Si Play Protect ofrece analizar una app desconocida, dejá que termine y revisá el resultado. Si advierte que la app es potencialmente dañina o bloquea la instalación, detené el proceso y consultá al equipo responsable indicando el mensaje y la versión descargada. Esa advertencia no debe atribuirse automáticamente a que la app se distribuye fuera de la tienda.
 
-1. Tocá **"Más detalles"**.
-2. Tocá **"Instalar de todas formas"**.
+Referencia: [cómo funciona Google Play Protect](https://support.google.com/googleplay/answer/2812853?hl=es).
 
 ## Paso 5 — Instalá y abrí la app
 
@@ -86,12 +87,14 @@ Cuando subamos una versión nueva de la app, tenés dos formas de enterarte e in
 - **Si instalaste "Firebase App Tester"**: abrí esa app, vas a ver la nueva versión disponible ahí, tocá **Download** e instalá (mismos pasos de más arriba, ya no debería pedirte permisos de nuevo).
 - **Si no la instalaste**: te va a llegar un mail nuevo avisando que hay una versión para probar — repetís los pasos 1 a 5 de esta guía.
 
+Actualizá sobre la app existente. Si te pide desinstalarla primero, consultá al equipo responsable y sincronizá los datos pendientes antes de hacerlo.
+
 ---
 
 ## Preguntas frecuentes
 
 **¿Es seguro instalar esto si no viene de Google Play?**
-Sí. Firebase App Distribution es una herramienta oficial de Google, pensada específicamente para que empresas prueben apps con un grupo cerrado de personas antes de publicarlas. Los avisos de seguridad que ves son los mismos que aparecen con *cualquier* app instalada fuera de la tienda — no significan que haya un problema con esta app en particular.
+Firebase App Distribution es una herramienta oficial de Google para distribuir pruebas, pero el canal de descarga por sí solo no garantiza la seguridad del archivo. Usá la invitación y versión confirmadas por el equipo responsable y seguí las indicaciones de Play Protect explicadas arriba.
 
 **Cambié de celular / perdí el acceso, ¿qué hago?**
 Avisanos y te reenviamos la invitación a tu mail.

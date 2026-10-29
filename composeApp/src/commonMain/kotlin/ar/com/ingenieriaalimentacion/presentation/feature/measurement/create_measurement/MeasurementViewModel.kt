@@ -12,11 +12,11 @@ import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.CreateMeasurementUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.measurement.FutureMeasurementDateException
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.PrepareMeasurementUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.util.sanitizeDecimalInput
-import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +24,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.TimeZone
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 
 class MeasurementViewModel(
@@ -33,9 +35,19 @@ class MeasurementViewModel(
     private val getCurrentEstablishment: GetCurrentEstablishmentUseCase,
     private val syncCoordinator: SyncCoordinator,
     private val prepareMeasurement: PrepareMeasurementUseCase,
+    private val now: () -> Instant,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(MeasurementState(measuredAtDisplay = friendlyNow()))
+    private fun currentMeasurementDateTime(): LocalDateTime {
+        val value = now().toLocalDateTime(PrepareMeasurementUseCase.ARGENTINA_TIME_ZONE)
+        return LocalDateTime(value.year, value.monthNumber, value.dayOfMonth, value.hour, value.minute)
+    }
+
+    private val initialDateTime = currentMeasurementDateTime()
+    private val _state = MutableStateFlow(MeasurementState(
+        measuredDateTime = initialDateTime,
+        latestAllowedMeasurementDate = initialDateTime.date,
+    ))
     val state = _state.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5_000L),
@@ -56,11 +68,19 @@ class MeasurementViewModel(
             action !is MeasurementAction.HeightFocusChanged &&
             action !is MeasurementAction.ObservationFocusChanged
         ) return
+        if (action == MeasurementAction.BackClick &&
+            (_state.value.showMeasurementDatePicker || _state.value.showMeasurementTimePicker)
+        ) {
+            _state.update { it.copy(showMeasurementDatePicker = false, showMeasurementTimePicker = false) }
+            return
+        }
         if (action == MeasurementAction.BackClick && _state.value.confirmation != null) {
             invalidateDraft()
             return
         }
         when (action) {
+            is MeasurementAction.MeasurementDateSelected,
+            is MeasurementAction.MeasurementTimeSelected,
             is MeasurementAction.ObservationChanged,
             is MeasurementAction.WeightChanged,
             is MeasurementAction.HeightChanged,
@@ -72,6 +92,44 @@ class MeasurementViewModel(
             else -> Unit
         }
         when (action) {
+            MeasurementAction.MeasurementDatePickerOpen -> {
+                if (_state.value.confirmation == null && !_state.value.showMeasurementTimePicker) {
+                    _state.update { it.copy(
+                        showMeasurementDatePicker = true,
+                        latestAllowedMeasurementDate = currentMeasurementDateTime().date,
+                    ) }
+                }
+            }
+            MeasurementAction.MeasurementDatePickerDismiss ->
+                _state.update { it.copy(showMeasurementDatePicker = false) }
+            is MeasurementAction.MeasurementDateSelected -> {
+                val current = _state.value.measuredDateTime ?: return
+                val maximum = currentMeasurementDateTime().date
+                _state.update { it.copy(
+                    measuredDateTime = LocalDateTime(action.date, current.time),
+                    latestAllowedMeasurementDate = maximum,
+                    measurementDateError = if (action.date > maximum) "La fecha no puede ser futura." else null,
+                    showMeasurementDatePicker = false,
+                    successMessage = null,
+                    submitError = null,
+                ) }
+            }
+            MeasurementAction.MeasurementTimePickerOpen -> {
+                if (_state.value.confirmation == null && !_state.value.showMeasurementDatePicker) {
+                    _state.update { it.copy(showMeasurementTimePicker = true) }
+                }
+            }
+            MeasurementAction.MeasurementTimePickerDismiss ->
+                _state.update { it.copy(showMeasurementTimePicker = false) }
+            is MeasurementAction.MeasurementTimeSelected -> {
+                val current = _state.value.measuredDateTime ?: return
+                _state.update { it.copy(
+                    measuredDateTime = LocalDateTime(current.date, LocalTime(action.time.hour, action.time.minute)),
+                    showMeasurementTimePicker = false,
+                    successMessage = null,
+                    submitError = null,
+                ) }
+            }
             is MeasurementAction.WeightChanged ->
                 _state.update {
                     it.copy(
@@ -181,19 +239,24 @@ class MeasurementViewModel(
 
     private fun invalidateDraft() {
         retryDraft = null
-        _state.update { it.copy(confirmation = null, measuredAtDisplay = friendlyNow()) }
+        _state.update { it.copy(confirmation = null) }
     }
 
     private fun submit() {
         val current = _state.value
         if (current.isSubmitting || current.confirmation != null ||
+            current.showMeasurementDatePicker || current.showMeasurementTimePicker ||
             current.isLoadingProfile || current.profileError != null
         ) return
+        val selected = current.measuredDateTime ?: return
+        val maximum = currentMeasurementDateTime().date
         val validated = current.copy(
             weight = current.weight.showError(weightValidator),
             height = current.height.showError(heightValidator),
             observation = current.observation.showError(observationValidator),
             establishmentError = if (current.selectedEstablishment == null) "Elegí el establecimiento." else null,
+            latestAllowedMeasurementDate = maximum,
+            measurementDateError = if (selected.date > maximum) "La fecha no puede ser futura." else null,
         )
         _state.value = validated
         val subject = validated.subject ?: return
@@ -201,17 +264,34 @@ class MeasurementViewModel(
         if (!validated.weight.isValid || !validated.height.isValid || !validated.observation.isValid) return
         val weight = validated.weight.value.toDoubleOrNull() ?: return
         val height = validated.height.value.toDoubleOrNull() ?: return
-        val draft = retryDraft?.takeIf { sameForm(it, validated) } ?: MeasurementConfirmation(
-            token = ++nextConfirmationToken,
-            prepared = prepareMeasurement(subject, establishment.id, establishment.name, weight, height, validated.observation.value),
-            weightText = validated.weight.value,
-            heightText = validated.height.value,
-        ).also { retryDraft = it }
+        if (validated.measurementDateError != null) return
+        val selectedInstant = selected.toInstant(PrepareMeasurementUseCase.ARGENTINA_TIME_ZONE)
+        if (selectedInstant.toLocalDateTime(PrepareMeasurementUseCase.ARGENTINA_TIME_ZONE) != selected) {
+            _state.update { it.copy(submitError = "La hora elegida no existe en esa fecha en Argentina. Elegí otra hora.") }
+            return
+        }
+        val draft = retryDraft?.takeIf { sameForm(it, validated) } ?: try {
+            MeasurementConfirmation(
+                token = ++nextConfirmationToken,
+                prepared = prepareMeasurement(
+                    subject, establishment.id, establishment.name, weight, height,
+                    observation = validated.observation.value,
+                    measuredAt = selectedInstant,
+                ),
+                weightText = validated.weight.value,
+                heightText = validated.height.value,
+            ).also { retryDraft = it }
+        } catch (_: FutureMeasurementDateException) {
+            _state.update { it.copy(measurementDateError = "La fecha no puede ser futura.") }
+            return
+        } catch (_: IllegalArgumentException) {
+            _state.update { it.copy(submitError = "Revisá los datos de la medición.") }
+            return
+        }
         _state.update {
             it.copy(
                 submitError = null,
                 successMessage = null,
-                measuredAtDisplay = friendlyAt(draft.prepared.measurement.measuredAt),
             )
         }
         if (draft.prepared.requiresConfirmation) {
@@ -227,7 +307,8 @@ class MeasurementViewModel(
             measurement.establishmentId == state.selectedEstablishment?.id &&
             measurement.establishmentName == state.selectedEstablishment?.name &&
             draft.weightText == state.weight.value && draft.heightText == state.height.value &&
-            measurement.observation == state.observation.value.trim().takeIf { it.isNotEmpty() }
+            measurement.observation == state.observation.value.trim().takeIf { it.isNotEmpty() } &&
+            measurement.measuredAt == state.measuredDateTime?.toInstant(PrepareMeasurementUseCase.ARGENTINA_TIME_ZONE)
     }
 
     private fun persist(draft: MeasurementConfirmation) {
@@ -239,6 +320,7 @@ class MeasurementViewModel(
             createMeasurement(draft.prepared.measurement).fold(
                 onSuccess = {
                     retryDraft = null
+                    val resetDateTime = currentMeasurementDateTime()
                     _state.update {
                         it.copy(
                             weight = TextFieldState(),
@@ -248,7 +330,11 @@ class MeasurementViewModel(
                             isSubmitting = false,
                             submitError = null,
                             successMessage = "Medición guardada",
-                            measuredAtDisplay = friendlyNow(),
+                            measuredDateTime = resetDateTime,
+                            latestAllowedMeasurementDate = resetDateTime.date,
+                            measurementDateError = null,
+                            showMeasurementDatePicker = false,
+                            showMeasurementTimePicker = false,
                         )
                     }
                     syncCoordinator.requestSync()
@@ -275,16 +361,4 @@ class MeasurementViewModel(
         Rules.decimalInRange(20.0, 250.0, "Talla entre 20 y 250 cm."),
     )
 
-    private companion object {
-        fun friendlyNow(): String = "Ahora · ${friendlyAt(Clock.System.now())}"
-
-        fun friendlyAt(instant: Instant): String {
-            val dt = instant.toLocalDateTime(TimeZone.currentSystemDefault())
-            val d = dt.dayOfMonth.toString().padStart(2, '0')
-            val m = dt.monthNumber.toString().padStart(2, '0')
-            val h = dt.hour.toString().padStart(2, '0')
-            val min = dt.minute.toString().padStart(2, '0')
-            return "$d/$m/${dt.year} $h:$min"
-        }
-    }
 }

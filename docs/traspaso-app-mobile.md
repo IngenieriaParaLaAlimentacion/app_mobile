@@ -56,7 +56,7 @@ TestFlight, App Store y Ad Hoc requieren una membresía activa del Apple Develop
 | Alternativa | Cómo recibe la app el usuario | Requisitos y límites principales | Aplicación al proyecto |
 | --- | --- | --- | --- |
 | Xcode y Personal Team gratuito | El desarrollador instala desde Xcode en un dispositivo personal | Perfiles de 7 días | Desarrollo y pruebas personales |
-| TestFlight | Instala TestFlight desde App Store y acepta una invitación o enlace | Membresía del programa. Cada compilación dura hasta 90 días | Pruebas con usuarios, pendiente de habilitación |
+| TestFlight | Instala TestFlight desde App Store y acepta una invitación o enlace | La misma membresía que App Store. Cada compilación dura hasta 90 días | Pruebas previas opcionales, sin habilitar |
 | App Store público | Descarga desde la tienda o su enlace | Membresía, ficha y revisión de Apple | Publicación estable |
 | App Store no listado | Abre un enlace directo a la ficha | Apple revisa la app y aprueba el modo no listado. Cualquiera con el enlace puede descargarla | Distribución estable sin aparecer en búsquedas |
 | Ad Hoc con Firebase o entrega directa | Instala un IPA firmado para su dispositivo registrado | Membresía y registro del identificador del dispositivo, UDID. Hasta 100 dispositivos por familia y año de membresía | Pocos equipos conocidos, con administración de sus registros |
@@ -156,11 +156,9 @@ La entrega incluye el proyecto de iOS, la separación entre pruebas y producció
 3. Con esa cuenta, el equipo técnico completa la preparación de la versión para distribuir, configura las notificaciones y realiza las pruebas de funcionamiento en iPhone.
 4. El equipo técnico sube la versión al canal elegido, tramita la revisión correspondiente y entrega el enlace de descarga o la invitación.
 
-### Descarga mediante TestFlight
+### Descarga desde App Store
 
-Si el cliente elige TestFlight, el administrador sube la versión a App Store Connect, prepara el grupo externo y solicita la revisión. El usuario instala TestFlight desde App Store, abre la invitación o enlace y toca instalar. Luego actualiza desde TestFlight. El administrador publica los reemplazos antes del vencimiento de 90 días. [Flujo de TestFlight](https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview).
-
-Para distribuir la versión estable por App Store hace falta una publicación adicional. Después de la aprobación, los usuarios descargan y actualizan desde la ficha de la app.
+Con la membresía Apple activa, el equipo puede enviar la versión final directamente a revisión para publicarla en App Store. No hace falta pasar por TestFlight. Después de la aprobación, el cliente recibe el enlace de la ficha y los usuarios descargan y actualizan desde la tienda. [Publicación en App Store](https://developer.apple.com/help/app-store-connect/manage-your-apps-availability/overview-of-publishing-your-app-on-the-app-store).
 
 ## 8. Publicación opcional en las tiendas
 
@@ -188,7 +186,7 @@ Antes de publicar, el equipo prueba la actualización desde Firebase a Play en d
 
 ### Mantenimiento posterior
 
-El titular renueva la membresía Apple cada año. Si vence, Apple retira la app de nuevas descargas e impide enviar actualizaciones. Las instalaciones existentes siguen funcionando. [Renovación de Apple](https://developer.apple.com/help/account/membership/renewal/). El administrador de pruebas también mantiene las compilaciones de TestFlight y las descargas de Firebase dentro de sus plazos de vigencia.
+El titular renueva la membresía Apple cada año. Si vence, Apple retira la app de nuevas descargas e impide enviar actualizaciones. Las instalaciones existentes siguen funcionando. [Renovación de Apple](https://developer.apple.com/help/account/membership/renewal/). El administrador mantiene las descargas vigentes en Firebase y, si usa TestFlight para pruebas, reemplaza las compilaciones antes de su vencimiento.
 
 ## 9. Decisiones y acta de recepción
 
@@ -199,7 +197,7 @@ El titular renueva la membresía Apple cada año. Si vence, Apple retira la app 
 | Distribución Android actual | Firebase App Distribution |
 | Cuenta Firebase actual | Gmail dedicado al proyecto, incluido en el traspaso |
 | Distribución iOS actual | Sin canal de descarga habilitado para usuarios |
-| Pruebas iOS | Elección entre TestFlight y Firebase Ad Hoc pendiente. Ninguno está habilitado |
+| Pruebas iOS | TestFlight es opcional para pruebas previas. Sin habilitar |
 | Publicación Google Play | A elección del cliente. Cuenta y responsable pendientes |
 | Publicación App Store | A elección del cliente. Membresía o exención y preparación de iOS pendientes |
 

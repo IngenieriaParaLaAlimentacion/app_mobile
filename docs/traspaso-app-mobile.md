@@ -32,12 +32,8 @@ Las instituciones educativas acreditadas, entidades gubernamentales y organizaci
 | Google Play público | Busca la app o abre su enlace en Play Store | La tienda gestiona la descarga y las actualizaciones. Exige una cuenta y revisión | Publicación estable, a elección del cliente |
 | Pruebas de Google Play | Acepta una invitación y descarga desde Play Store | Prueba interna de hasta 100 testers. También ofrece pruebas cerradas y abiertas | Alternativa a Firebase con una cuenta Play Console |
 | APK por web o enlace directo | Descarga el archivo y autoriza su instalación | El administrador gestiona el alojamiento, los accesos y las actualizaciones | Posible, con más trabajo manual que Firebase |
-| Otras tiendas Android | Instala desde la tienda elegida | Cada tienda tiene sus condiciones y revisiones | Sin implementar. La elección depende de los dispositivos y el público |
-| Managed Google Play privado | Recibe una app autorizada para su organización | Distribución empresarial mediante una solución de administración de dispositivos, EMM o MDM | Sin configurar. Requiere esa infraestructura |
 
-Fuentes: [Firebase para Android](https://firebase.google.com/docs/app-distribution/android/distribute-console), [creación de una app en Play](https://support.google.com/googleplay/android-developer/answer/9859152?hl=en), [canales de prueba de Play](https://support.google.com/googleplay/android-developer/answer/9845334?hl=en), [distribución alternativa Android](https://developer.android.com/distribute/marketing-tools/alternative-distribution) y [apps privadas empresariales](https://developers.google.com/android/work/play/emm-api/private-apps).
-
-La publicación privada desde una consola EMM puede crear la cuenta de Managed Google Play sin cobrar el registro de USD 25. [Publicación privada mediante EMM](https://developers.google.com/android/work/play/emm-api/private-apps).
+Fuentes: [Firebase para Android](https://firebase.google.com/docs/app-distribution/android/distribute-console), [creación de una app en Play](https://support.google.com/googleplay/android-developer/answer/9859152?hl=en), [canales de prueba de Play](https://support.google.com/googleplay/android-developer/answer/9845334?hl=en) y [distribución alternativa Android](https://developer.android.com/distribute/marketing-tools/alternative-distribution).
 
 ### Vigencia y límites de Firebase
 

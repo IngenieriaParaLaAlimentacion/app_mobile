@@ -4,7 +4,7 @@ Ingeniería en Alimentación. Fuentes consultadas el 28 de octubre de 2026.
 
 ## 1. Qué se entrega y cómo se descarga hoy
 
-Android se descarga por Firebase App Distribution. El equipo administra el servicio con un Gmail dedicado al proyecto. La entrega incluye esa cuenta, el control del proyecto Firebase, las claves de firma, el código fuente y las instrucciones para publicar nuevas versiones. El acta de la sección 9 registra la recepción.
+Android se descarga por Firebase App Distribution. El equipo administra el servicio con un Gmail dedicado al proyecto. La entrega incluye esa cuenta, el control del proyecto Firebase, las claves de firma, el código fuente y las instrucciones para publicar nuevas versiones.
 
 Para iOS se entrega el proyecto de Xcode. Todavía no hay una descarga disponible para usuarios. Falta elegir el canal, contratar la membresía Apple, configurar la firma y validar la versión que se distribuirá.
 
@@ -68,15 +68,13 @@ Fuentes: [Personal Team](https://developer.apple.com/help/account/basics/about-y
 
 ### Gmail dedicado y proyecto Firebase
 
-El acta de la sección 9 identifica el Gmail del proyecto, el Project ID, los Firebase App ID y los enlaces de descarga.
-
 El cliente recibe el control del Gmail y acceso a Firebase desde sus propias cuentas. El rol `Firebase App Distribution Admin`, con identificador `roles/firebaseappdistro.admin`, permite gestionar versiones y testers. La administración de propietarios, permisos y otros recursos requiere roles adicionales. Una invitación como tester solo da acceso a la descarga. [Roles oficiales de Firebase](https://firebase.google.com/docs/projects/iam/roles-predefined-product).
 
 Procedimiento de recepción:
 
 1. El cliente ingresa al Gmail y comprueba el acceso a Firebase, las invitaciones y el historial de versiones.
 2. El cliente y el equipo saliente actualizan la contraseña, el correo y teléfono de recuperación, la verificación en dos pasos y los códigos de respaldo. El cliente conserva el control de esos métodos. Las credenciales se entregan por un canal seguro, fuera de Git y de este documento.
-3. El administrador actual agrega las cuentas del cliente con permiso para gestionar el proyecto y distribuir versiones. El acta identifica quién administra usuarios y permisos.
+3. El administrador actual agrega las cuentas del cliente con permiso para gestionar el proyecto y distribuir versiones. Ambas partes acuerdan quién administra usuarios y permisos.
 4. Ambas partes registran los servicios asociados al Gmail, los recursos del proyecto y su facturación. El traspaso conserva el proyecto existente.
 5. El cliente agrega un tester y distribuye una versión para comprobar el acceso. Las partes acuerdan qué permisos conserva el equipo saliente y cierran las sesiones restantes.
 
@@ -188,9 +186,7 @@ Antes de publicar, el equipo prueba la actualización desde Firebase a Play en d
 
 El titular renueva la membresía Apple cada año. Si vence, Apple retira la app de nuevas descargas e impide enviar actualizaciones. Las instalaciones existentes siguen funcionando. [Renovación de Apple](https://developer.apple.com/help/account/membership/renewal/). El administrador mantiene las descargas vigentes en Firebase y, si usa TestFlight para pruebas, reemplaza las compilaciones antes de su vencimiento.
 
-## 9. Decisiones y acta de recepción
-
-### Decisiones registradas y pendientes
+## 9. Decisiones registradas y pendientes
 
 | Tema | Estado |
 | --- | --- |
@@ -200,36 +196,3 @@ El titular renueva la membresía Apple cada año. Si vence, Apple retira la app 
 | Pruebas iOS | TestFlight es opcional para pruebas previas. Sin habilitar |
 | Publicación Google Play | A elección del cliente. Cuenta y responsable pendientes |
 | Publicación App Store | A elección del cliente. Membresía o exención y preparación de iOS pendientes |
-
-### Registro de recepción
-
-El acta identifica las cuentas, los materiales, los responsables y los accesos. El equipo saliente entrega las contraseñas, claves privadas y códigos de recuperación por un canal seguro. El acta registra dónde se guardan y quién puede acceder.
-
-| Dato | Registro |
-| --- | --- |
-| Responsables del equipo saliente y del cliente | Pendiente |
-| Correo del Gmail dedicado | Pendiente |
-| Recuperación y verificación en dos pasos bajo control del cliente | Pendiente de verificar |
-| Firebase Project ID y enlace de consola | Pendiente |
-| Firebase App ID por entorno y grupo de testers | Pendiente |
-| Enlace vigente de descarga Android | Pendiente |
-| Versión, entorno, commit y fecha del APK entregado | Pendiente |
-| Huella SHA-256 del certificado que firma ese APK | Pendiente |
-| Resguardo y recepción del keystore y propiedades locales | Pendiente |
-| Responsables de backend, dominios y soporte | Pendiente |
-| Cuenta Play, titular y decisión de publicación | Pendiente |
-| Cuenta Apple, Team ID, Bundle ID y decisión de distribución | Pendiente |
-| Responsable del pago o exención y renovación Apple | Pendiente |
-| Accesos que conserva el equipo saliente y fecha de retiro | Pendiente |
-
-### Comprobación de recepción
-
-- [ ] El cliente controla el Gmail, su recuperación y segundo factor.
-- [ ] Puede administrar el proyecto Firebase desde sus cuentas y gestionar testers.
-- [ ] Recibió código, configuración y respaldo de firma por los canales acordados.
-- [ ] Generó un APK firmado y distribuyó una versión al grupo de recepción.
-- [ ] Un usuario del cliente instaló y actualizó la app, y probó acceso, operación offline y sincronización.
-- [ ] Quedaron registrados los enlaces reales y los responsables de soporte e infraestructura.
-- [ ] Las partes acordaron el canal de distribución iOS y los responsables de su preparación, firma y validación.
-- [ ] Quedó documentada la decisión sobre las tiendas, quién paga y quién mantiene cada canal.
-- [ ] Se acordó el cierre de los accesos del equipo saliente.

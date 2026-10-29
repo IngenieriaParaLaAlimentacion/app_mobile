@@ -17,9 +17,8 @@ El cliente puede mantener Firebase para Android y elegir cómo distribuir iOS. T
 | Firebase App Distribution | Sin cargo por el servicio | Distribución de versiones de prueba. Otros productos de Firebase pueden cobrar sus servicios |
 | Google Play Console | USD 25, pago único | Cuenta para publicar y gestionar apps en Google Play |
 | Apple Developer Program | USD 99 por año o precio local | Distribución con TestFlight, App Store y Ad Hoc |
-| Apple Developer Enterprise Program | USD 299 por año o precio local | Distribución interna a empleados de organizaciones que cumplan sus requisitos |
 
-Fuentes: [precios de Firebase](https://firebase.google.com/pricing), [registro de Play Console](https://support.google.com/googleplay/android-developer/answer/6112435?hl=en), [inscripción al programa de Apple](https://developer.apple.com/programs/enroll/) y [programa Enterprise](https://developer.apple.com/programs/enterprise/).
+Fuentes: [precios de Firebase](https://firebase.google.com/pricing), [registro de Play Console](https://support.google.com/googleplay/android-developer/answer/6112435?hl=en) e [inscripción al programa de Apple](https://developer.apple.com/programs/enroll/).
 
 El importe final depende de la región, la moneda, los impuestos y el medio de pago. Estos aranceles no cubren desarrollo, equipos, backend, soporte ni servicios de compilación. La venta de contenido o servicios dentro de la app puede tener cargos adicionales.
 
@@ -68,10 +67,9 @@ TestFlight, App Store y Ad Hoc requieren una membresía activa del Apple Develop
 | App Store no listado | Abre un enlace directo a la ficha | Apple revisa la app y aprueba el modo no listado. Cualquiera con el enlace puede descargarla | Distribución estable sin aparecer en búsquedas |
 | Ad Hoc con Firebase o entrega directa | Instala un IPA firmado para su dispositivo registrado | Membresía y registro del identificador del dispositivo, UDID. Hasta 100 dispositivos por familia y año de membresía | Pocos equipos conocidos, con administración de sus registros |
 | Custom Apps para organizaciones | La organización distribuye por Apple Business o Apple School Manager | Membresía, revisión y cuenta de la organización destinataria | Distribución institucional privada |
-| Enterprise interno | Instala mediante sistemas internos o MDM | Programa separado para organizaciones que cumplan los requisitos y tengan al menos 100 empleados | Solo empleados. Excluye beneficiarios, clientes y público externo |
 | Marketplaces alternativos y distribución web nativa | Usa un canal autorizado en su región | Reglas regionales, autorización y notarización de Apple | No permite la distribución general en Argentina |
 
-Fuentes: [Personal Team](https://developer.apple.com/help/account/basics/about-your-developer-account), [TestFlight](https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview), [apps no listadas](https://developer.apple.com/support/unlisted-app-distribution/), [dispositivos Ad Hoc](https://developer.apple.com/help/account/devices/devices-overview), [Custom Apps](https://developer.apple.com/support/volume-purchase-and-custom-apps/), [Enterprise](https://developer.apple.com/programs/enterprise/) y [distribución alternativa por región](https://support.apple.com/en-us/118110).
+Fuentes: [Personal Team](https://developer.apple.com/help/account/basics/about-your-developer-account), [TestFlight](https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview), [apps no listadas](https://developer.apple.com/support/unlisted-app-distribution/), [dispositivos Ad Hoc](https://developer.apple.com/help/account/devices/devices-overview), [Custom Apps](https://developer.apple.com/support/volume-purchase-and-custom-apps/) y [distribución alternativa por región](https://support.apple.com/en-us/118110).
 
 ### TestFlight y Firebase en iOS
 
@@ -85,7 +83,7 @@ TestFlight evita el registro de cada dispositivo. Ad Hoc permite controlar qué 
 
 Una app no listada se descarga desde App Store por un enlace y no aparece en búsquedas ni categorías. Apple exige una versión final y aprueba tanto la app como ese modo de distribución. No admite versiones beta. Cualquiera puede compartir el enlace. La autenticación y los permisos de la app controlan el acceso a sus funciones. [Distribución no listada](https://developer.apple.com/support/unlisted-app-distribution/).
 
-Una Custom App está disponible solo para las organizaciones designadas en Apple Business o Apple School Manager. Apple también la revisa. Este canal permite distribuir a instituciones sin contratar Enterprise. [Distribución a organizaciones específicas](https://developer.apple.com/support/volume-purchase-and-custom-apps/).
+Una Custom App está disponible solo para las organizaciones designadas en Apple Business o Apple School Manager. Apple también la revisa. [Distribución a organizaciones específicas](https://developer.apple.com/support/volume-purchase-and-custom-apps/).
 
 ### Canales regionales y alternativa web
 

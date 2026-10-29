@@ -1,0 +1,5 @@
+#include "Base.xcconfig"
+
+APP_ENVIRONMENT = tst
+PRODUCT_BUNDLE_IDENTIFIER = ar.com.ingenieriaalimentacion.tst
+APP_DISPLAY_NAME = Ing. Alimentación (Test)

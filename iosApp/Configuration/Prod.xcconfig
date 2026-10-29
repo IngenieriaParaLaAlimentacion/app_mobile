@@ -1,0 +1,5 @@
+#include "Base.xcconfig"
+
+APP_ENVIRONMENT = prod
+PRODUCT_BUNDLE_IDENTIFIER = ar.com.ingenieriaalimentacion
+APP_DISPLAY_NAME = Ingeniería en Alimentación

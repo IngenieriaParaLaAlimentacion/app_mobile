@@ -8,10 +8,16 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
-        FirebaseApp.configure()
+        // Local Debug builds can run before Firebase/APNs is provisioned.
+        // The build phase requires the matching Firebase config for Release.
+        if Bundle.main.url(forResource: "GoogleService-Info", withExtension: "plist") != nil {
+            FirebaseApp.configure()
+        }
         IosFirebaseMessagingBridgeProvider.shared.setBridge(bridge: IOSFirebaseMessagingBridge())
         InitKoinKt.doInitKoin()
-        PushNotificationDelegate.shared.configure(application: application)
+        if FirebaseApp.app() != nil {
+            PushNotificationDelegate.shared.configure(application: application)
+        }
         return true
     }
 
@@ -19,6 +25,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
     ) {
-        Messaging.messaging().apnsToken = deviceToken
+        if FirebaseApp.app() != nil {
+            Messaging.messaging().apnsToken = deviceToken
+        }
     }
 }

@@ -2,7 +2,7 @@
 
 ## 1.1 Conocer la app
 
-El relevador o responsable de establecimiento usa la app móvil para registrar datos en el comedor. **Inicio**, **Historial** y **Perfil** están en la barra inferior. Inicio reúne los accesos a Medición, Sujeto, Encuesta, Alimentos y Recetas.
+El relevador o responsable de establecimiento usa la app móvil para registrar datos en el comedor. **Inicio**, **Historial** y **Perfil** están en la barra inferior. Inicio reúne los accesos a Medición, Sujeto, Encuesta y Alimentos. Para consultar recetas, entrá en **Alimentos → Planificar comidas → Recetas con tu stock**.
 
 ![Inicio de la app con un establecimiento elegido](assets/app-inicio-comedor.png)
 

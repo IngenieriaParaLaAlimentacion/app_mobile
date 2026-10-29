@@ -27,6 +27,10 @@ Comenzá por Acceso y seguí el capítulo de la tarea que necesitás realizar. C
 | Sincronizar | Enviar al sistema los registros guardados en el teléfono. |
 | Perfil del establecimiento | Ficha sobre funcionamiento, asistentes, alimentación y comunidad; distinta del perfil personal. |
 
+## Instalar o actualizar la app
+
+Usá la versión de prueba indicada por el equipo. En Android, seguí la [guía de instalación para testers](https://github.com/IngenieriaParaLaAlimentacion/app_mobile/blob/develop/docs/guia-instalacion-testers.md). Antes de actualizar, sincronizá las cargas pendientes; no desinstales la app para actualizarla.
+
 ## Antes de empezar
 
 Guardá y sincronizá tus cargas antes de cerrar sesión o cambiar de dispositivo. Las mediciones y respuestas pendientes permanecen en el teléfono hasta que se envían; los movimientos de alimentos y las confirmaciones de recetas requieren conexión.

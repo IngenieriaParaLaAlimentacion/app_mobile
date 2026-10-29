@@ -4,7 +4,7 @@
 
 **Dónde:** app → Inicio → **Alimentos**.
 
-La pantalla muestra el stock actual y los últimos movimientos del establecimiento elegido. Desde allí podés **Registrar ingreso**, **Registrar con recibo**, **Registrar egreso**, **Ver todo el stock** o abrir **Recetas con el stock disponible**.
+La pantalla muestra el stock actual y los últimos movimientos del establecimiento elegido. Desde allí podés **Registrar ingreso**, **Registrar con recibo**, **Registrar egreso**, **Ver todo el stock** o abrir **Recetas con tu stock**.
 
 En **Stock**, filtrá por categoría y elegí el orden que te resulte útil. Cada alimento muestra su unidad y cantidad. **Sin alimentos disponibles** indica que no hay existencias para esa consulta; si elegiste una categoría, probá quitar el filtro.
 
@@ -41,7 +41,7 @@ El formulario requiere al menos un alimento y cantidades positivas. Si falla la 
 
 El análisis prepara una propuesta: **no registra automáticamente el ingreso**. La revisión es parte del trabajo. Si el análisis no está disponible, la opción **Cargar manualmente con esta foto** permite continuar la revisión manual cuando la pantalla la ofrece.
 
-**Limitación comprobada en esta edición:** el análisis automático puede terminar en **No se pudo completar. Reintentá con este mismo recibo** por una incompatibilidad entre la app y el backend. Para continuar, elegí **Cargar manualmente con esta foto**, seleccioná los alimentos y completá las cantidades. Consultá al equipo antes de repetir el análisis indefinidamente.
+Si el servicio no devuelve una propuesta utilizable, continuá con **Cargar manualmente con esta foto**: seleccioná los alimentos del catálogo y completá las cantidades. Aunque el análisis encuentre alimentos, revisá y confirmá cada línea antes de guardar.
 
 ![Foto de demostración antes de procesar el recibo](assets/app-recibo-foto.png)
 
@@ -82,29 +82,41 @@ No confundas **Historial** de tus cargas en la app con el historial completo de 
 
 ## 4.6 Solicitar propuestas de recetas
 
-**Dónde:** app → Inicio → **Recetas**, o **Alimentos → Recetas con el stock disponible**.
+**Dónde:** app → Inicio → **Alimentos → Planificar comidas → Recetas con tu stock**.
 
 1. Elegí el comedor y verificá sus existencias.
-2. En **Generar**, completá **¿Cuántos chicos comen hoy?** con un número entero positivo.
+2. En **Propuestas**, completá **¿Cuántos chicos comen hoy?** con un número entero positivo.
 3. Elegí el **Tipo de comida**: desayuno, almuerzo, merienda o cena.
-4. Tocá **Buscar propuestas** y esperá. El formulario informa que la preparación puede tardar unos minutos.
-5. Revisá las propuestas disponibles: nombre, porciones, ingredientes, cantidades, preparación y los indicadores y restricciones que se muestran.
+4. Tocá **Buscar recetas** y esperá. El formulario informa que la preparación puede tardar unos minutos.
+5. Compará las tarjetas de **Propuestas para hoy** y tocá **Ver receta** para abrir el detalle. Consultar una propuesta no modifica el stock.
+6. Revisá ingredientes, cantidades, preparación y avisos de **Antes de preparar**. Desplegá **Ver información nutricional** para consultar indicadores y restricciones.
+7. Para cambiar la cantidad de chicos o el tipo de comida, tocá **Cambiar** y volvé a buscar. Las propuestas anteriores se conservan y la pantalla avisa si corresponden a los datos anteriores.
 
 Si no hay stock suficiente, el sistema no puede preparar una propuesta viable. Si la generación falla, revisá el mensaje y usá el reintento disponible. Una falta de conexión o un límite temporal no se resuelve creando repetidamente el mismo pedido.
 
+Si aparece **Se alcanzó el límite del servicio de IA** o **El servicio de IA no está disponible**, intentá generar más tarde; podés seguir consultando y reutilizando recetas del historial. Si alcanzaste el límite de solicitudes, esperá antes de volver a generar. El reintento se inicia con **Reintentar**; no se repite automáticamente.
+
+![Aviso de servicio de IA no disponible y reintento explícito](assets/app-recetas-error-ia.png)
+
 Completar la ficha del establecimiento aporta contexto sobre la cocina y la comunidad. El formulario de recetas no pide inventar ingredientes que el comedor no tiene.
+
+![Acceso a recetas desde Planificar comidas en Alimentos](assets/app-alimentos-recetas.png)
 
 ![Generación de propuestas para un comedor y una cantidad de chicos](assets/app-recetas-generar.png)
 
-La propuesta puede advertir que no alcanza todos los objetivos. Abrí **Ver preparación y nutrientes** para revisar los pasos, indicadores y faltantes antes de decidir. El ejemplo de esta guía usa intencionalmente un stock limitado para mostrar ese aviso.
+La propuesta puede advertir que no alcanza todos los objetivos. Abrí **Ver receta** y **Ver información nutricional** para revisar los pasos, indicadores y faltantes antes de decidir. El ejemplo de esta guía usa intencionalmente un stock limitado para mostrar ese aviso.
 
-![Propuesta de receta con las advertencias que conviene revisar antes de elegirla](assets/app-recetas-propuesta.png)
+![Tarjetas resumidas para comparar propuestas y abrir su detalle](assets/app-recetas-propuesta.png)
+
+![Detalle con advertencias, ingredientes y pasos de preparación](assets/app-recetas-detalle.png)
+
+![Información nutricional desplegada antes de registrar la preparación](assets/app-recetas-nutricion.png)
 
 ## 4.7 Elegir una receta y descontar sus ingredientes
 
-1. En una propuesta, tocá **Elegir esta receta**.
-2. Revisá el diálogo **¿Cocinar esta receta?**, el nombre y la cantidad de chicos.
-3. Elegí **Confirmar y registrar salida** únicamente cuando quieras registrar ese consumo.
+1. Abrí una propuesta con **Ver receta** y tocá **Registrar preparación**.
+2. Revisá el diálogo **¿Registrar esta preparación?**, el nombre, la cantidad de chicos y el aviso de descuento de ingredientes.
+3. Elegí **Confirmar y descontar stock** únicamente cuando quieras registrar ese consumo.
 4. Comprobá la receta elegida, el egreso generado y el nuevo stock.
 
 La confirmación crea una salida de alimentos y descuenta los ingredientes. Solo se puede elegir una propuesta por pedido. Si el stock cambió y no alcanza, revisá las existencias antes de continuar.
@@ -115,10 +127,10 @@ Si no se conoce el resultado por una falla de conexión, usá **Reintentar confi
 
 ## 4.8 Volver a cocinar una receta anterior
 
-1. En **Recetas → Historial**, buscá una receta elegida y tocá **Ver receta**.
-2. En **Volver a cocinar**, ingresá la **Cantidad de chicos de hoy**.
-3. Tocá **Ver cantidades para hoy** para revisar los ingredientes ajustados.
-4. Elegí **Cocinar esta receta**, revisá la confirmación y registrá la salida.
+1. En **Recetas → Historial**, buscá una preparación registrada y tocá **Ver receta**. Si hace falta, usá **Actualizar historial** o **Cargar más recetas**.
+2. En **Ajustar para hoy**, ingresá **¿Cuántos chicos comen hoy?**.
+3. Tocá **Calcular cantidades para hoy** para revisar los ingredientes ajustados.
+4. Elegí **Registrar preparación**, revisá la confirmación y tocá **Confirmar y descontar stock**.
 5. Comprobá el egreso y el stock actualizado.
 
 La reutilización ajusta una receta existente y vuelve a validar las existencias actuales. Consultar el detalle o previsualizar cantidades todavía no registra un consumo.

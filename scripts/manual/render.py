@@ -113,7 +113,7 @@ def render(output, linked_assets=False):
         '<input id="search" type="search" placeholder="Ej.: sincronizar" autocomplete="off">'
         f'<nav aria-label="Capítulos">{"".join(nav)}</nav></aside><main>'
         '<div class="toolbar"><button onclick="window.print()">Imprimir</button></div>'
-        f"<article>{body}<footer>Ingeniería Para la Alimentación · Edición 26/10/2026 · Capturas del 25/10/2026 · Datos de demostración</footer>"
+        f"<article>{body}<footer>Ingeniería Para la Alimentación · Edición 29/10/2026 · Datos de demostración</footer>"
         '</article></main><dialog aria-label="Captura ampliada"><button type="button">Cerrar</button><img alt=""></dialog>'
         '<script>const dialog=document.querySelector("dialog");'
         'function reveal(n){for(let p=n;p;p=p.parentElement){if(p.tagName==="DETAILS")p.open=true}const d=n.querySelector(":scope > details");if(d)d.open=true}'

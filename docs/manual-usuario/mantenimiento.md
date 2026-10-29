@@ -24,7 +24,7 @@ Al actualizar una pantalla, revisar sus pasos, permisos, mensajes y capturas. Re
 
 ## Procedencia de las capturas
 
-Esta entrega separa el material preparado originalmente en [backend#221](https://github.com/IngenieriaParaLaAlimentacion/backend/pull/221). Las imágenes conservan los datos ficticios del escenario Semillas del Sur y la fecha de captura del 25/10/2026. Trasladarlas a este repositorio no implica que se hayan vuelto a ejecutar contra la revisión actual.
+Esta entrega separa el material preparado originalmente en [backend#221](https://github.com/IngenieriaParaLaAlimentacion/backend/pull/221). Las capturas históricas conservan los datos ficticios del escenario Semillas del Sur y su fecha del 25/10/2026. Trasladarlas a este repositorio no implica que se hayan vuelto a ejecutar contra la revisión actual.
 
 | Componente | Revisión de la captura |
 |---|---|
@@ -37,4 +37,12 @@ El [inventario](inventario.json) conserva las pantallas de esta plataforma, los 
 
 Las capturas Android verifican pantallas y varios recorridos con persistencia: medición sin conexión y sincronización, encuestas e ingresos/egresos. No constituyen una prueba exhaustiva de todas las validaciones y permisos.
 
-El análisis automático de recibos presentó una incompatibilidad entre el backend y el campo obligatorio `needs_review` de la app. Se documentó y comprobó la alternativa de carga manual con foto. Recetas y recibos usaron respuestas fijas del modelo y almacenamiento local de demostración; no se validaron Gemini, extracción óptica real ni R2. La entrega de correos y notificaciones externas queda pendiente. iOS no se ejecutó ni se capturó en esta edición.
+La incompatibilidad histórica del campo `needs_review` se corrigió en app_mobile#97. La guía ya no la presenta como una limitación vigente. El reconocimiento real de imágenes, el proveedor de IA, el almacenamiento externo, la entrega de correos y las notificaciones siguen requiriendo comprobación con sus servicios configurados.
+
+## Actualización del 29/10/2026
+
+El texto se contrastó con `develop` de app_mobile, revisión `7f787be685ba1ed764feba8c1a385ca04aef7da2`. Se incorporaron los selectores de fecha y hora de mediciones (#100), el recorrido de recetas dentro de Alimentos (#96) y las correcciones de recibos y mensajes de IA (#97). #101 modifica la cobertura de CI y no agrega pasos de usuario.
+
+Las 17 capturas nuevas o renovadas se identifican individualmente en `inventario.json`. Se ejecutó la app Android de esa revisión en el AVD aislado `IPA_Manual`, con un servidor HTTP local de datos ficticios. Las respuestas de recetas son fijas: las capturas verifican navegación, formularios y revisión visual; no prueban la generación por IA ni movimientos persistidos en el backend. Las imágenes no renovadas conservan su fecha y procedencia del 25/10/2026.
+
+#103 incorpora el proyecto ejecutable de iOS. La preparación técnica y distribución se describen en [desarrollo local iOS](../ios-desarrollo-local.md) y [traspaso](../traspaso-app-mobile.md). Esta actualización del manual conserva instrucciones y capturas de Android; no afirma validación funcional en iOS ni disponibilidad en las tiendas.

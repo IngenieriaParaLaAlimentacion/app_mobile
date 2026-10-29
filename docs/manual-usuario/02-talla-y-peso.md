@@ -34,24 +34,30 @@ La búsqueda de sujetos existentes consulta al servidor. En esta versión, haber
 
 1. Completá **Peso (kg)** y **Talla (cm)**. No ingreses la talla en metros.
 2. Si hace falta, agregá una **Observación (opcional)** de hasta 500 caracteres.
-3. Revisá la **Fecha de medición** que muestra el formulario. La app asigna el momento de la carga; ese campo no es un selector de fecha retroactiva.
+3. Revisá **Fecha de medición** y **Hora de medición**. Al abrir el formulario se completan con la fecha y hora actuales de Argentina (Buenos Aires). Si estás cargando una medición anterior, tocá cada campo, elegí cuándo se tomó y confirmá con **Aceptar**. La hora usa formato de 24 horas; podés alternar entre **Ingresar hora** y **Usar reloj**.
 4. Tocá **Guardar**.
 5. Comprobá **Medición guardada** y después el estado de sincronización.
 
+La fecha de medición no puede ser un día futuro. Registrá la fecha y hora de la toma, aunque la cargues o sincronices después. **Cancelar** cierra el selector sin aplicar cambios. Después de guardar, los selectores vuelven a la fecha y hora actuales para la próxima medición.
+
 El formulario controla campos vacíos y valores fuera del rango permitido. Corregí el valor señalado y volvé a guardar. Si falla el guardado local, conservá los datos del formulario para reintentar.
 
-![Formulario de medición con el sujeto elegido](assets/app-medicion-completa.png)
+![Formulario con fecha y hora de la medición anterior](assets/app-medicion-completa.png)
+
+![Calendario para seleccionar el día en que se tomó la medición](assets/app-medicion-fecha.png)
+
+![Selector de hora con alternativa para ingresarla por teclado](assets/app-medicion-hora.png)
 
 ## 2.4 Revisar una medición que genera una alerta
 
 Si los valores ingresados generarían una alerta, la app muestra **Revisá las medidas** antes de guardarlos.
 
-1. Compará el peso y la talla del diálogo con los valores que pretendías ingresar.
+1. Compará el peso, la talla y la fecha y hora del diálogo con los datos de la medición.
 2. Elegí **Corregir** si hay un error. Los datos permanecen en el formulario.
 3. Si los valores son los que querés registrar, elegí **Confirmar y guardar**.
 4. Revisá el aviso de guardado y su sincronización.
 
-Cerrar el diálogo o volver atrás no confirma la carga. Cambiar el sujeto, el comedor o las medidas obliga a revisar la nueva combinación antes de confirmar. Las medidas que no requieren esa revisión se guardan directamente.
+Cerrar el diálogo o volver atrás no confirma la carga. Cambiar el sujeto, el comedor, las medidas o la fecha y hora obliga a revisar la nueva combinación antes de confirmar. Las medidas que no requieren esa revisión se guardan directamente.
 
 La alerta mostrada en esta instancia se calcula con los datos conocidos por la app. El resultado del registro sincronizado es el que podrá consultar el equipo en el sistema.
 
@@ -69,7 +75,7 @@ La app permite guardar sujetos y mediciones en el dispositivo y subirlos al recu
 | **Sincronizando…** | Esperá a que termine antes de dar por finalizado el trabajo. |
 | **Con error** | Abrí Historial, revisá la causa y usá la acción de reintento disponible. |
 
-En **Historial**, seleccioná el tipo de carga y revisá sus estados. Una persona creada sin conexión debe sincronizarse antes que sus mediciones asociadas; la app coordina esa secuencia.
+En **Historial**, seleccioná el tipo de carga y revisá sus estados. Las mediciones conservan la fecha y hora elegidas, incluso si se guardaron sin conexión y se enviaron después. Se ordenan por el momento de la medición, por lo que una carga anterior puede aparecer más abajo en el historial. Una persona creada sin conexión debe sincronizarse antes que sus mediciones asociadas; la app coordina esa secuencia.
 
 ![Medición guardada en el teléfono mientras no hay conexión](assets/app-pendiente-offline.png)
 

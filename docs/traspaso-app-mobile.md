@@ -61,29 +61,8 @@ TestFlight, App Store y Ad Hoc requieren una membresía activa del Apple Develop
 | App Store no listado | Abre un enlace directo a la ficha | Apple revisa la app y aprueba el modo no listado. Cualquiera con el enlace puede descargarla | Distribución estable sin aparecer en búsquedas |
 | Ad Hoc con Firebase o entrega directa | Instala un IPA firmado para su dispositivo registrado | Membresía y registro del identificador del dispositivo, UDID. Hasta 100 dispositivos por familia y año de membresía | Pocos equipos conocidos, con administración de sus registros |
 | Custom Apps para organizaciones | La organización distribuye por Apple Business o Apple School Manager | Membresía, revisión y cuenta de la organización destinataria | Distribución institucional privada |
-| Marketplaces alternativos y distribución web nativa | Usa un canal autorizado en su región | Reglas regionales, autorización y notarización de Apple | No permite la distribución general en Argentina |
 
-Fuentes: [Personal Team](https://developer.apple.com/help/account/basics/about-your-developer-account), [TestFlight](https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview), [apps no listadas](https://developer.apple.com/support/unlisted-app-distribution/), [dispositivos Ad Hoc](https://developer.apple.com/help/account/devices/devices-overview), [Custom Apps](https://developer.apple.com/support/volume-purchase-and-custom-apps/) y [distribución alternativa por región](https://support.apple.com/en-us/118110).
-
-### TestFlight y Firebase en iOS
-
-TestFlight admite hasta 100 testers internos con acceso a App Store Connect y 10.000 externos sin permisos de administración. Cada compilación vence a los 90 días, por lo que el administrador publica su reemplazo antes de esa fecha. Apple realiza una revisión completa de la primera compilación enviada a pruebas externas. Puede omitir esa revisión completa en las siguientes compilaciones de la misma versión. [Funcionamiento y límites](https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview) y [revisión de pruebas externas](https://developer.apple.com/help/app-store-connect/test-a-beta-version/invite-external-testers).
-
-Firebase también distribuye iOS y exige la firma de Apple. Para Ad Hoc, Firebase recoge el UDID de cada dispositivo. El desarrollador lo registra en Apple, lo incorpora al perfil de aprovisionamiento y vuelve a generar el paquete. También controla los vencimientos de los perfiles y certificados y el cupo de dispositivos. [Registro de dispositivos con Firebase](https://firebase.google.com/docs/app-distribution/register-additional-devices) y [cupo de Apple](https://developer.apple.com/help/account/devices/devices-overview).
-
-TestFlight evita el registro de cada dispositivo. Ad Hoc permite controlar qué equipos instalan la app, a costa de administrar esos registros. El cliente elige el canal antes de habilitar las descargas de iOS.
-
-### Opciones para una distribución estable y restringida
-
-Una app no listada se descarga desde App Store por un enlace y no aparece en búsquedas ni categorías. Apple exige una versión final y aprueba tanto la app como ese modo de distribución. No admite versiones beta. Cualquiera puede compartir el enlace. La autenticación y los permisos de la app controlan el acceso a sus funciones. [Distribución no listada](https://developer.apple.com/support/unlisted-app-distribution/).
-
-Una Custom App está disponible solo para las organizaciones designadas en Apple Business o Apple School Manager. Apple también la revisa. [Distribución a organizaciones específicas](https://developer.apple.com/support/volume-purchase-and-custom-apps/).
-
-### Canales regionales y alternativa web
-
-Apple informa distribución alternativa en Brasil, Japón y la Unión Europea, con condiciones distintas en cada región. Este canal no cubre la distribución general en Argentina. [Disponibilidad regional](https://support.apple.com/en-us/118110). En la Unión Europea, la distribución web de apps nativas exige autorización, notarización y un dominio registrado en App Store Connect. [Distribución web en la UE](https://developer.apple.com/support/web-distribution-eu/).
-
-La opción web o PWA requiere desarrollar o validar por separado las funciones móviles y offline de esta app.
+Fuentes: [Personal Team](https://developer.apple.com/help/account/basics/about-your-developer-account), [TestFlight](https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview), [apps no listadas](https://developer.apple.com/support/unlisted-app-distribution/), [dispositivos Ad Hoc](https://developer.apple.com/help/account/devices/devices-overview) y [Custom Apps](https://developer.apple.com/support/volume-purchase-and-custom-apps/).
 
 ## 5. Cuentas, accesos y materiales incluidos en el traspaso
 

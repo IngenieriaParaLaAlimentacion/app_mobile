@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,6 +29,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.banner.AlBann
 import ar.com.ingenieriaalimentacion.core.design_system.components.banner.AlInlineBanner
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlInput
+import ar.com.ingenieriaalimentacion.core.design_system.components.input.alInputScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.components.toast.AlToast
@@ -123,7 +123,7 @@ private fun SurveyResponseFormBody(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .verticalScroll(scrollState)
+                    .alInputScroll(scrollState)
                     .padding(horizontal = AlTheme.spacing.lg)
                     .padding(top = AlTheme.spacing.lg, bottom = AlTheme.spacing.md),
                 verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg),

@@ -47,6 +47,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.dialog.AlConf
 import ar.com.ingenieriaalimentacion.core.design_system.components.dialog.AlConfirmTone
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlInput
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlSelectField
+import ar.com.ingenieriaalimentacion.core.design_system.components.input.alInputScroll
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.components.sheet.AlBottomSheet
@@ -224,7 +225,7 @@ private fun MeasurementForm(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .verticalScroll(scrollState)
+                    .alInputScroll(scrollState)
                     .padding(top = AlTheme.spacing.lg, bottom = AlTheme.spacing.md),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,6 +32,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlAutoc
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlInput
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlSuggestion
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.DateVisualTransformation
+import ar.com.ingenieriaalimentacion.core.design_system.components.input.alInputScroll
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
@@ -136,7 +136,7 @@ private fun CreateFoodIntakeForm(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .verticalScroll(scrollState)
+                    .alInputScroll(scrollState)
                     .padding(top = AlTheme.spacing.lg, bottom = AlTheme.spacing.md),
                 verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg),
             ) {

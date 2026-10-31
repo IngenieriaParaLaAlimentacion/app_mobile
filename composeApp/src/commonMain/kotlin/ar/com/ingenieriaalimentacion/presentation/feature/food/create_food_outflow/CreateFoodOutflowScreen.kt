@@ -42,6 +42,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButt
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlInput
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlSelectField
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.DateVisualTransformation
+import ar.com.ingenieriaalimentacion.core.design_system.components.input.alInputScroll
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.components.sheet.AlBottomSheet
@@ -123,7 +124,7 @@ private fun OutflowForm(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .verticalScroll(scrollState)
+                    .alInputScroll(scrollState)
                     .padding(top = AlTheme.spacing.lg, bottom = AlTheme.spacing.md),
                 verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg),
             ) {

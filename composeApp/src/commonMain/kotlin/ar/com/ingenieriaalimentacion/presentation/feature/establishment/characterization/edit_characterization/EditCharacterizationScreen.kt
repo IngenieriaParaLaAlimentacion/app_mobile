@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ar.com.ingenieriaalimentacion.core.design_system.components.input.alInputScroll
 import ar.com.ingenieriaalimentacion.core.design_system.components.AlErrorState
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
@@ -101,7 +101,7 @@ private fun EditCharacterizationContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .verticalScroll(scrollState)
+                .alInputScroll(scrollState)
                 .padding(top = AlTheme.spacing.lg, bottom = AlTheme.spacing.md),
             verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg),
         ) {

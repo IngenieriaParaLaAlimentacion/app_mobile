@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -27,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlInput
+import ar.com.ingenieriaalimentacion.core.design_system.components.input.alInputScroll
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
@@ -104,7 +104,7 @@ private fun BasicsStep(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .verticalScroll(scrollState)
+                .alInputScroll(scrollState)
                 .padding(top = AlTheme.spacing.lg, bottom = AlTheme.spacing.md),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -208,7 +208,7 @@ private fun CharacterizationStep(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .verticalScroll(scrollState)
+                .alInputScroll(scrollState)
                 .padding(top = AlTheme.spacing.lg, bottom = AlTheme.spacing.md),
             verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg),
         ) {

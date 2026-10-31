@@ -144,21 +144,17 @@ Non-text fields (e.g. a `Sex` selector) keep a plain `String?` error set on subm
 ### Scroll-to-field on keyboard open (CMP pattern)
 Do NOT use `BringIntoViewRequester` — it is experimental and unreliable on iOS in Compose Multiplatform. Use `ScrollState` directly:
 
-1. Store a named `rememberScrollState()` and pass it to `verticalScroll(scrollState)`.
-2. Track the field's position with `onGloballyPositioned`:
-   ```kotlin
-   .onGloballyPositioned { coordinates ->
-       fieldScrollOffset = coordinates.boundsInRoot().top.toInt() + scrollState.value
-   }
-   ```
-3. Combine IME visibility with focus state to trigger the scroll:
-   ```kotlin
-   LaunchedEffect(isFocused, isImeVisible) {
-       if (isFocused && isImeVisible) {
-           scrollState.animateScrollTo(fieldScrollOffset)
-       }
-   }
-   ```
+Use the shared input components rather than implementing scroll offsets per screen:
+
+1. Store a named `rememberScrollState()` and use `Modifier.alInputScroll(scrollState)`
+   on the form's scrollable container instead of `verticalScroll(scrollState)`.
+2. Pass that same `scrollState` and the current `isImeVisible` to `AlInput`,
+   `AlPasswordInput`, or `AlUnitInput`.
+3. `alInputScroll` records the viewport coordinates. `AlInput` uses the field's
+   unclipped position relative to that viewport plus the current scroll value
+   when focus and keyboard visibility trigger scrolling. Never use
+   `boundsInRoot().top + scrollState.value`: it includes toolbar/safe-area offsets
+   and can scroll the focused field above the visible form.
 
 ### Navigate-back-with-result to refresh (CMP pattern)
 When a child editor mutates server data (e.g. `EditProfile` PATCHes `/me`) and the

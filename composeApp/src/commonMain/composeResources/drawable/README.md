@@ -1,27 +1,40 @@
-# Vector Drawables
+# Iconos vectoriales
 
-Icons here are Android Vector Drawable XML files accessible from common code via
-`painterResource(Res.drawable.<name>)`.
+Esta carpeta contiene los iconos MingCute como Android Vector Drawables XML. El código compartido los usa mediante los accesores generados `Res.drawable.ic_mingcute_<nombre>`.
 
-## Source
+## Usar un icono existente
 
-[MingCute Icon library](https://github.com/mingcute-design/mingcute-icons) — pick from `svg/system/`, `svg/file/`, `svg/editor/`, etc. (folder names are lowercase).
+```kotlin
+import ingenieria_alimentacion.composeapp.generated.resources.Res
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_home_line
+import org.jetbrains.compose.resources.vectorResource
 
-## Adding a new icon
-
-```bash
-# 1. download the source SVG (replace <category> and <icon_name>)
-curl -sSL -o /tmp/<icon_name>.svg \
-  https://raw.githubusercontent.com/mingcute-design/mingcute-icons/main/svg/<category>/<icon_name>.svg
-
-# 2. convert to vector drawable XML (drops into this directory)
-npx --yes svg2vectordrawable@latest -i /tmp/<icon_name>.svg -o .
-
-# 3. rename to ic_mingcute_<icon_name>.xml for clarity
-mv <icon_name>.xml ic_mingcute_<icon_name>.xml
+Icon(
+	imageVector = vectorResource(Res.drawable.ic_mingcute_home_line),
+	contentDescription = "Inicio",
+	tint = AlTheme.colors.textMuted,
+)
 ```
 
-After conversion:
+También se pueden cargar con `painterResource`. Usá los colores de `AlTheme` para aplicar el tinte. Los XML son monocromos, con `android:fillColor="#FF000000"`.
 
-- MingCute SVGs include a 24x24 outer-rectangle path used as a sizing trick — delete it, the viewport attributes already set the size.
-- Replace any brand fill color with `android:fillColor="#FF000000"` and tint at the call site via `Icon(tint = ...)` or `ColorFilter.tint(...)`.
+## Agregar un icono
+
+Revisá primero si ya existe un recurso adecuado en esta carpeta. La fuente es [MingCute](https://github.com/mingcute-design/mingcute-icons), con licencia Apache-2.0.
+
+El importador local está en `.claude/skills/add-mingcute-icon/driver.mjs`, relativo a la raíz del repositorio. Ese script espera la estructura histórica `svg/<categoría>/<nombre>.svg`. El repositorio de MingCute actualmente publica sus fuentes bajo `assets/svg/`, por lo que las descargas del importador requieren actualizar esa integración antes de usarla con el upstream actual.
+
+Para convertir un SVG descargado, guardalo como `.context/nombre.svg` y ejecutá desde la raíz del repositorio, reemplazando `nombre` por el nombre del icono:
+
+```bash
+npx --yes svg2vectordrawable@latest -i .context/nombre.svg -o .context
+mv .context/nombre.xml composeApp/src/commonMain/composeResources/drawable/ic_mingcute_nombre.xml
+```
+
+La conversión requiere Node.js, npm y acceso al registro de paquetes. Revisá el XML generado:
+
+- Conservá el tamaño del viewport del SVG.
+- Eliminá cualquier path transparente usado solamente como rectángulo de encuadre. No lo conviertas en un relleno visible.
+- Usá `android:fillColor="#FF000000"` en los paths visibles y aplicá el color desde Compose.
+
+Compilá nuevamente para generar el accesor `Res.drawable.*` y revisá el icono en la pantalla que lo utiliza.

@@ -1,12 +1,13 @@
-# Recipe recommendations (#75)
+# Recipe recommendations
 
-Home's **Recetas** tile requires an approved current establishment. The same flow
-is accessible from **Alimentos**. The screen resolves the stored establishment
-against current approved links, so restored navigation cannot pin a stale scope.
+Open **Inicio → Alimentos → Planificar comidas → Recetas con tu stock**.
+The flow requires an approved current establishment. The screen resolves the stored
+establishment against current approved links, so restored navigation cannot pin a stale scope.
 
 The form sends only establishment id, a strict positive integer up to 10000,
 and meal type. Generation runs online with a longer request timeout, retains
-input after errors, and aims for two or three backend proposals and can show one valid alternative. Recipes include
+input after errors, and displays the proposals returned by the backend. A single valid
+alternative remains selectable. Recipes include
 exact stock-unit quantities, preparation, nutritional percentages, GAPA groups,
 cultural inspiration and explicit energy/nutritional shortfalls. Indicators are
 returned by the backend; the client only formats them for display.
@@ -21,7 +22,8 @@ movements; Home refreshes the shared movement cache for recent activity.
 Requires the recommendation API from
 [backend#170](https://github.com/IngenieriaParaLaAlimentacion/backend/issues/170),
 including the read-only reuse preview endpoint added with this implementation.
-The backend migration must deploy before the mobile feature is usable.
+The deployed backend must support all endpoints listed below. Their availability is
+a deployment prerequisite and is not established by mobile unit tests.
 
 All paths are under `/api/v1`:
 
@@ -52,10 +54,8 @@ Empty usable stock, access errors, model failure, provider AI quota exhaustion
 per-user rate limits (`429 /errors/rate-limited`), conflicting choices and exact
 stock shortages map to distinct Spanish messages. AI failures retain generation
 input and require an explicit retry. History, choice and reuse do not invoke AI.
-Receipt proposals no longer depend on `needs_review`; each proposed line must
-still be explicitly reviewed locally before confirmation. An unavailable receipt
-analyzer returns an empty proposal with manual-entry guidance and opens the
-review form directly with the captured photo. No offline outflow is queued.
+No offline outflow is queued. Receipt intake is a separate flow, described in the
+[user manual](manual-usuario/04-nutrir.md#43-registrar-alimentos-a-partir-de-un-recibo).
 
 ## Verification
 

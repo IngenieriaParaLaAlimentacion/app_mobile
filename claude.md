@@ -1,4 +1,4 @@
-# CLAUDE.md
+# Development guide for agents
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -27,7 +27,7 @@ Use cases orchestrate repository calls and add business logic, keeping it out of
 Dependency injection is handled with Koin.
 
 ### On presentation
-Each feature screen has six files (see `presentation/feature/home/` as the reference):
+Feature screens generally use the following files. See `presentation/feature/subject/create_subject/` as a reference:
 - `*Action` — sealed user actions for that screen, with payload properties when needed; called as `{ onAction(...) }` in the Screen file
 - `*Destination` — sealed list of all destinations reachable from this screen, with navigation params when needed
 - `*Navigation` — navigation logic
@@ -35,7 +35,7 @@ Each feature screen has six files (see `presentation/feature/home/` as the refer
 - `*State` — the screen's state model
 - `*ViewModel` — holds state, reduces actions to methods, calls use cases, and emits destinations
 
-To add a new feature, copy `presentation/feature/home/`, rename, then register the route in `presentation/navigation/Route.kt` and wire the screen into `app/AppNavHost.kt`.
+To add a feature, follow a similar screen, register the route in `presentation/navigation/Route.kt`, wire the screen into `app/AppNavHost.kt`, and register its dependencies in `di/`. The Home, History, and Profile tabs are wired in `app/AuthedShell.kt`; `HomeNavigation.kt` is not the active Home dispatcher.
 
 ### On domain
 Models, use cases, repository interfaces, utils, and constants. No dependencies on `data` or `presentation`.
@@ -157,71 +157,22 @@ Use the shared input components rather than implementing scroll offsets per scre
    and can scroll the focused field above the visible form.
 
 ### Navigate-back-with-result to refresh (CMP pattern)
-When a child editor mutates server data (e.g. `EditProfile` PATCHes `/me`) and the
-parent that opened it must reflect the change after `popBackStack()`, push a
-**one-shot result** through the back stack entry's `SavedStateHandle` instead of
-blanket-refreshing on every `ON_RESUME`. The parent then refreshes only on a real
-success — never when the user just opened the editor and backed out. This is how the
-`../extra` CMP project (`profile_home` ← `enter_bio`, `listing_detail` ← `edit_listing`)
-does it.
 
-**Result keys.** Keep the keys as shared `const val`s in one file so producer and
-consumer agree on the string (extra: `presentation/common/Results.kt`):
-```kotlin
-const val PROFILE_UPDATED_RESULT = "PROFILE_UPDATED_RESULT"
-```
+When a child editor changes data, return a one-shot result through the navigation
+entry's `SavedStateHandle`. Keep shared keys in `presentation/navigation/NavResults.kt`.
+The child emits a success destination only after the mutation succeeds. Its navigation
+handler sets the result on `previousBackStackEntry` before calling `popBackStack()`.
 
-**1. Producer — the child editor.** Distinguish a plain back from a successful save in
-the `*Destination` (`EditProfile` already has `data object Back` and `data object Saved`),
-and emit `Saved` *only* in the PATCH success branch of the ViewModel:
-```kotlin
-updateMyProfile(update).fold(
-    onSuccess = { _state.update { it.copy(isSaving = false, destination = EditProfileDestination.Saved) } },
-    onFailure = { error -> _state.update { it.copy(isSaving = false, saveError = error) } },
-)
-```
-Write the result into the **previous** back stack entry's `savedStateHandle` right
-before popping, in the `*Navigation` handler:
-```kotlin
-when (destination) {
-    EditProfileDestination.Back -> navController.popBackStack()
-    EditProfileDestination.Saved -> {
-        navController.previousBackStackEntry?.savedStateHandle?.set(PROFILE_UPDATED_RESULT, true)
-        navController.popBackStack()
-    }
-}
-```
+The parent observes the result with the existing `RefreshOnNavResult` helper and
+refreshes once. The helper clears the result after consumption. See
+`presentation/feature/profile/edit/EditProfileNavigation.kt` and
+`presentation/feature/profile/view/ProfileScreen.kt`.
 
-**2. Consumer — the parent screen root.** Collect the key as a `StateFlow`, refresh,
-then `remove` it so it fires once (consume-once):
-```kotlin
-LaunchedEffect(entry) {
-    entry.savedStateHandle
-        .getStateFlow<Boolean?>(PROFILE_UPDATED_RESULT, null)
-        .collect { result ->
-            if (result != null) {
-                viewModel.refresh()
-                entry.savedStateHandle.remove<Boolean?>(PROFILE_UPDATED_RESULT)
-            }
-        }
-}
-```
-
-**Which back stack entry? (important for the Profile case).** The producer's write
-target and the consumer's read target must be the **same** entry. In `../extra` the
-parent and child share one NavController, so it is simply
-`navController.currentBackStackEntry`. In *this* app the Profile tab lives inside
-`AuthedShell`'s **inner** `NavHost`, while `EditProfile` is pushed on the **outer** nav
-(`LocalOuterNavController`). So `EditProfile`'s `previousBackStackEntry` is the
-**AuthedShell** outer-nav entry — not the Profile inner-nav entry. Both sides must use
-the outer nav's shared entry: the producer writes to `outerNav.previousBackStackEntry`
-(already the case, since `editProfileScreen` receives the outer `navController`), and
-`ProfileScreenRoot` must read from `LocalOuterNavController.current.currentBackStackEntry`,
-not its inner entry.
-
-Adopting this lets `ProfileScreenRoot` drop the `LifecycleResumeEffect` +
-`skipFirstResume` workaround (which re-fetches `/me` on every tab re-entry); the result
-key refreshes only after a confirmed save.
+Both sides must use the same back stack entry. Profile lives in `AuthedShell`'s inner
+NavHost, but EditProfile is pushed on the outer NavController. The editor writes to the
+outer controller's previous entry, and Profile reads
+`LocalOuterNavController.current.currentBackStackEntry?.savedStateHandle`.
+Do not add a refresh on every lifecycle resume for this flow.
 
 ## Environments (tst / prod)
 
@@ -236,7 +187,7 @@ editing Gradle plus `ApiConfig` and nothing else. Do not read `AlEnv` directly e
 
 `web_host_tst` / `web_host_prod` carry the backoffice **web** host of each environment (bare
 host). Unlike the API URL, both have a default committed in `composeApp/build.gradle.kts`, so
-the `local.properties` keys are optional overrides and a fresh clone builds either flavor. The
+the web-host keys are optional overrides. A `tst` artifact still requires `api_url_tst`. The
 host feeds two places that must agree: the `webHost` manifest placeholder of each flavor (the
 `autoVerify` App Link filter for `https://<host>/verify-email`) and `ApiConfig.WEB_HOST` (the
 `navDeepLink` pattern in `presentation/navigation/DeepLinks.kt`). It must match the host of the
@@ -257,7 +208,7 @@ Two guardrails worth knowing before you touch that block:
 - Only one environment can be baked per Gradle invocation, so requesting both flavors at once
   (`./gradlew assembleTstDebug assembleProdDebug`) fails fast rather than shipping the wrong URL.
 
-A blank API URL hard-fails any `assemble`/`bundle`/`install` task and only warns for bare compile
+A blank API URL hard-fails any `assemble`/`bundle`/`install`/`embedAndSign` task and only warns for bare compile
 tasks, so `scripts/compile.sh` and CI type checks stay green without a `local.properties`.
 
 Both flavors currently claim the same `ingenieriaalimentacion://` deep-link scheme, so with both
@@ -305,4 +256,7 @@ Every variant is flavored — there is no plain `assembleDebug`.
 ```
 
 ### iOS
-No Xcode project is checked in yet, so the app cannot be run on a simulator from this repo.
+Open `iosApp/iosApp.xcodeproj` and select `iosApp-tst` or `iosApp-prod` with an
+Apple Silicon iPhone Simulator. See [local iOS development](docs/ios-desarrollo-local.md)
+for unsigned CLI builds and [push notification setup](docs/push-notifications-ios.md)
+for Firebase and APNs provisioning.

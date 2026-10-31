@@ -120,7 +120,7 @@ La configuración del repositorio está en [composeApp/build.gradle.kts](../comp
 | `tst` | `ar.com.ingenieriaalimentacion.tst` | Ing. Alimentación (Test) |
 | `prod` | `ar.com.ingenieriaalimentacion` | Ingeniería en Alimentación |
 
-Las variantes pueden coexistir y guardan sus datos por separado. La publicación de producción usa `prod`. El código entregado define `versionName = 0.1.1` y `versionCode = 2`. La siguiente versión toma como referencia la última distribuida en Firebase.
+Las variantes pueden coexistir y guardan sus datos por separado. La publicación de producción usa `prod`. La versión Android se define con `versionName` y `versionCode` en [composeApp/build.gradle.kts](../composeApp/build.gradle.kts). Antes de distribuir, compará esos valores con la última versión publicada en Firebase y actualizalos. La versión iOS se configura por separado con `MARKETING_VERSION` y `CURRENT_PROJECT_VERSION` en [Base.xcconfig](../iosApp/Configuration/Base.xcconfig).
 
 Procedimiento de generación y distribución de nuevas versiones:
 

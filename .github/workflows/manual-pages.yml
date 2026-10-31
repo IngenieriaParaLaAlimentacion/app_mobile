@@ -1,0 +1,72 @@
+name: Manual de usuario · GitHub Pages
+
+on:
+  pull_request:
+    branches: [develop]
+    paths:
+      - 'docs/manual-usuario/**'
+      - 'scripts/manual/**'
+      - '.github/workflows/manual-pages.yml'
+  push:
+    branches: [develop]
+    paths:
+      - 'docs/manual-usuario/**'
+      - 'scripts/manual/**'
+      - '.github/workflows/manual-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: manual-pages-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: scripts/manual/requirements.txt
+
+      - name: Install renderer
+        run: python -m pip install -r scripts/manual/requirements.txt
+
+      - name: Verify manual and build site
+        run: |
+          python scripts/manual/verify.py
+          python scripts/manual/render.py --output .context/manual-pages/index.html
+          cp docs/manual-usuario/manual.pdf .context/manual-pages/manual.pdf
+          touch .context/manual-pages/.nojekyll
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: .context/manual-pages
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/develop'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Deploy manual
+        id: deployment
+        uses: actions/deploy-pages@v4

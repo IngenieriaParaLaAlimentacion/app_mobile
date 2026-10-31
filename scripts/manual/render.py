@@ -112,7 +112,8 @@ def render(output, linked_assets=False):
         f'<small>Manual de usuario · {label}</small><label for="search">Buscar un tema</label>'
         '<input id="search" type="search" placeholder="Ej.: sincronizar" autocomplete="off">'
         f'<nav aria-label="Capítulos">{"".join(nav)}</nav></aside><main>'
-        '<div class="toolbar"><button onclick="window.print()">Imprimir</button></div>'
+        '<div class="toolbar"><a href="manual.pdf" download>Descargar PDF</a>&nbsp; '
+        '<button onclick="window.print()">Imprimir</button></div>'
         f"<article>{body}<footer>Ingeniería Para la Alimentación · Edición 29/10/2026 · Datos de demostración</footer>"
         '</article></main><dialog aria-label="Captura ampliada"><button type="button">Cerrar</button><img alt=""></dialog>'
         '<script>const dialog=document.querySelector("dialog");'

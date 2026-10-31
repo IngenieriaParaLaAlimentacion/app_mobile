@@ -222,6 +222,11 @@ iOS has a checked-in Xcode project at `iosApp/iosApp.xcodeproj`. Shared schemes
 configurations set `KOTLIN_FRAMEWORK_BUILD_TYPE` to Debug or Release. Build environments
 sequentially. Simulator builds do not need an Apple account; see `docs/ios-desarrollo-local.md`.
 
+## Working documents
+
+Keep temporary plans, research notes, and PR drafts in the git-ignored `.context/`
+directory. Maintain project documentation intended for the team in `docs/`.
+
 ## Git workflow
 
 Gitflow-lite with two long-lived branches:

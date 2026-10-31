@@ -12,8 +12,6 @@ App Android e iOS desarrollada con Kotlin y Compose Multiplatform. Permite regis
 - [Funcionamiento técnico de recetas](docs/recipe-recommendations.md).
 - [Convenciones de desarrollo](claude.md).
 
-`thoughts/` conserva investigaciones, planes y decisiones de diseño. Los planes describen el contexto de su elaboración y pueden incluir tareas ya implementadas. Para compilar y operar la app, usá las guías anteriores.
-
 ## Requisitos
 
 - JDK 21 para ejecutar Gradle.

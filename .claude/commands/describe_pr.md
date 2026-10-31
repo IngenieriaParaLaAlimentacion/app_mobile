@@ -4,10 +4,9 @@ You are tasked with generating a comprehensive pull request description followin
 
 ## Steps to follow:
 
-1. **Read the PR description template:**
-    - First, check if `thoughts/pr_description.md` exists
-    - If it doesn't exist, inform the user that their `extra thoughts` setup is incomplete and they need to create a PR description template at `thoughts/pr_description.md`
-    - Read the template carefully to understand all sections and requirements
+1. **Read the PR description template if available:**
+    - Check `.github/pull_request_template.md` and `.github/PULL_REQUEST_TEMPLATE/` for the repository template.
+    - If none exists, describe the problem, resulting behavior, and validation concisely.
 
 2. **Identify the PR to describe:**
     - Check if the current branch has an associated PR: `gh pr view --json url,number,title,state 2>/dev/null`
@@ -15,7 +14,7 @@ You are tasked with generating a comprehensive pull request description followin
     - Ask the user which PR they want to describe
 
 3. **Check for existing description:**
-    - Check if `thoughts/prs/{number}_description.md` already exists
+    - Check if `.context/prs/{number}_description.md` already exists
     - If it exists, read it and inform the user you'll be updating it
     - Consider what has changed since the last description was written
 
@@ -51,12 +50,12 @@ You are tasked with generating a comprehensive pull request description followin
         - Write a concise changelog entry
     - Ensure all checklist items are addressed (checked or explained)
 
-8. **Save and sync the description:**
-    - Write the completed description to `thoughts/prs/{number}_description.md`
+8. **Save the local draft:**
+    - Create `.context/prs/` if needed and write the completed description to `.context/prs/{number}_description.md`. Keep the draft out of Git.
     - Show the user the generated description
 
 9. **Update the PR:**
-    - Update the PR description directly: `gh pr edit {number} --body-file thoughts/shared/prs/{number}_description.md`
+    - Update the PR description directly: `gh pr edit {number} --body-file .context/prs/{number}_description.md`
     - Confirm the update was successful
     - If any verification steps remain unchecked, remind the user to complete them before merging
 

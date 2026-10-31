@@ -24,8 +24,8 @@ Please provide:
 
 I'll analyze this information and work with you to create a comprehensive plan.
 
-Tip: You can also invoke this command with a ticket file directly: `/create_plan thoughts/tickets/eng_1234.md`
-For deeper analysis, try: `/create_plan think deeply about thoughts/tickets/eng_1234.md`
+Tip: You can also invoke this command with a ticket file directly: `/create_plan .context/tickets/eng_1234.md`
+For deeper analysis, try: `/create_plan think deeply about .context/tickets/eng_1234.md`
 ```
 
 Then wait for the user's input.
@@ -126,7 +126,7 @@ Once aligned on approach:
 
 After structure approval:
 
-1. **Write the plan** to `thoughts/plans/{descriptive_name}.md`
+1. **Write the plan** to `.context/plans/{descriptive_name}.md`
 2. **Use this template structure**:
 
 ```markdown
@@ -209,20 +209,19 @@ After structure approval:
 
 ## References
 
-- Original ticket: `thoughts/tickets/eng_XXXX.md`
-- Related research: `thoughts/research/[relevant].md`
+- Original ticket: `.context/tickets/eng_XXXX.md`
+- Related research: `.context/research/[relevant].md`
 - Similar implementation: `[file:line]`
 ```
 
-### Step 5: Sync and Review
+### Step 5: Review
 
-1. **Sync the thoughts directory**:
-   - This ensures the plan is properly indexed and available
+Keep the plan in `.context/` as a local working document. Do not commit temporary plans.
 
-2. **Present the draft plan location**:
+1. **Present the draft plan location**:
    ```
 I've created the initial implementation plan at:
-`thoughts/plans/[filename].md`
+`.context/plans/[filename].md`
 
 Please review it and let me know:
 - Are the phases properly scoped?
@@ -231,13 +230,13 @@ Please review it and let me know:
 - Missing edge cases or considerations?
    ```
 
-3. **Iterate based on feedback** - be ready to:
+2. **Iterate based on feedback** - be ready to:
    - Add missing phases
    - Adjust technical approach
    - Clarify success criteria (both automated and manual)
    - Add/remove scope items
 
-4. **Continue refining** until the user is satisfied
+3. **Continue refining** until the user is satisfied
 
 ## Important Guidelines
 
@@ -346,7 +345,7 @@ When spawning research sub-agents via the Agent tool:
 User: /implementation_plan
 Assistant: I'll help you create a detailed implementation plan...
 
-User: We need to add parent-child tracking for Claude sub-tasks. See thoughts/allison/tickets/eng_1478.md
+User: We need to add parent-child tracking for Claude sub-tasks. See .context/tickets/eng_1478.md
 Assistant: Let me read that ticket file completely first...
 
 [Reads file fully]

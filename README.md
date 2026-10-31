@@ -4,7 +4,7 @@ App Android e iOS desarrollada con Kotlin y Compose Multiplatform. Permite regis
 
 ## Documentación
 
-- [Manual de usuario](docs/manual-usuario/README.md), disponible en [HTML](docs/manual-usuario/index.html) y [PDF](docs/manual-usuario/manual.pdf). Los pasos y las capturas corresponden a Android.
+- [Manual de usuario en línea](https://ingenieriaparalaalimentacion.github.io/app_mobile/), con búsqueda, navegación por capítulos y descarga del PDF. También está disponible en el repositorio en [HTML](docs/manual-usuario/index.html) y [PDF](docs/manual-usuario/manual.pdf). Los pasos y las capturas corresponden a Android.
 - [Instalar y actualizar la app de prueba](docs/guia-instalacion-testers.md).
 - [Compilar y ejecutar iOS en un simulador](docs/ios-desarrollo-local.md).
 - [Configurar notificaciones iOS](docs/push-notifications-ios.md).

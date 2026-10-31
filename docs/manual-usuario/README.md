@@ -2,6 +2,7 @@
 
 Guía para relevadores y responsables de establecimiento que usan la app Android.
 
+- [Leer el manual en línea](https://ingenieriaparalaalimentacion.github.io/app_mobile/): publicación en GitHub Pages desde `develop`.
 - [Leer el manual HTML](index.html): archivo independiente con las capturas incluidas, navegación, búsqueda y ampliación de imágenes.
 - [Descargar el manual PDF](manual.pdf): versión para leer e imprimir en A4.
 

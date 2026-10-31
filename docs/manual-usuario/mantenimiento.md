@@ -22,6 +22,32 @@ Para exportar con un Chrome ya instalado, definir `CHROME_EXECUTABLE` con la rut
 
 Al actualizar una pantalla, revisar sus pasos, permisos, mensajes y capturas. Regenerar HTML y PDF y comprobar enlaces, búsqueda, ampliación, vista angosta e impresión. Revisar que ninguna captura incluya datos reales ni enlaces de autenticación con tokens. No hace falta levantar el backend para regenerar los documentos con las imágenes existentes.
 
+## Publicar en GitHub Pages
+
+El workflow [Manual de usuario · GitHub Pages](../../.github/workflows/manual-pages.yml) genera el HTML desde los capítulos y publica el sitio en <https://ingenieriaparalaalimentacion.github.io/app_mobile/>. Incluye búsqueda, ampliación de capturas y descarga de `manual.pdf`.
+
+Para habilitar la primera publicación:
+
+1. En el repositorio, abrí **Settings > Pages**.
+2. En **Build and deployment > Source**, seleccioná **GitHub Actions**.
+3. Si el entorno `github-pages` restringe las ramas permitidas, agregá `develop`.
+4. Integrá el workflow en `develop`. Si ya está integrado, ejecutalo desde **Actions > Manual de usuario · GitHub Pages > Run workflow**, seleccionando `develop`.
+5. Comprobá la URL que muestra el paso de despliegue.
+
+Los cambios del manual, sus scripts o el workflow que llegan a `develop` actualizan el sitio. Los pull requests a `develop` verifican enlaces y generan el artefacto sin publicarlo. Una ejecución manual desde otra rama tampoco publica.
+
+El artefacto contiene únicamente `index.html`, `manual.pdf` y `.nojekyll`. Las imágenes están incluidas en el HTML. El PDF publicado es el archivo versionado: al cambiar los capítulos, regenerá HTML y PDF con los comandos anteriores e incluí ambos en el mismo cambio.
+
+Para revisar el sitio localmente después de instalar las dependencias de Python:
+
+```bash
+.context/manual-venv/bin/python scripts/manual/render.py --output .context/manual-pages/index.html
+cp docs/manual-usuario/manual.pdf .context/manual-pages/manual.pdf
+python3 -m http.server 8000 --directory .context/manual-pages
+```
+
+Abrí <http://localhost:8000/>. La configuración de Pages sigue el [workflow oficial de GitHub](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
+
 ## Procedencia de las capturas
 
 Esta entrega separa el material preparado originalmente en [backend#221](https://github.com/IngenieriaParaLaAlimentacion/backend/pull/221). Las capturas históricas conservan los datos ficticios del escenario Semillas del Sur y su fecha del 25/10/2026. Trasladarlas a este repositorio no implica que se hayan vuelto a ejecutar contra la revisión actual.

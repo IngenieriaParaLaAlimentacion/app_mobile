@@ -33,12 +33,17 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlIcon
 import ar.com.ingenieriaalimentacion.core.design_system.components.card.AlCard
 import ar.com.ingenieriaalimentacion.core.design_system.components.dialog.AlConfirmDialog
 import ar.com.ingenieriaalimentacion.core.design_system.components.dialog.AlConfirmTone
+import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlDateSeparator
 import ar.com.ingenieriaalimentacion.core.design_system.components.pill.AlPill
 import ar.com.ingenieriaalimentacion.core.design_system.components.pill.AlPillTone
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
+import ar.com.ingenieriaalimentacion.presentation.common.dayOf
+import ar.com.ingenieriaalimentacion.presentation.common.groupByDay
+import ar.com.ingenieriaalimentacion.presentation.common.today
 import ingenieria_alimentacion.composeapp.generated.resources.Res
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_delete
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.datetime.TimeZone
 
 @Composable
 fun MeasurementUploadsContent(
@@ -49,11 +54,21 @@ fun MeasurementUploadsContent(
     var pendingDelete by remember { mutableStateOf<MeasurementUploadUi?>(null) }
     val listState = rememberLazyListState()
     val currentState by rememberUpdatedState(state)
+    val zone = TimeZone.currentSystemDefault()
+    val days = remember(state.uploads) {
+        // Grouped on `measured_at` — the same field the repository sorts by, and the one the
+        // backend feeds into the activity feed's `occurred_at`.
+        state.uploads.groupByDay(today(zone)) { upload ->
+            upload.measuredAtMillis?.let { dayOf(it, zone) }
+        }
+    }
+    // Headers occupy list slots too, so the near-end check counts lines, not measurements.
+    val lineCount by rememberUpdatedState(days.size + state.uploads.size)
 
     LaunchedEffect(listState) {
         snapshotFlow {
             val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
-            last >= currentState.uploads.lastIndex - LOAD_MORE_THRESHOLD
+            last >= lineCount - 1 - LOAD_MORE_THRESHOLD
         }.distinctUntilChanged().collect { nearEnd ->
             if (nearEnd && currentState.canLoadMore) onAction(MeasurementUploadsAction.LoadMore)
         }
@@ -73,15 +88,36 @@ fun MeasurementUploadsContent(
         else -> LazyColumn(
             modifier = modifier.fillMaxSize(),
             state = listState,
-            contentPadding = PaddingValues(AlTheme.spacing.md),
+            // No top inset: a sticky header pins below `contentPadding`, so any top padding would
+            // leave a gap for cards to scroll through above the pinned date. The first separator
+            // carries that spacing itself instead.
+            contentPadding = PaddingValues(
+                start = AlTheme.spacing.md,
+                end = AlTheme.spacing.md,
+                bottom = AlTheme.spacing.md,
+            ),
             verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
         ) {
-            items(state.uploads, key = { it.localId }) { upload ->
-                MeasurementUploadRow(
-                    upload = upload,
-                    onAction = onAction,
-                    onRequestDelete = { pendingDelete = it },
-                )
+            days.forEachIndexed { dayIndex, day ->
+                stickyHeader(key = day.key, contentType = "date-separator") {
+                    AlDateSeparator(
+                        label = day.label,
+                        // The list already insets horizontally, and its 8dp arrangement supplies
+                        // the gap under the header.
+                        horizontalPadding = 0.dp,
+                        // `sm`, not `xs`: the hub's segmented control adds its own `md` below, so
+                        // 16 + 8 is the `lg` that separates one day's block from the next.
+                        topPadding = if (dayIndex == 0) AlTheme.spacing.sm else AlTheme.spacing.lg,
+                        bottomPadding = 0.dp,
+                    )
+                }
+                items(day.items, key = { it.localId }, contentType = { "measurement" }) { upload ->
+                    MeasurementUploadRow(
+                        upload = upload,
+                        onAction = onAction,
+                        onRequestDelete = { pendingDelete = it },
+                    )
+                }
             }
             if (state.isLoadingMore) {
                 item {

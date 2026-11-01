@@ -140,7 +140,54 @@ class SurveyResponseEditViewModelTest {
         val edit = editRepo.enqueued.first()
         assertEquals("r1", edit.responseId)
         assertEquals(SurveyAnswerValue.SingleChoice("opt-b"), edit.answers["q1"])
+        assertEquals(null, edit.responseNumber)
         // A fresh, current-clock event_at — distinct from the original response's 1_000L.
         assertEquals(true, edit.eventAtMs > responseDetail.eventAtMs)
+    }
+
+    @Test
+    fun `required survey blocks clearing the response number`() = runTest(dispatcher) {
+        val editRepo = FakeSurveyResponseEditRepository()
+        val vm = viewModel(
+            historyRepo = FakeSurveyResponseHistoryRepository().apply {
+                detailResult = Result.success(responseDetail.copy(responseNumber = 7))
+            },
+            surveyRepo = FakeSurveyRepository().apply {
+                detailResult = Result.success(surveyDetail.copy(requiresResponseNumber = true))
+            },
+            editRepo = editRepo,
+        )
+
+        vm.state.test {
+            awaitState { !it.isLoading }
+            vm.onAction(SurveyResponseEditAction.ResponseNumberChanged(""))
+            vm.onAction(SurveyResponseEditAction.Submit)
+            assertEquals(
+                "Ingresá el número de respuesta.",
+                awaitState { it.responseNumber.displayError != null }.responseNumber.displayError,
+            )
+            cancelAndIgnoreRemainingEvents()
+        }
+        assertEquals(0, editRepo.enqueued.size)
+    }
+
+    @Test
+    fun `optional survey can clear a previously supplied response number`() = runTest(dispatcher) {
+        val editRepo = FakeSurveyResponseEditRepository()
+        val vm = viewModel(
+            historyRepo = FakeSurveyResponseHistoryRepository().apply {
+                detailResult = Result.success(responseDetail.copy(responseNumber = 7))
+            },
+            editRepo = editRepo,
+        )
+
+        vm.state.test {
+            awaitState { !it.isLoading }
+            vm.onAction(SurveyResponseEditAction.ResponseNumberChanged(""))
+            vm.onAction(SurveyResponseEditAction.Submit)
+            awaitState { it.destination == SurveyResponseEditDestination.Saved }
+            cancelAndIgnoreRemainingEvents()
+        }
+        assertEquals(null, editRepo.enqueued.single().responseNumber)
     }
 }

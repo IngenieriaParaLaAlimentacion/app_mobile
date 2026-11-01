@@ -11,4 +11,6 @@ sealed interface HomeAction {
     data object EstablishmentPickerDismiss : HomeAction
     data class EstablishmentSelected(val establishment: EstablishmentWithStatus) : HomeAction
     data object RespondSurveyClick : HomeAction
+    data object FoodOverviewClick : HomeAction
+    data object CompleteCharacterizationClick : HomeAction
 }

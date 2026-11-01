@@ -10,6 +10,8 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.composable
+import ar.com.ingenieriaalimentacion.presentation.feature.establishment.characterization.edit_characterization.navigateToEditCharacterization
+import ar.com.ingenieriaalimentacion.presentation.feature.food.food_overview.navigateToFoodOverview
 import ar.com.ingenieriaalimentacion.presentation.feature.measurement.create_measurement.navigateToCreateMeasurement
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.create_subject.navigateToCreateSubject
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_list.navigateToSurveyList
@@ -38,5 +40,10 @@ internal fun navigate(
         HomeDestination.NavigateToCreateMeasurement -> navController.navigateToCreateMeasurement()
         HomeDestination.NavigateToHistory -> navController.navigate(Route.History)
         HomeDestination.NavigateToSurveyList -> navController.navigateToSurveyList()
+        HomeDestination.NavigateToFoodOverview -> navController.navigateToFoodOverview()
+        is HomeDestination.NavigateToEditCharacterization -> navController.navigateToEditCharacterization(
+            establishmentId = destination.establishmentId,
+            establishmentName = destination.establishmentName,
+        )
     }
 }

@@ -1,11 +1,24 @@
 package ar.com.ingenieriaalimentacion.di
 
+import androidx.lifecycle.SavedStateHandle
 import ar.com.ingenieriaalimentacion.app.AppViewModel
-import ar.com.ingenieriaalimentacion.presentation.feature.establishment.select_establishment.SelectEstablishmentViewModel
+import ar.com.ingenieriaalimentacion.domain.model.auth.canEditCharacterization
+import ar.com.ingenieriaalimentacion.domain.model.auth.establishmentLinkMode
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.forgot_password.ForgotPasswordViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.login.LoginViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.reset_password.ResetPasswordViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.verify_email.VerifyEmailViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.establishment.characterization.edit_characterization.EditCharacterizationViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.establishment.select_establishment.SelectEstablishmentViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_intake.CreateFoodIntakeViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_outflow.CreateFoodOutflowViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_food_movement_detail.EstablishmentFoodMovementDetailViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_food_movement_history.EstablishmentFoodMovementHistoryViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.food.food_movement_history.FoodMovementHistoryViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.food.food_overview.FoodOverviewViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.food.food_stock.FoodStockViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.food.receipt_food_intake.ReceiptFoodIntakeViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.food.recipes.RecipesViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.get_started.GetStartedViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.home.HomeViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.measurement.create_measurement.MeasurementViewModel
@@ -24,6 +37,7 @@ import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_edit.SurveyResponseEditViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_form.SurveyResponseFormViewModel
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_history.SurveyResponseHistoryViewModel
+import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_number_fix.SurveyResponseNumberFixViewModel
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 import kotlin.time.Clock
 import org.koin.core.module.dsl.viewModel
@@ -31,6 +45,9 @@ import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
 val viewModelsModule = module {
+    viewModel { (savedState: SavedStateHandle) ->
+        RecipesViewModel(repository = get(), resolveCurrentEstablishment = get(), connectivity = get(), ids = get(), savedState = savedState)
+    }
     viewModelOf(::AppViewModel)
     viewModelOf(::GetStartedViewModel)
     viewModel {
@@ -38,6 +55,8 @@ val viewModelsModule = module {
             observeSubjectUploads = get(),
             observeMeasurements = get(),
             observeSurveyResponseUploads = get(),
+            observeFoodMovements = get(),
+            getFoodMovementHistory = get(),
             getMyProfile = get(),
             getMyEstablishments = get(),
             getCurrentEstablishment = get(),
@@ -52,15 +71,41 @@ val viewModelsModule = module {
     viewModel { (route: Route.CreateSubject) ->
         CreateSubjectViewModel(route = route, createSubject = get(), syncCoordinator = get())
     }
-    viewModelOf(::MeasurementViewModel)
+    viewModel {
+        MeasurementViewModel(
+            createMeasurement = get(),
+            getMyEstablishments = get(),
+            getCurrentEstablishment = get(),
+            syncCoordinator = get(),
+            prepareMeasurement = get(),
+            now = { Clock.System.now() },
+        )
+    }
+    viewModelOf(::CreateFoodIntakeViewModel)
+    viewModelOf(::ReceiptFoodIntakeViewModel)
+    viewModelOf(::CreateFoodOutflowViewModel)
     viewModelOf(::MeasurementUploadsViewModel)
     viewModelOf(::SelectSubjectViewModel)
     viewModelOf(::SubjectUploadsViewModel)
     viewModelOf(::ForgotPasswordViewModel)
     viewModelOf(::ProfileViewModel)
-    viewModelOf(::RequestEstablishmentViewModel)
+    viewModel { (route: Route.RequestEstablishment) ->
+        RequestEstablishmentViewModel(
+            mode = establishmentLinkMode(route.role),
+            getAvailable = get(),
+            requestAccess = get(),
+            subscribe = get(),
+        )
+    }
     viewModelOf(::NotifyEstablishmentViewModel)
-    viewModelOf(::MyEstablishmentsViewModel)
+    viewModel { (route: Route.MyEstablishments) ->
+        MyEstablishmentsViewModel(
+            mode = establishmentLinkMode(route.role),
+            canEditCharacterization = canEditCharacterization(route.role),
+            getMyEstablishments = get(),
+            withdrawFromEstablishment = get(),
+        )
+    }
     viewModel { (route: Route.SelectEstablishment) ->
         SelectEstablishmentViewModel(route = route, getEstablishments = get())
     }
@@ -69,6 +114,9 @@ val viewModelsModule = module {
     }
     viewModel { (route: Route.VerifyEmail) ->
         VerifyEmailViewModel(route = route, verifyEmail = get())
+    }
+    viewModel { (route: Route.EditCharacterization) ->
+        EditCharacterizationViewModel(route = route, getCharacterization = get(), saveCharacterization = get())
     }
     viewModel { (route: Route.EditProfile) ->
         EditProfileViewModel(route = route, updateMyProfile = get())
@@ -85,12 +133,24 @@ val viewModelsModule = module {
         )
     }
     viewModelOf(::SurveyResponseHistoryViewModel)
+    viewModelOf(::FoodMovementHistoryViewModel)
+    viewModelOf(::FoodStockViewModel)
+    viewModelOf(::FoodOverviewViewModel)
+    viewModelOf(::EstablishmentFoodMovementHistoryViewModel)
+    viewModel { (route: Route.EstablishmentFoodMovementDetail) ->
+        EstablishmentFoodMovementDetailViewModel(
+            route = route,
+            getDetail = get(),
+            connectivity = get(),
+        )
+    }
     viewModel { (route: Route.SurveyResponseDetail) ->
         SurveyResponseDetailViewModel(
             route = route,
             getSurveyResponseDetail = get(),
             getSurveyDetail = get(),
             getMyProfile = get(),
+            getMyEstablishments = get(),
             observeEditStatus = get(),
             retryEditUpload = get(),
             syncCoordinator = get(),
@@ -104,5 +164,8 @@ val viewModelsModule = module {
             editSurveyResponse = get(),
             syncCoordinator = get(),
         )
+    }
+    viewModel { (route: Route.SurveyResponseNumberFix) ->
+        SurveyResponseNumberFixViewModel(route, get(), get())
     }
 }

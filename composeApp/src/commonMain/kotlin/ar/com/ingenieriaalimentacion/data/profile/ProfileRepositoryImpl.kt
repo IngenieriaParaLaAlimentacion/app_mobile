@@ -1,8 +1,11 @@
 package ar.com.ingenieriaalimentacion.data.profile
 
+import ar.com.ingenieriaalimentacion.data.establishment.characterization.dto.ValidationProblem
+import ar.com.ingenieriaalimentacion.data.establishment.characterization.mapper.toDto
 import ar.com.ingenieriaalimentacion.data.profile.dto.EstablishmentAbsenceRequest
 import ar.com.ingenieriaalimentacion.data.profile.dto.RequestEstablishmentsRequest
 import ar.com.ingenieriaalimentacion.data.profile.dto.UpdateProfileRequest
+import ar.com.ingenieriaalimentacion.data.profile.dto.WithdrawEstablishmentsRequest
 import ar.com.ingenieriaalimentacion.data.profile.local.CurrentEstablishmentLocalStore
 import ar.com.ingenieriaalimentacion.data.profile.local.EstablishmentLocalStore
 import ar.com.ingenieriaalimentacion.data.profile.mapper.toDomain
@@ -10,11 +13,13 @@ import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentAbsenceEr
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentAbsenceNotice
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentRequestError
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
+import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithdrawalError
 import ar.com.ingenieriaalimentacion.domain.model.profile.PagedEstablishments
 import ar.com.ingenieriaalimentacion.domain.model.profile.Profile
 import ar.com.ingenieriaalimentacion.domain.model.profile.ProfileError
 import ar.com.ingenieriaalimentacion.domain.model.profile.UpdateProfile
 import ar.com.ingenieriaalimentacion.domain.repository.ProfileRepository
+import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ResponseException
 import io.ktor.http.HttpStatusCode
@@ -88,6 +93,42 @@ class ProfileRepositoryImpl(
         runCatching {
             api.requestEstablishmentAccess(RequestEstablishmentsRequest(ids)).map { it.toDomain() }
         }.recoverCatching { throw EstablishmentRequestFailure(mapRequestError(it), it) }
+            .onSuccess { created -> mergeIntoCache(created) }
+
+    override suspend fun subscribeToEstablishments(
+        ids: List<String>,
+    ): Result<List<EstablishmentWithStatus>> =
+        runCatching {
+            api.subscribeToEstablishments(RequestEstablishmentsRequest(ids)).map { it.toDomain() }
+        }.recoverCatching { throw EstablishmentRequestFailure(mapRequestError(it), it) }
+            .onSuccess { subscribed -> mergeIntoCache(subscribed) }
+
+    override suspend fun withdrawFromEstablishment(establishmentId: String): Result<Unit> =
+        runCatching {
+            api.withdrawEstablishmentAccess(WithdrawEstablishmentsRequest(listOf(establishmentId)))
+        }.recoverCatching { throw EstablishmentWithdrawalFailure(mapWithdrawalError(it), it) }
+            .onSuccess { forgetEstablishment(establishmentId) }
+            .map { }
+
+    override suspend fun unsubscribeFromEstablishments(ids: List<String>): Result<Unit> =
+        runCatching { api.unsubscribeFromEstablishments(ids) }
+            .recoverCatching { throw EstablishmentWithdrawalFailure(mapWithdrawalError(it), it) }
+            .onSuccess { ids.forEach { id -> forgetEstablishment(id) } }
+
+    /**
+     * Upserts freshly created links into the cache. [getMyEstablishments] is cache-first, so
+     * without this a new request or subscription would not show until the next refresh.
+     */
+    private suspend fun mergeIntoCache(created: List<EstablishmentWithStatus>) {
+        val createdIds = created.map { it.id }.toSet()
+        local.replaceAll(local.getAll().filterNot { it.id in createdIds } + created)
+    }
+
+    /** Drops a link the user left, and deselects it if it was the current establishment. */
+    private suspend fun forgetEstablishment(establishmentId: String) {
+        local.replaceAll(local.getAll().filterNot { cached -> cached.id == establishmentId })
+        if (currentEstablishment.get() == establishmentId) currentEstablishment.set(null)
+    }
 
     override suspend fun notifyEstablishmentAbsence(
         notice: EstablishmentAbsenceNotice,
@@ -99,6 +140,7 @@ class ProfileRepositoryImpl(
                     formattedAddress = notice.formattedAddress,
                     city = notice.city,
                     province = notice.province,
+                    characterization = notice.characterization?.toDto(),
                 ),
             )
         }.recoverCatching { throw EstablishmentAbsenceFailure(mapAbsenceError(it), it) }
@@ -125,13 +167,27 @@ class ProfileRepositoryImpl(
         else -> EstablishmentRequestError.Unknown(t)
     }
 
-    private fun mapAbsenceError(t: Throwable): EstablishmentAbsenceError = when (t) {
+    private fun mapWithdrawalError(t: Throwable): EstablishmentWithdrawalError = when (t) {
+        is ClientRequestException -> when (t.response.status) {
+            HttpStatusCode.Unauthorized -> EstablishmentWithdrawalError.Unauthorized
+            HttpStatusCode.Forbidden -> EstablishmentWithdrawalError.Forbidden
+            HttpStatusCode.NotFound -> EstablishmentWithdrawalError.EstablishmentNotFound
+            HttpStatusCode.Conflict -> EstablishmentWithdrawalError.NotWithdrawable
+            else -> EstablishmentWithdrawalError.Network
+        }
+        is ResponseException -> EstablishmentWithdrawalError.Network
+        else -> EstablishmentWithdrawalError.Unknown(t)
+    }
+
+    private suspend fun mapAbsenceError(t: Throwable): EstablishmentAbsenceError = when (t) {
         is ClientRequestException -> when (t.response.status) {
             HttpStatusCode.Unauthorized -> EstablishmentAbsenceError.Unauthorized
             HttpStatusCode.Forbidden -> EstablishmentAbsenceError.Forbidden
             HttpStatusCode.BadRequest,
             HttpStatusCode.UnprocessableEntity,
-            -> EstablishmentAbsenceError.Validation
+            -> EstablishmentAbsenceError.Validation(
+                field = runCatching { t.response.body<ValidationProblem>() }.getOrNull()?.field,
+            )
 
             else -> EstablishmentAbsenceError.Network
         }
@@ -147,4 +203,7 @@ class EstablishmentRequestFailure(val error: EstablishmentRequestError, cause: T
     Exception(error.toString(), cause)
 
 class EstablishmentAbsenceFailure(val error: EstablishmentAbsenceError, cause: Throwable?) :
+    Exception(error.toString(), cause)
+
+class EstablishmentWithdrawalFailure(val error: EstablishmentWithdrawalError, cause: Throwable?) :
     Exception(error.toString(), cause)

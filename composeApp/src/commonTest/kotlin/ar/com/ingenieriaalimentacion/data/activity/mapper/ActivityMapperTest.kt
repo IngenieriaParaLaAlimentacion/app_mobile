@@ -3,11 +3,12 @@ package ar.com.ingenieriaalimentacion.data.activity.mapper
 import ar.com.ingenieriaalimentacion.data.activity.dto.PaginatedActivityResponse
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.test.assertNull
+import kotlinx.serialization.json.Json
 
 class ActivityMapperTest {
 
@@ -17,7 +18,7 @@ class ActivityMapperTest {
         {
             "type": "subject",
             "occurred_at": "2026-06-01T12:00:00Z",
-            "subject": { "id": "subj-1", "dni": 42, "name": "Ana", "last_name": "García", "sex": "female" }
+            "subject": { "id": "subj-1", "dni": 42, "name": "Ana", "last_name": "García", "birth_date":"1990-01-01","sex": "female" }
         }
     """.trimIndent()
 
@@ -92,13 +93,26 @@ class ActivityMapperTest {
     }
 
     @Test
-    fun `an unknown type throws`() {
-        val malformed = """
+    fun `a food item this build does not model is skipped, not thrown on`() {
+        // The hardening guard: `/me/activity` gained food_intake/food_outflow, and an already
+        // installed build must render the feed partially rather than crash on an unknown type.
+        val foodIntake = """
+            {
+                "type": "food_intake",
+                "occurred_at": "2026-06-01T12:00:00Z",
+                "food_intake": { "id": "fi-1" }
+            }
+        """.trimIndent()
+
+        assertNull(page(foodIntake).items.single().toParsedEntry())
+    }
+
+    @Test
+    fun `an unknown type returns null rather than throwing`() {
+        val unknown = """
             { "type": "unknown", "occurred_at": "2026-06-01T12:00:00Z" }
         """.trimIndent()
 
-        assertFailsWith<IllegalStateException> {
-            page(malformed).items.single().toParsedEntry()
-        }
+        assertNull(page(unknown).items.single().toParsedEntry())
     }
 }

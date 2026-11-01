@@ -1,0 +1,3 @@
+-- v8 -> v9: FoodMovement cached intake payload now carries originType/isRecurring.
+-- Read-through only; refresh from /users/me/activity when online.
+DELETE FROM CachedActivityItem WHERE type = 'FOOD_INTAKE';

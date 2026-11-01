@@ -2,14 +2,25 @@ package ar.com.ingenieriaalimentacion.di
 
 import ar.com.ingenieriaalimentacion.data.activity.local.ActivityLocalStore
 import ar.com.ingenieriaalimentacion.data.activity.local.DefaultActivityLocalStore
+import ar.com.ingenieriaalimentacion.data.recipe.RecipeRepositoryImpl
+import ar.com.ingenieriaalimentacion.domain.repository.RecipeRepository
 import ar.com.ingenieriaalimentacion.data.auth.AuthRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.auth.storage.TokenStoreSessionManager
 import ar.com.ingenieriaalimentacion.data.device.DeviceIdProvider
 import ar.com.ingenieriaalimentacion.data.establishment.EstablishmentRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.establishment.characterization.EstablishmentCharacterizationRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.food.FoodCatalogRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.food.EstablishmentFoodMovementRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.food.FoodIntakeRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.food.ReceiptIntakeRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.food.FoodOutflowRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.food.FoodMovementHistoryRepositoryImpl
+import ar.com.ingenieriaalimentacion.data.food.FoodStockRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.measurement.MeasurementHistoryRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.measurement.MeasurementRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.measurement.local.DefaultMeasurementLocalStore
 import ar.com.ingenieriaalimentacion.data.measurement.local.MeasurementLocalStore
+import ar.com.ingenieriaalimentacion.data.notification.PushDeviceRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.profile.ProfileRepositoryImpl
 import ar.com.ingenieriaalimentacion.data.profile.local.CurrentEstablishmentLocalStore
 import ar.com.ingenieriaalimentacion.data.profile.local.DefaultCurrentEstablishmentLocalStore
@@ -33,8 +44,17 @@ import ar.com.ingenieriaalimentacion.data.survey.local.SurveyResponseEditLocalSt
 import ar.com.ingenieriaalimentacion.data.survey.local.SurveyResponseLocalStore
 import ar.com.ingenieriaalimentacion.domain.repository.AuthRepository
 import ar.com.ingenieriaalimentacion.domain.repository.EstablishmentRepository
+import ar.com.ingenieriaalimentacion.domain.repository.EstablishmentCharacterizationRepository
+import ar.com.ingenieriaalimentacion.domain.repository.FoodCatalogRepository
+import ar.com.ingenieriaalimentacion.domain.repository.EstablishmentFoodMovementRepository
+import ar.com.ingenieriaalimentacion.domain.repository.FoodIntakeRepository
+import ar.com.ingenieriaalimentacion.domain.repository.ReceiptIntakeRepository
+import ar.com.ingenieriaalimentacion.domain.repository.FoodOutflowRepository
+import ar.com.ingenieriaalimentacion.domain.repository.FoodMovementHistoryRepository
+import ar.com.ingenieriaalimentacion.domain.repository.FoodStockRepository
 import ar.com.ingenieriaalimentacion.domain.repository.MeasurementHistoryRepository
 import ar.com.ingenieriaalimentacion.domain.repository.ProfileRepository
+import ar.com.ingenieriaalimentacion.domain.repository.PushDeviceRepository
 import ar.com.ingenieriaalimentacion.domain.repository.MeasurementRepository
 import ar.com.ingenieriaalimentacion.domain.repository.RegistrationRepository
 import ar.com.ingenieriaalimentacion.domain.repository.SessionManager
@@ -53,6 +73,7 @@ import org.koin.dsl.module
 import kotlin.time.Clock
 
 val repositoriesModule = module {
+    single<RecipeRepository> { RecipeRepositoryImpl(get()) }
     single<Json>(named("auth")) {
         Json { ignoreUnknownKeys = true; isLenient = true; encodeDefaults = true }
     }
@@ -68,6 +89,9 @@ val repositoriesModule = module {
         )
     }
     single<EstablishmentRepository> { EstablishmentRepositoryImpl(api = get()) }
+    single<EstablishmentCharacterizationRepository> {
+        EstablishmentCharacterizationRepositoryImpl(api = get())
+    }
     single<RegistrationRepository> { RegistrationRepositoryImpl(api = get()) }
     single<SubjectLocalStore> {
         DefaultSubjectLocalStore(queries = get(), now = { Clock.System.now().toEpochMilliseconds() })
@@ -126,6 +150,7 @@ val repositoriesModule = module {
             api = get(),
             local = get(),
             subjects = get(),
+            surveys = get(),
             idGenerator = get(),
             json = get(named("auth")),
             now = { Clock.System.now().toEpochMilliseconds() },
@@ -139,10 +164,25 @@ val repositoriesModule = module {
             api = get(),
             local = get(),
             responses = get(),
+            surveys = get(),
             idGenerator = get(),
             json = get(named("auth")),
             now = { Clock.System.now().toEpochMilliseconds() },
         )
+    }
+    single<FoodCatalogRepository> { FoodCatalogRepositoryImpl(api = get()) }
+    single<FoodIntakeRepository> { FoodIntakeRepositoryImpl(api = get()) }
+    single<ReceiptIntakeRepository> { ReceiptIntakeRepositoryImpl(api = get()) }
+    single<FoodOutflowRepository> { FoodOutflowRepositoryImpl(api = get()) }
+    single<FoodStockRepository> { FoodStockRepositoryImpl(api = get()) }
+    single<EstablishmentFoodMovementRepository> {
+        EstablishmentFoodMovementRepositoryImpl(api = get())
+    }
+    single<PushDeviceRepository> {
+        PushDeviceRepositoryImpl(api = get(), deviceIdProvider = get(), tokenProvider = get())
+    }
+    single<FoodMovementHistoryRepository> {
+        FoodMovementHistoryRepositoryImpl(api = get(), cache = get(), json = get(named("auth")))
     }
     single<SurveyResponseHistoryRepository> {
         SurveyResponseHistoryRepositoryImpl(

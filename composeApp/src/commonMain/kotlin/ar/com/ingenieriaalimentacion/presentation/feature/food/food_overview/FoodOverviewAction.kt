@@ -1,0 +1,26 @@
+package ar.com.ingenieriaalimentacion.presentation.feature.food.food_overview
+
+import ar.com.ingenieriaalimentacion.domain.model.food.StockSortOrder
+
+sealed interface FoodOverviewAction {
+    data object RecipesClick : FoodOverviewAction
+    data object BackClick : FoodOverviewAction
+    data object IntakeClick : FoodOverviewAction
+    data object ReceiptIntakeClick : FoodOverviewAction
+    data object ReceiptSourceSheetDismiss : FoodOverviewAction
+    data object ReceiptCameraClick : FoodOverviewAction
+    data object ReceiptGalleryClick : FoodOverviewAction
+    data object OutflowClick : FoodOverviewAction
+    data object SeeAllMovementsClick : FoodOverviewAction
+    data class MovementClick(val movementId: String) : FoodOverviewAction
+    data object RetryAll : FoodOverviewAction
+    data object RetryStock : FoodOverviewAction
+    data object RetryMovements : FoodOverviewAction
+    data object SeeAllStockClick : FoodOverviewAction
+    data class CategorySelected(val categoryId: String?) : FoodOverviewAction
+    data class SortSelected(val sortOrder: StockSortOrder) : FoodOverviewAction
+    data object CategorySheetOpen : FoodOverviewAction
+    data object CategorySheetDismiss : FoodOverviewAction
+    data object SortSheetOpen : FoodOverviewAction
+    data object SortSheetDismiss : FoodOverviewAction
+}

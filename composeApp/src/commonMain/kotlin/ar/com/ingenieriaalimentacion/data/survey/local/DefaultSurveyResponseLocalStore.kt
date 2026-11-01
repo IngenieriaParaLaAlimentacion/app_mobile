@@ -3,9 +3,9 @@ package ar.com.ingenieriaalimentacion.data.survey.local
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import ar.com.ingenieriaalimentacion.data.db.PendingSurveyResponseQueries
-import ar.com.ingenieriaalimentacion.data.survey.mapper.toDbString
 import ar.com.ingenieriaalimentacion.data.survey.mapper.toDomain
 import ar.com.ingenieriaalimentacion.data.survey.mapper.toSurveyDbString
+import ar.com.ingenieriaalimentacion.data.survey.mapper.toDbString
 import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseConflict
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseUpload
 import ar.com.ingenieriaalimentacion.domain.model.survey.id
@@ -56,11 +56,16 @@ class DefaultSurveyResponseLocalStore(
             attemptCount = upload.attemptCount.toLong(),
             createdAt = upload.createdAt,
             updatedAt = upload.updatedAt,
+            responseNumber = upload.responseNumber?.toLong(),
         )
     }
 
     override suspend fun syncable(): List<SurveyResponseUpload> = withContext(dispatcher) {
         queries.selectSyncable().executeAsList().map { it.toDomain() }
+    }
+
+    override suspend fun awaitingNumberPolicy(): List<SurveyResponseUpload> = withContext(dispatcher) {
+        queries.selectAwaitingNumberPolicy().executeAsList().map { it.toDomain() }
     }
 
     override suspend fun markSyncing(localId: String): Unit = withContext(dispatcher) {
@@ -83,6 +88,11 @@ class DefaultSurveyResponseLocalStore(
                 updatedAt = now(),
                 localId = localId,
             )
+        }
+
+    override suspend fun updateResponseNumber(localId: String, responseNumber: Int): Unit =
+        withContext(dispatcher) {
+            queries.updateResponseNumber(responseNumber.toLong(), now(), localId)
         }
 
     override suspend fun delete(localId: String): Unit = withContext(dispatcher) {

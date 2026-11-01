@@ -6,8 +6,11 @@ import ar.com.ingenieriaalimentacion.data.profile.dto.PaginatedAvailableResponse
 import ar.com.ingenieriaalimentacion.data.profile.dto.ProfileResponse
 import ar.com.ingenieriaalimentacion.data.profile.dto.RequestEstablishmentsRequest
 import ar.com.ingenieriaalimentacion.data.profile.dto.UpdateProfileRequest
+import ar.com.ingenieriaalimentacion.data.profile.dto.WithdrawEstablishmentsRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.plugins.expectSuccess
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.patch
@@ -54,9 +57,40 @@ class ProfileApi(private val client: HttpClient) {
             setBody(body)
         }.body()
 
-    /** 201 on success; the created request's body is irrelevant to the app. */
+    suspend fun withdrawEstablishmentAccess(
+        body: WithdrawEstablishmentsRequest,
+    ): List<EstablishmentWithStatusResponse> =
+        client.patch("api/v1/users/me/establishments/withdraw") {
+            contentType(ContentType.Application.Json)
+            setBody(body)
+        }.body()
+
+    /**
+     * Admin-only (admin/superadmin). 201 with the links in request order, all approved.
+     * Idempotent (already-subscribed ids are skipped) and all-or-nothing (404 if any id is unknown).
+     */
+    suspend fun subscribeToEstablishments(
+        body: RequestEstablishmentsRequest,
+    ): List<EstablishmentWithStatusResponse> =
+        client.post("api/v1/users/me/establishments/subscriptions") {
+            contentType(ContentType.Application.Json)
+            setBody(body)
+        }.body()
+
+    /** Admin-only. 204; the links are deleted (not marked withdrawn). Unlinked ids are skipped. */
+    suspend fun unsubscribeFromEstablishments(establishmentIds: List<String>) {
+        client.delete("api/v1/users/me/establishments/subscriptions") {
+            establishmentIds.forEach { parameter("establishment_ids", it) }
+        }
+    }
+
+    /**
+     * 201 on success; the created request's body is irrelevant to the app. Nothing is read from
+     * the response, so without `expectSuccess` a 4xx would pass as a success on the authed client.
+     */
     suspend fun notifyEstablishmentAbsence(body: EstablishmentAbsenceRequest) {
         client.post("api/v1/establishments/requests") {
+            expectSuccess = true
             contentType(ContentType.Application.Json)
             setBody(body)
         }

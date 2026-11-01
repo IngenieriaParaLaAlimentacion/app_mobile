@@ -5,9 +5,15 @@ import ar.com.ingenieriaalimentacion.data.survey.dto.SurveyResponseActivitySubje
 import ar.com.ingenieriaalimentacion.data.survey.dto.SurveyResponseActivitySummaryResponse
 import ar.com.ingenieriaalimentacion.data.survey.dto.SurveyResponseActivitySurveyResponse
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseTarget
+import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseUpload
+import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseTargetRef
+import ar.com.ingenieriaalimentacion.domain.model.survey.needsRequiredResponseNumber
+import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class SurveyResponseHistoryMapperTest {
 
@@ -15,6 +21,7 @@ class SurveyResponseHistoryMapperTest {
         responseTarget: String? = null,
         establishment: SurveyResponseActivityEstablishmentResponse? = null,
         subject: SurveyResponseActivitySubjectResponse? = null,
+        responseNumber: Int? = null,
     ) = SurveyResponseActivitySummaryResponse(
         id = "r1",
         eventAt = "2026-01-01T00:00:00Z",
@@ -22,6 +29,7 @@ class SurveyResponseHistoryMapperTest {
         responseTarget = responseTarget,
         establishment = establishment,
         subject = subject,
+        responseNumber = responseNumber,
     )
 
     private val establishment =
@@ -70,6 +78,36 @@ class SurveyResponseHistoryMapperTest {
 
         assertEquals(SurveyResponseTarget.Anonymous, summary.responseTarget)
         assertNull(summary.targetLabel)
+    }
+
+    @Test
+    fun `response number is retained in history summary`() {
+        assertEquals(42, item(responseNumber = 42).toSummary().responseNumber)
+    }
+
+    @Test
+    fun `local history retains number and narrows required-number recovery`() {
+        val base = SurveyResponseUpload(
+            localId = "local-1",
+            surveyId = "sv-1",
+            surveyName = "Encuesta",
+            target = ResponseTargetRef.Anonymous,
+            answersJson = "{}",
+            eventAt = "2026-01-01T00:00:00Z",
+            syncState = SyncState.Failed,
+            canonicalId = null,
+            errorMessage = "Falta el número de respuesta.",
+            conflict = null,
+            attemptCount = 1,
+            createdAt = 1L,
+            updatedAt = 2L,
+            responseNumber = null,
+        ).toSummary()
+
+        assertTrue(base.needsRequiredResponseNumber)
+        assertFalse(base.copy(errorMessage = "Otro error").needsRequiredResponseNumber)
+        assertFalse(base.copy(responseNumber = 9).needsRequiredResponseNumber)
+        assertEquals(9, base.copy(responseNumber = 9).responseNumber)
     }
 
     @Test

@@ -4,18 +4,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,18 +29,26 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ar.com.ingenieriaalimentacion.app.LocalOuterNavController
 import ar.com.ingenieriaalimentacion.core.design_system.components.EmptyState
 import ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlBadgeTone
 import ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlStatusBadge
+import ar.com.ingenieriaalimentacion.core.design_system.components.banner.AlBannerVariant
+import ar.com.ingenieriaalimentacion.core.design_system.components.banner.AlInlineBanner
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButtonVariant
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlCardIconButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.card.AlInfoCard
 import ar.com.ingenieriaalimentacion.core.design_system.components.header.AlScreenHeader
+import ar.com.ingenieriaalimentacion.core.design_system.components.header.AlSectionLabel
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
+import ar.com.ingenieriaalimentacion.core.design_system.components.sheet.AlBottomSheet
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
+import ar.com.ingenieriaalimentacion.presentation.navigation.ESTABLISHMENTS_CHANGED_RESULT
+import ar.com.ingenieriaalimentacion.presentation.navigation.RefreshOnNavResult
+import ar.com.ingenieriaalimentacion.presentation.navigation.FOOD_MOVEMENT_CREATED_RESULT
 import ingenieria_alimentacion.composeapp.generated.resources.Res
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_alert_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_check_circle
@@ -48,10 +56,13 @@ import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_doc_li
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_document_2_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_down_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_location_line
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_package_2_line
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_package_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_ruler_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_time
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_upload_line
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_user_3_line
+import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_wardrobe_line
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.vectorResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -62,6 +73,20 @@ fun HomeScreenRoot(
     navigate: (HomeDestination) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    // MyEstablishments lives on the outer nav, so its result lands on the AuthedShell entry,
+    // not on this tab's inner entry. See CLAUDE.md "Navigate-back-with-result".
+    RefreshOnNavResult(
+        savedStateHandle = LocalOuterNavController.current.currentBackStackEntry?.savedStateHandle,
+        key = ESTABLISHMENTS_CHANGED_RESULT,
+    ) {
+        viewModel.reloadEstablishments()
+    }
+
+    RefreshOnNavResult(
+        savedStateHandle = LocalOuterNavController.current.currentBackStackEntry?.savedStateHandle,
+        key = FOOD_MOVEMENT_CREATED_RESULT,
+    ) { viewModel.refreshFoodMovements() }
 
     LaunchedEffect(state.destination) {
         state.destination?.let {
@@ -91,6 +116,9 @@ fun HomeScreen(
                 enabled = state.establishmentOptions.isNotEmpty(),
                 onClick = { onAction(HomeAction.EstablishmentPickerOpen) },
             )
+            if (state.showsCharacterizationPending) {
+                CharacterizationPendingRow(onClick = { onAction(HomeAction.CompleteCharacterizationClick) })
+            }
 
             Column(
                 modifier = Modifier
@@ -114,7 +142,7 @@ fun HomeScreen(
         }
 
         if (state.showEstablishmentPicker) {
-            ModalBottomSheet(
+            AlBottomSheet(
                 onDismissRequest = { onAction(HomeAction.EstablishmentPickerDismiss) },
                 sheetState = sheetState,
             ) {
@@ -175,6 +203,24 @@ private fun EstablishmentTopBar(
             )
         }
     }
+}
+
+/**
+ * "Pendiente de ficha" under the establishment name, with its own tap target so completing the
+ * ficha never opens the establishment picker by mistake.
+ */
+@Composable
+private fun CharacterizationPendingRow(onClick: () -> Unit) {
+    Text(
+        text = "Pendiente de ficha · Completar",
+        style = AlTheme.typography.caption.copy(fontWeight = FontWeight.Medium),
+        color = AlTheme.colors.warning,
+        textAlign = TextAlign.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = AlTheme.spacing.lg, vertical = AlTheme.spacing.xs),
+    )
 }
 
 @Composable
@@ -240,35 +286,55 @@ private fun SyncStatusCard(sync: SyncStatusUi, onAction: (HomeAction) -> Unit) {
     }
 }
 
+internal class QuickAction(
+    val icon: DrawableResource,
+    val label: String,
+    val action: HomeAction,
+)
+
+// ic_mingcute_wardrobe_line (a despensa/cupboard) represents the unified food area; package_*
+// remain reserved for intake/outflow history rows so the entry point cannot look like a movement.
+internal val QUICK_ACTIONS = listOf(
+    QuickAction(Res.drawable.ic_mingcute_ruler_line, "Medición", HomeAction.NewMeasurementClick),
+    QuickAction(Res.drawable.ic_mingcute_user_3_line, "Sujeto", HomeAction.NewSubjectClick),
+    QuickAction(Res.drawable.ic_mingcute_doc_line, "Encuesta", HomeAction.RespondSurveyClick),
+    QuickAction(Res.drawable.ic_mingcute_wardrobe_line, "Alimentos", HomeAction.FoodOverviewClick),
+)
+
+private const val QUICK_ACTION_COLUMNS = 2
+
 @Composable
 private fun QuickActions(state: HomeState, onAction: (HomeAction) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
-        ) {
-            AlCardIconButton(
-                modifier = Modifier.weight(1f),
-                icon = Res.drawable.ic_mingcute_ruler_line,
-                label = "Medición",
-                onClick = { onAction(HomeAction.NewMeasurementClick) },
-            )
-            AlCardIconButton(
-                modifier = Modifier.weight(1f),
-                icon = Res.drawable.ic_mingcute_user_3_line,
-                label = "Sujeto",
-                onClick = { onAction(HomeAction.NewSubjectClick) },
-            )
-            AlCardIconButton(
-                modifier = Modifier.weight(1f),
-                icon = Res.drawable.ic_mingcute_doc_line,
-                label = "Encuesta",
-                onClick = { onAction(HomeAction.RespondSurveyClick) },
-            )
+        // Spacers preserve equal tile widths if the action count becomes odd.
+        Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+            QUICK_ACTIONS.chunked(QUICK_ACTION_COLUMNS).forEach { row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
+                ) {
+                    row.forEach { quickAction ->
+                        AlCardIconButton(
+                            modifier = Modifier.weight(1f),
+                            icon = quickAction.icon,
+                            label = quickAction.label,
+                            onClick = { onAction(quickAction.action) },
+                            enabled = state.quickActionsEnabled,
+                        )
+                    }
+                    repeat(QUICK_ACTION_COLUMNS - row.size) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+
+        state.quickActionsHint?.let { hint ->
+            AlInlineBanner(message = hint, variant = AlBannerVariant.Warning)
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
-            SectionLabel("HOY")
+            AlSectionLabel("Hoy")
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -321,19 +387,10 @@ private fun StatCell(value: String, label: String, modifier: Modifier = Modifier
 @Composable
 private fun RecentActivity(recent: List<RecentActivityUi>, onAction: (HomeAction) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            SectionLabel("ACTIVIDAD RECIENTE")
-            Text(
-                text = "Ver todo",
-                style = AlTheme.typography.caption.copy(fontWeight = FontWeight.Medium),
-                color = AlTheme.colors.textBase,
-                modifier = Modifier.clickable { onAction(HomeAction.SeeAllActivityClick) },
-            )
-        }
+        AlSectionLabel(
+            text = "Actividad reciente",
+            onSeeAll = { onAction(HomeAction.SeeAllActivityClick) },
+        )
         if (recent.isEmpty()) {
             EmptyState(
                 title = "Sin actividad",
@@ -341,38 +398,42 @@ private fun RecentActivity(recent: List<RecentActivityUi>, onAction: (HomeAction
                 modifier = Modifier.padding(vertical = AlTheme.spacing.lg),
             )
         } else {
-            recent.forEach { item ->
-                AlListRow(
-                    title = item.title,
-                    subtitle = item.subtitle,
-                    value = item.value,
-                    leadingIcon = item.kind.icon(),
-                    leadingIconTint = item.badgeTone.color(),
-                    onClick = { onAction(HomeAction.SeeAllActivityClick) },
-                    showChevron = false,
-                    horizontalPadding = 0.dp,
-                    trailing = {
-                        item.badgeText?.let { AlStatusBadge(text = it, tone = item.badgeTone) }
-                    },
-                )
+            // An inner Column with no arrangement: the section's `sm` spacing is meant to
+            // separate the header from the list, not the rows from each other. Applied between
+            // rows it stacks on top of the divider each AlListRow already draws underneath
+            // itself, leaving the row's text sitting high between two hairlines.
+            Column {
+                recent.forEach { item ->
+                    AlListRow(
+                        title = item.title,
+                        subtitle = item.subtitle,
+                        value = item.value,
+                        leadingIcon = item.kind.icon(),
+                        leadingIconTint = item.badgeTone.color(),
+                        onClick = { onAction(HomeAction.SeeAllActivityClick) },
+                        showChevron = false,
+                        horizontalPadding = 0.dp,
+                        trailing = {
+                            item.badgeText?.let {
+                                AlStatusBadge(text = it, tone = item.badgeTone)
+                            }
+                        },
+                    )
+                }
             }
         }
     }
-}
-
-@Composable
-private fun SectionLabel(text: String) {
-    Text(
-        text = text,
-        style = AlTheme.typography.caption.copy(fontWeight = FontWeight.Medium),
-        color = AlTheme.colors.textMuted,
-    )
 }
 
 private fun RecentActivityUi.Kind.icon(): DrawableResource = when (this) {
     RecentActivityUi.Kind.Subject -> Res.drawable.ic_mingcute_user_3_line
     RecentActivityUi.Kind.Measurement -> Res.drawable.ic_mingcute_ruler_line
     RecentActivityUi.Kind.SurveyResponse -> Res.drawable.ic_mingcute_document_2_line
+    // Movement rows use package directions, distinct from the cupboard used by the food entry point.
+    // Same mapping as MovementRow in the Alimentos history: the open carton is what arrives, the
+    // sealed parcel is what leaves. A movement must not change icon depending on where it is read.
+    RecentActivityUi.Kind.FoodIntake -> Res.drawable.ic_mingcute_package_line
+    RecentActivityUi.Kind.FoodOutflow -> Res.drawable.ic_mingcute_package_2_line
 }
 
 @Composable

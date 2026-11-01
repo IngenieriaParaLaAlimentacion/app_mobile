@@ -6,6 +6,10 @@ import kotlinx.serialization.Serializable
 @Serializable
 sealed class Route {
     @Serializable
+    @SerialName("recipes")
+    data object Recipes : Route()
+
+    @Serializable
     @SerialName("get_started")
     data object GetStarted : Route()
 
@@ -31,6 +35,40 @@ sealed class Route {
     data class CreateSubject(
         val prefillDni: String = "",
         val returnsResult: Boolean = false,
+    ) : Route()
+
+    @Serializable
+    @SerialName("food_overview")
+    data object FoodOverview : Route()
+
+    @Serializable
+    @SerialName("create_food_intake")
+    data object CreateFoodIntake : Route()
+
+    @Serializable
+    @SerialName("receipt_food_intake")
+    data class ReceiptFoodIntake(val source: String) : Route()
+
+    @Serializable
+    @SerialName("create_food_outflow")
+    data object CreateFoodOutflow : Route()
+
+    /** Stock of the *currently selected* establishment — the id is resolved at screen entry from
+     *  `CurrentEstablishmentLocalStore`, never passed as a route argument, so a deep link or a
+     *  restored back stack can never pin a stale establishment. */
+    @Serializable
+    @SerialName("food_stock")
+    data object FoodStock : Route()
+
+    @Serializable
+    @SerialName("establishment_food_movement_history")
+    data object EstablishmentFoodMovementHistory : Route()
+
+    @Serializable
+    @SerialName("establishment_food_movement_detail")
+    data class EstablishmentFoodMovementDetail(
+        val establishmentId: String,
+        val movementId: String,
     ) : Route()
 
     @Serializable
@@ -95,7 +133,7 @@ sealed class Route {
 
     @Serializable
     @SerialName("request_establishment")
-    data object RequestEstablishment : Route()
+    data class RequestEstablishment(val role: String) : Route()
 
     @Serializable
     @SerialName("notify_establishment")
@@ -103,7 +141,12 @@ sealed class Route {
 
     @Serializable
     @SerialName("my_establishments")
-    data object MyEstablishments : Route()
+    data class MyEstablishments(val role: String) : Route()
+
+    /** View and edit an approved establishment's ficha; [establishmentName] titles the screen. */
+    @Serializable
+    @SerialName("edit_characterization")
+    data class EditCharacterization(val establishmentId: String, val establishmentName: String) : Route()
 
     @Serializable
     @SerialName("authed_shell")
@@ -135,4 +178,8 @@ sealed class Route {
     @Serializable
     @SerialName("survey_response_edit")
     data class SurveyResponseEdit(val surveyId: String, val responseId: String) : Route()
+
+    @Serializable
+    @SerialName("survey_response_number_fix")
+    data class SurveyResponseNumberFix(val localId: String, val surveyName: String) : Route()
 }

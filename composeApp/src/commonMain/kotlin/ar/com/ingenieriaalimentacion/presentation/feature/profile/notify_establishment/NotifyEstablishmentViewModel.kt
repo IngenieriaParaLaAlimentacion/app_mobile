@@ -3,6 +3,7 @@ package ar.com.ingenieriaalimentacion.presentation.feature.profile.notify_establ
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ar.com.ingenieriaalimentacion.core.validation.Rules
+import ar.com.ingenieriaalimentacion.core.validation.TextFieldState
 import ar.com.ingenieriaalimentacion.core.validation.Validator
 import ar.com.ingenieriaalimentacion.core.validation.onChange
 import ar.com.ingenieriaalimentacion.core.validation.onFocus
@@ -11,6 +12,7 @@ import ar.com.ingenieriaalimentacion.data.profile.EstablishmentAbsenceFailure
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentAbsenceError
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentAbsenceNotice
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.NotifyEstablishmentAbsenceUseCase
+import ar.com.ingenieriaalimentacion.presentation.feature.establishment.characterization.common.CharacterizationFormReducer
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -63,10 +65,28 @@ class NotifyEstablishmentViewModel(
             is NotifyEstablishmentAction.ProvinceFocusChanged ->
                 _state.update { it.copy(province = it.province.onFocus(action.focused, optionalFieldValidator)) }
 
-            NotifyEstablishmentAction.SubmitClick -> submit()
+            is NotifyEstablishmentAction.Characterization -> _state.update {
+                it.copy(
+                    characterization = CharacterizationFormReducer.reduce(it.characterization, action.action),
+                    submitError = null,
+                    hasInvalidCharacterization = false,
+                )
+            }
 
-            NotifyEstablishmentAction.BackClick ->
-                _state.update { it.copy(destination = NotifyEstablishmentDestination.Back) }
+            NotifyEstablishmentAction.NextClick -> next()
+            NotifyEstablishmentAction.SubmitClick -> submit(withCharacterization = true)
+            NotifyEstablishmentAction.AnswerLaterClick -> submit(withCharacterization = false)
+
+            NotifyEstablishmentAction.BackClick -> _state.update {
+                if (it.isSubmitting) {
+                    it
+                } else if (it.step == NotifyEstablishmentStep.Characterization) {
+                    // Everything typed in either step is kept.
+                    it.copy(step = NotifyEstablishmentStep.Basics, submitError = null)
+                } else {
+                    it.copy(destination = NotifyEstablishmentDestination.Back)
+                }
+            }
         }
     }
 
@@ -74,26 +94,52 @@ class NotifyEstablishmentViewModel(
         _state.update { it.copy(destination = null) }
     }
 
-    private fun submit() {
+    private fun validateBasics(state: NotifyEstablishmentState) = state.copy(
+        name = state.name.showError(nameValidator),
+        address = state.address.showError(addressValidator),
+        city = state.city.showError(optionalFieldValidator),
+        province = state.province.showError(optionalFieldValidator),
+    )
+
+    private fun next() {
+        val validated = validateBasics(_state.value)
+        _state.value = if (validated.isFormValid) {
+            validated.copy(step = NotifyEstablishmentStep.Characterization, submitError = null)
+        } else {
+            validated
+        }
+    }
+
+    private fun submit(withCharacterization: Boolean) {
         val current = _state.value
         if (current.isSubmitting) return
 
-        val validated = current.copy(
-            name = current.name.showError(nameValidator),
-            address = current.address.showError(addressValidator),
-            city = current.city.showError(optionalFieldValidator),
-            province = current.province.showError(optionalFieldValidator),
-        )
-        _state.value = validated
-        if (!validated.isFormValid) return
+        // Re-checked here too: a server error may have sent the user back with a field to fix.
+        val validated = validateBasics(current)
+        if (!validated.isFormValid) {
+            _state.value = validated.copy(step = NotifyEstablishmentStep.Basics)
+            return
+        }
 
-        _state.update { it.copy(isSubmitting = true, submitError = null) }
+        val characterization = if (withCharacterization) {
+            val form = CharacterizationFormReducer.showAllErrors(validated.characterization)
+            if (!form.isValid) {
+                _state.value = validated.copy(characterization = form, hasInvalidCharacterization = true)
+                return
+            }
+            CharacterizationFormReducer.toCharacterization(form)
+        } else {
+            null
+        }
+
+        _state.value = validated.copy(isSubmitting = true, submitError = null, hasInvalidCharacterization = false)
         viewModelScope.launch {
             val notice = EstablishmentAbsenceNotice(
                 name = validated.name.value,
                 formattedAddress = validated.address.value,
                 city = validated.city.value,
                 province = validated.province.value,
+                characterization = characterization,
             )
             notifyAbsence(notice).fold(
                 onSuccess = {
@@ -105,13 +151,38 @@ class NotifyEstablishmentViewModel(
                     if (throwable is CancellationException) throw throwable
                     val error = (throwable as? EstablishmentAbsenceFailure)?.error
                         ?: EstablishmentAbsenceError.Unknown(throwable)
-                    _state.update { it.copy(isSubmitting = false, submitError = error) }
+                    _state.update { it.withServerError(error).copy(isSubmitting = false, submitError = error) }
                 },
             )
         }
     }
 
+    /**
+     * Routes a 422 to the input it names, without clearing anything: a ficha field stays on step 2,
+     * a name/address field sends the user back to step 1 with that input flagged.
+     */
+    private fun NotifyEstablishmentState.withServerError(error: EstablishmentAbsenceError): NotifyEstablishmentState {
+        val field = (error as? EstablishmentAbsenceError.Validation)?.field ?: return this
+        if (field.startsWith(CHARACTERIZATION_PREFIX)) {
+            return copy(
+                step = NotifyEstablishmentStep.Characterization,
+                characterization = CharacterizationFormReducer.withServerError(characterization, field),
+            )
+        }
+        val flag = { state: TextFieldState -> state.copy(error = SERVER_INVALID, forceShow = true, isFocused = false) }
+        val flagged = when (field) {
+            "name" -> copy(name = flag(name))
+            "formatted_address" -> copy(address = flag(address))
+            "city" -> copy(city = flag(city))
+            "province" -> copy(province = flag(province))
+            else -> return this
+        }
+        return flagged.copy(step = NotifyEstablishmentStep.Basics)
+    }
+
     private companion object {
         const val MAX_FIELD_LENGTH = 100
+        const val CHARACTERIZATION_PREFIX = "characterization."
+        const val SERVER_INVALID = "Este valor no es válido. Revisalo y volvé a enviar."
     }
 }

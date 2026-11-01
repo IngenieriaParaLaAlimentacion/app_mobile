@@ -1,0 +1,86 @@
+# 2. Talla y Peso
+
+## 2.1 Registrar un sujeto
+
+**Antes de empezar:** tené a mano los datos de la persona y buscala primero para evitar registrar dos veces a la misma persona.
+
+1. En Inicio, tocá **Sujeto**. También podés elegir **Crear sujeto nuevo** al buscar a alguien desde una medición.
+2. Ingresá el **DNI** sin puntos, **Nombre**, **Apellido** y **Fecha de nacimiento** en formato día/mes/año.
+3. Elegí **Sexo** y completá las opciones **Población rural** y **Población indígena** según corresponda.
+4. Tocá **Guardar** y verificá el aviso de guardado.
+5. Si llegaste desde la selección de una medición, continuá con el sujeto recién creado.
+
+La fecha de nacimiento no puede ser futura. Revisá los mensajes debajo de cada campo si el formulario no permite guardar. Si ya existe una persona con ese DNI, revisá el registro existente antes de crear otra.
+
+Si una carga local se reconcilia con una persona que ya estaba registrada, Historial muestra **Ya existía**. Revisá el resultado antes de repetir el alta.
+
+![Alta de un sujeto desde la app](assets/app-sujeto-alta.png)
+
+## 2.2 Buscar al sujeto y preparar la medición
+
+**Dónde:** app → Inicio → **Medición**.
+
+1. Tocá **Seleccionar sujeto**.
+2. Buscá por nombre o DNI y elegí la persona correcta.
+3. Confirmá el nombre y el DNI que aparecen en el encabezado del formulario.
+4. Si elegiste otra persona por error, tocá **Cambiar**.
+5. Revisá el establecimiento de la medición. Debe ser el lugar al que corresponde esta carga.
+
+La búsqueda de sujetos existentes consulta al servidor. En esta versión, haber abierto el listado antes no garantiza poder volver a buscar sin conexión. Seleccioná al sujeto con conexión antes de continuar la medición, o usá la creación de un sujeto desde el formulario cuando corresponda. Si aparece **No se pudieron cargar los sujetos**, recuperá conexión y tocá **Reintentar**.
+
+![Selección del sujeto por nombre o DNI](assets/app-sujeto-buscar.png)
+
+## 2.3 Cargar peso, talla y observaciones
+
+1. Completá **Peso (kg)** y **Talla (cm)**. No ingreses la talla en metros.
+2. Si hace falta, agregá una **Observación (opcional)** de hasta 500 caracteres.
+3. Revisá **Fecha de medición** y **Hora de medición**. Al abrir el formulario se completan con la fecha y hora actuales de Argentina (Buenos Aires). Si estás cargando una medición anterior, tocá cada campo, elegí cuándo se tomó y confirmá con **Aceptar**. La hora usa formato de 24 horas; podés alternar entre **Ingresar hora** y **Usar reloj**.
+4. Tocá **Guardar**.
+5. Comprobá **Medición guardada** y después el estado de sincronización.
+
+La fecha de medición no puede ser un día futuro. Registrá la fecha y hora de la toma, aunque la cargues o sincronices después. **Cancelar** cierra el selector sin aplicar cambios. Después de guardar, los selectores vuelven a la fecha y hora actuales para la próxima medición.
+
+El formulario controla campos vacíos y valores fuera del rango permitido. Corregí el valor señalado y volvé a guardar. Si falla el guardado local, conservá los datos del formulario para reintentar.
+
+![Formulario con fecha y hora de la medición anterior](assets/app-medicion-completa.png)
+
+![Calendario para seleccionar el día en que se tomó la medición](assets/app-medicion-fecha.png)
+
+![Selector de hora con alternativa para ingresarla por teclado](assets/app-medicion-hora.png)
+
+## 2.4 Revisar una medición que genera una alerta
+
+Si los valores ingresados generarían una alerta, la app muestra **Revisá las medidas** antes de guardarlos.
+
+1. Compará el peso, la talla y la fecha y hora del diálogo con los datos de la medición.
+2. Elegí **Corregir** si hay un error. Los datos permanecen en el formulario.
+3. Si los valores son los que querés registrar, elegí **Confirmar y guardar**.
+4. Revisá el aviso de guardado y su sincronización.
+
+Cerrar el diálogo o volver atrás no confirma la carga. Cambiar el sujeto, el comedor, las medidas o la fecha y hora obliga a revisar la nueva combinación antes de confirmar. Las medidas que no requieren esa revisión se guardan directamente.
+
+La alerta mostrada en esta instancia se calcula con los datos conocidos por la app. El resultado del registro sincronizado es el que podrá consultar el equipo en el sistema.
+
+![Confirmación de medidas antes del guardado](assets/app-medicion-confirmacion.png)
+
+## 2.5 Cargar sin conexión y comprobar la subida
+
+La app permite guardar sujetos y mediciones en el dispositivo y subirlos al recuperar conexión. No hace falta repetir la carga por el solo hecho de estar sin internet.
+
+| Aviso de Inicio | Qué hacer |
+|---|---|
+| **Todo sincronizado** | Las colas no muestran cargas pendientes. Consultá Historial si necesitás comprobar un registro concreto. |
+| **Sin conexión** y registros que «se subirán al reconectar» | Conservá el dispositivo y recuperá conectividad para subirlos. |
+| **Sin subir / Sincronizar** | Tocá **Sincronizar** y esperá el resultado. |
+| **Sincronizando…** | Esperá a que termine antes de dar por finalizado el trabajo. |
+| **Con error** | Abrí Historial, revisá la causa y usá la acción de reintento disponible. |
+
+En **Historial**, seleccioná el tipo de carga y revisá sus estados. Las mediciones conservan la fecha y hora elegidas, incluso si se guardaron sin conexión y se enviaron después. Se ordenan por el momento de la medición, por lo que una carga anterior puede aparecer más abajo en el historial. Una persona creada sin conexión debe sincronizarse antes que sus mediciones asociadas; la app coordina esa secuencia.
+
+![Medición guardada en el teléfono mientras no hay conexión](assets/app-pendiente-offline.png)
+
+![Registro sincronizado en el historial de mediciones](assets/app-mediciones-historial.png)
+
+No borres datos de la aplicación ni la reinstales para resolver una carga pendiente. Si el error persiste, comunicá al equipo qué registro y qué mensaje aparecen.
+
+La acción **Eliminar** de un historial local requiere especial cuidado: quitar una carga del teléfono no es un procedimiento para borrar una medición ya registrada en el sistema. No elimines una carga pendiente que todavía necesitás enviar.

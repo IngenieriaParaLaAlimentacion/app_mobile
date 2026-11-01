@@ -14,6 +14,7 @@ data class SurveyResponseDetailState(
     val surveyName: String = "",
     val targetLabel: String = "",
     val eventAtLabel: String = "",
+    val responseNumber: Int? = null,
     val answeredQuestions: List<AnsweredQuestionUi> = emptyList(),
     val canEdit: Boolean = false,
     val isLoading: Boolean = true,

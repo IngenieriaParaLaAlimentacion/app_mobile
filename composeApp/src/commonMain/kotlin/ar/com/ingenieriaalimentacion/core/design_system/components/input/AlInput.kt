@@ -15,12 +15,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.unit.dp
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import com.komoui.components.Input
+import kotlin.math.roundToInt
 
 /**
  * Design-system text field. Wraps the KomoUI [Input] with an optional [label],
@@ -29,7 +31,7 @@ import com.komoui.components.Input
  * unreliable on iOS in Compose Multiplatform).
  *
  * Pass [scrollState] + [isImeVisible] to enable auto-scroll-on-focus for fields
- * inside a scrollable, IME-affected form. Omit them for standalone inputs (e.g.
+ * inside a form using [alInputScroll]. Omit them for standalone inputs (e.g.
  * a search box) that don't need the behavior.
  *
  * [onFocusChange] reports focus gained (`true`) / lost (`false`). The initial
@@ -57,7 +59,8 @@ fun AlInput(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
-    var fieldScrollOffset by remember { mutableStateOf(0) }
+    var fieldCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var scrollViewport by remember { mutableStateOf<InputScrollViewport?>(null) }
     var hasFocusedOnce by remember { mutableStateOf(false) }
 
     LaunchedEffect(isFocused) {
@@ -67,9 +70,18 @@ fun AlInput(
     }
 
     if (scrollState != null) {
-        LaunchedEffect(isFocused, isImeVisible) {
-            if (isFocused && isImeVisible) {
-                scrollState.animateScrollTo(fieldScrollOffset)
+        val viewportCoordinates = scrollViewport?.coordinates
+        LaunchedEffect(isFocused, isImeVisible, scrollState, fieldCoordinates, viewportCoordinates) {
+            val field = fieldCoordinates
+            val viewport = viewportCoordinates
+            if (
+                isFocused && isImeVisible && scrollViewport?.scrollState === scrollState &&
+                field != null && field.isAttached && viewport != null && viewport.isAttached
+            ) {
+                // Use unclipped coordinates relative to the viewport. Root bounds include
+                // the toolbar/safe area and would scroll the focused field above the form.
+                val offset = viewport.localPositionOf(field, Offset.Zero).y + scrollState.value
+                scrollState.animateScrollTo(offset.roundToInt().coerceAtLeast(0))
             }
         }
     }
@@ -79,9 +91,9 @@ fun AlInput(
             .fillMaxWidth()
             .then(
                 if (scrollState != null) {
-                    Modifier.onGloballyPositioned { coordinates ->
-                        fieldScrollOffset = coordinates.boundsInRoot().top.toInt() + scrollState.value
-                    }
+                    Modifier
+                        .modifierLocalConsumer { scrollViewport = ModifierLocalInputScrollViewport.current }
+                        .onGloballyPositioned { fieldCoordinates = it }
                 } else {
                     Modifier
                 },

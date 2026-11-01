@@ -7,8 +7,10 @@ import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatu
 import ar.com.ingenieriaalimentacion.domain.model.profile.Profile
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.SignOutUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyProfileUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.notification.UnregisterPushDeviceUseCase
 import ar.com.ingenieriaalimentacion.fake.FakeAuthRepository
 import ar.com.ingenieriaalimentacion.fake.FakeProfileRepository
+import ar.com.ingenieriaalimentacion.fake.FakePushDeviceRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -59,7 +61,7 @@ class ProfileViewModelTest {
         authRepo: FakeAuthRepository = FakeAuthRepository(),
     ) = ProfileViewModel(
         getMyProfile = GetMyProfileUseCase(profileRepo),
-        signOut = SignOutUseCase(authRepo),
+        signOut = SignOutUseCase(authRepo, UnregisterPushDeviceUseCase(FakePushDeviceRepository())),
     )
 
     private suspend fun ReceiveTurbine<ProfileState>.awaitState(
@@ -139,7 +141,7 @@ class ProfileViewModelTest {
             awaitState { it.profile != null }
             vm.onAction(ProfileAction.MyEstablishmentsClick)
             val state = awaitState { it.destination != null }
-            assertEquals(ProfileDestination.MyEstablishments, state.destination)
+            assertEquals(ProfileDestination.MyEstablishments(managerProfile.role), state.destination)
             cancelAndIgnoreRemainingEvents()
         }
     }

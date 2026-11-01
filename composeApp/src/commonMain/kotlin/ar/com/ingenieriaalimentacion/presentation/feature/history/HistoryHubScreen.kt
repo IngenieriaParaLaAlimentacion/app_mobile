@@ -15,13 +15,14 @@ import androidx.compose.ui.Modifier
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.components.segmented.AlSegmentedControl
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
+import ar.com.ingenieriaalimentacion.presentation.feature.food.food_movement_history.FoodMovementHistoryContentRoot
 import ar.com.ingenieriaalimentacion.presentation.feature.measurement.uploads.MeasurementUploadsContentRoot
 import ar.com.ingenieriaalimentacion.presentation.feature.subject.uploads.SubjectUploadsContentRoot
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_history.SurveyResponseHistoryContentRoot
 
 /**
- * Combined "Historial" hub: a Sujetos | Mediciones | Encuestas segmented control hosting each
- * segment's content body. Sync runs automatically via
+ * Combined "Historial" hub: a Sujetos | Mediciones | Encuestas | Alimentos segmented control
+ * hosting each segment's content body. Sync runs automatically via
  * [ar.com.ingenieriaalimentacion.app.AuthedShell]'s SyncTriggers (foreground, periodic
  * and connectivity-driven), so the hub no longer needs a manual "Sincronizar" action.
  */
@@ -46,6 +47,7 @@ private fun HistoryHubScreen(
                 HistorySegment.Subjects -> SubjectUploadsContentRoot(Modifier.fillMaxSize())
                 HistorySegment.Measurements -> MeasurementUploadsContentRoot(Modifier.fillMaxSize())
                 HistorySegment.SurveyResponses -> SurveyResponseHistoryContentRoot(Modifier.fillMaxSize())
+                HistorySegment.FoodMovements -> FoodMovementHistoryContentRoot(Modifier.fillMaxSize())
             }
         }
     }
@@ -59,7 +61,14 @@ private fun HubHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(AlTheme.spacing.md),
+            // Roomier above the title than around it: this is the first thing under the status
+            // bar, and at a flat `md` the display face sat too close to the top edge.
+            .padding(
+                start = AlTheme.spacing.md,
+                end = AlTheme.spacing.md,
+                top = AlTheme.spacing.lg,
+                bottom = AlTheme.spacing.md,
+            ),
         verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
     ) {
         Text(

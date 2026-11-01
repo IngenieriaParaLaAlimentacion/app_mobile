@@ -22,7 +22,8 @@ CREATE TABLE PendingSurveyResponseEdit (
     -- Added in 6.sqm via ALTER TABLE ADD COLUMN, which can only append — so it must stay LAST
     -- here or verifyMigrations fails on the ordinal mismatch. Path segment of the PUT URL:
     -- /surveys/{surveyId}/responses/{responseId}.
-    surveyId           TEXT    NOT NULL DEFAULT ''
+    surveyId           TEXT    NOT NULL DEFAULT '',
+    responseNumber     INTEGER
 );
 
 CREATE INDEX PendingSurveyResponseEdit_state ON PendingSurveyResponseEdit(syncState);
@@ -30,14 +31,20 @@ CREATE INDEX PendingSurveyResponseEdit_responseId ON PendingSurveyResponseEdit(r
 
 insert:
 INSERT INTO PendingSurveyResponseEdit(editId, responseId, surveyName, establishmentName,
-    answersJson, eventAt, syncState, errorMessage, attemptCount, createdAt, updatedAt, surveyId)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    answersJson, eventAt, syncState, errorMessage, attemptCount, createdAt, updatedAt, surveyId, responseNumber)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectAll:
 SELECT * FROM PendingSurveyResponseEdit ORDER BY createdAt DESC;
 
 selectSyncable:
 SELECT * FROM PendingSurveyResponseEdit WHERE syncState = 'PENDING' ORDER BY createdAt ASC;
+
+selectAwaitingNumberPolicy:
+SELECT * FROM PendingSurveyResponseEdit
+WHERE syncState = 'FAILED'
+  AND responseNumber IS NULL
+  AND errorMessage = 'Falta el número de respuesta.';
 
 selectPendingForResponse:          -- the "coalesce into the still-unsent edit" lookup (Phase 3)
 SELECT * FROM PendingSurveyResponseEdit WHERE responseId = ? AND syncState = 'PENDING' LIMIT 1;
@@ -50,7 +57,7 @@ LIMIT 1;
 
 updatePending:                     -- overwrite an unsent edit in place, no new idempotency key
 UPDATE PendingSurveyResponseEdit SET surveyName = ?, establishmentName = ?, answersJson = ?,
-    eventAt = ?, updatedAt = ? WHERE editId = ?;
+    eventAt = ?, responseNumber = ?, updatedAt = ? WHERE editId = ?;
 
 markSyncing:
 UPDATE PendingSurveyResponseEdit SET syncState = 'SYNCING', updatedAt = ? WHERE editId = ?;

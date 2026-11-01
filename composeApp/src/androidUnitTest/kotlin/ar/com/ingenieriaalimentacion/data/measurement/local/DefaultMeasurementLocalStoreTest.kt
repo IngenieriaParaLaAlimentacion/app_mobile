@@ -111,4 +111,48 @@ class DefaultMeasurementLocalStoreTest {
         val ids = store.observeAll().first().map { it.localId }
         assertEquals(listOf("r2"), ids)
     }
+    @Test
+    fun `observation survives queue writes failure retry and sync`() = runTest {
+        val note = "Se repitió la medición.\nSin calzado."
+        store.insert(row("noted").copy(observation = note))
+        assertEquals(note, store.all().single().observation)
+        store.markSyncing("noted")
+        store.bumpRetry("noted", "Sin conexión")
+        assertEquals(note, store.syncable().single().observation)
+        store.markFailed("noted", "Reintentar")
+        store.resetForRetry("noted")
+        assertEquals(note, store.syncable().single().observation)
+        store.markSynced("noted", null, null)
+        assertEquals(note, store.all().single().observation)
+    }
+
+    @Test
+    fun `v10 queue upgrade preserves existing queued rows with null observation`() = runTest {
+        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+        driver.execute(null, """
+            CREATE TABLE PendingMeasurement (
+                localId TEXT NOT NULL PRIMARY KEY, subjectId TEXT NOT NULL,
+                subjectName TEXT NOT NULL, subjectLastName TEXT NOT NULL, subjectDni INTEGER NOT NULL,
+                establishmentId TEXT NOT NULL, establishmentName TEXT NOT NULL,
+                weightKg REAL NOT NULL, heightCm REAL NOT NULL, measuredAt TEXT NOT NULL,
+                syncState TEXT NOT NULL, errorMessage TEXT, attemptCount INTEGER NOT NULL DEFAULT 0,
+                bmi REAL, alertsJson TEXT, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL
+            )
+        """.trimIndent(), 0)
+        driver.execute(null, """
+            INSERT INTO PendingMeasurement VALUES ('old', 's', 'Ana', 'García', 42, 'e', 'Escuela',
+                72.5, 170.0, '2026-06-21T18:30:00Z', 'PENDING', NULL, 0, NULL, NULL, 10, 10)
+        """.trimIndent(), 0)
+        AppDatabase.Schema.migrate(driver, 10L, 11L)
+        val upgraded = DefaultMeasurementLocalStore(AppDatabase(driver).pendingMeasurementQueries,
+            now = { time }, dispatcher = Dispatchers.Unconfined)
+        val old = upgraded.syncable().single()
+        assertEquals("old", old.localId)
+        assertEquals(72.5, old.weightKg)
+        assertEquals(null, old.observation)
+        upgraded.insert(row("new").copy(observation = "Observación nueva"))
+        assertEquals("Observación nueva", upgraded.all().first { it.localId == "new" }.observation)
+        driver.close()
+    }
+
 }

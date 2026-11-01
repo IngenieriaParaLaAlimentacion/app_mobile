@@ -45,6 +45,7 @@ data class SurveyResponseActivitySummaryResponse(
     @SerialName("event_at") val eventAt: String,
     val survey: SurveyResponseActivitySurveyResponse,
     @SerialName("response_target") val responseTarget: String? = null,
+    @SerialName("response_number") val responseNumber: Int? = null,
     val establishment: SurveyResponseActivityEstablishmentResponse? = null,
     val subject: SurveyResponseActivitySubjectResponse? = null,
 )

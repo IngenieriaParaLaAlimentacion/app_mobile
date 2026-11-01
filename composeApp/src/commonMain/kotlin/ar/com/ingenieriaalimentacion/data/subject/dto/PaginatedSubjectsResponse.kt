@@ -10,6 +10,7 @@ data class SubjectSummaryResponse(
     val name: String,
     @SerialName("last_name") val lastName: String,
     val sex: SexDto,
+    @SerialName("birth_date") val birthDate: String,
 )
 
 @Serializable

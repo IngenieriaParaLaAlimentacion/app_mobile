@@ -8,6 +8,6 @@ sealed class ProfileDestination {
         val role: String,
     ) : ProfileDestination()
 
-    data object MyEstablishments : ProfileDestination()
+    data class MyEstablishments(val role: String) : ProfileDestination()
     data object LoggedOut : ProfileDestination()
 }

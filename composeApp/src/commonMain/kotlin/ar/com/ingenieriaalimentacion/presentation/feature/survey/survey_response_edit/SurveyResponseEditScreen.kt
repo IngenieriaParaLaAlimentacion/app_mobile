@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,8 +19,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
+import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlInput
+import ar.com.ingenieriaalimentacion.core.design_system.components.input.alInputScroll
+import androidx.compose.foundation.text.KeyboardOptions
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
@@ -98,7 +101,7 @@ fun SurveyResponseEditScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
-                            .verticalScroll(scrollState)
+                            .alInputScroll(scrollState)
                             .padding(top = AlTheme.spacing.lg, bottom = AlTheme.spacing.md),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
@@ -106,6 +109,16 @@ fun SurveyResponseEditScreen(
                             text = state.targetLabel,
                             style = AlTheme.typography.body,
                             color = AlTheme.colors.textMuted,
+                        )
+
+                        AlInput(
+                            value = state.responseNumber.value,
+                            onValueChange = { onAction(SurveyResponseEditAction.ResponseNumberChanged(it)) },
+                            onFocusChange = { onAction(SurveyResponseEditAction.ResponseNumberFocusChanged(it)) },
+                            label = "Número de respuesta", required = state.requiresResponseNumber == true,
+                            error = state.responseNumber.displayError, enabled = !state.isSubmitting,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            scrollState = scrollState, isImeVisible = isImeVisible,
                         )
 
                         SurveyQuestionForm(

@@ -53,6 +53,7 @@ class SqlDelightDatabaseCleanerTest {
             attemptCount = 0L,
             bmi = null,
             alertsJson = null,
+            observation = null,
             createdAt = 10L,
             updatedAt = 10L,
         )
@@ -67,10 +68,25 @@ class SqlDelightDatabaseCleanerTest {
             province = "Provincia",
             status = "Approved",
             updatedAt = 10L,
+            characterizationStatus = null,
         )
         database.cachedActivityItemQueries.upsert(
             id = "a1",
             type = "SUBJECT",
+            occurredAtMillis = 10L,
+            payloadJson = "{}",
+        )
+        // `deleteAll` takes no `:type`, so the food types are wiped by the same statement. Seeded
+        // explicitly so that property is locked rather than incidental.
+        database.cachedActivityItemQueries.upsert(
+            id = "in:a2",
+            type = "FOOD_INTAKE",
+            occurredAtMillis = 10L,
+            payloadJson = "{}",
+        )
+        database.cachedActivityItemQueries.upsert(
+            id = "out:a3",
+            type = "FOOD_OUTFLOW",
             occurredAtMillis = 10L,
             payloadJson = "{}",
         )
@@ -83,6 +99,7 @@ class SqlDelightDatabaseCleanerTest {
             questionCount = 3L,
             detailJson = null,
             updatedAt = 10L,
+            requiresResponseNumber = null,
         )
         database.pendingSurveyResponseQueries.insert(
             localId = "sr-1",
@@ -101,6 +118,7 @@ class SqlDelightDatabaseCleanerTest {
             attemptCount = 0L,
             createdAt = 10L,
             updatedAt = 10L,
+            responseNumber = null,
         )
         database.pendingSurveyResponseEditQueries.insert(
             editId = "se-1",
@@ -115,6 +133,7 @@ class SqlDelightDatabaseCleanerTest {
             attemptCount = 0L,
             createdAt = 10L,
             updatedAt = 10L,
+            responseNumber = null,
         )
     }
 
@@ -126,6 +145,8 @@ class SqlDelightDatabaseCleanerTest {
         assertTrue(database.pendingMeasurementQueries.selectAll().executeAsList().isNotEmpty())
         assertTrue(database.cachedEstablishmentQueries.selectAll().executeAsList().isNotEmpty())
         assertTrue(database.cachedActivityItemQueries.selectByType("SUBJECT").executeAsList().isNotEmpty())
+        assertTrue(database.cachedActivityItemQueries.selectByType("FOOD_INTAKE").executeAsList().isNotEmpty())
+        assertTrue(database.cachedActivityItemQueries.selectByType("FOOD_OUTFLOW").executeAsList().isNotEmpty())
         assertTrue(database.currentEstablishmentQueries.select().executeAsOneOrNull()?.establishmentId != null)
         assertTrue(database.cachedSurveyQueries.selectAll().executeAsList().isNotEmpty())
         assertTrue(database.pendingSurveyResponseQueries.selectAll().executeAsList().isNotEmpty())
@@ -137,6 +158,8 @@ class SqlDelightDatabaseCleanerTest {
         assertTrue(database.pendingMeasurementQueries.selectAll().executeAsList().isEmpty())
         assertTrue(database.cachedEstablishmentQueries.selectAll().executeAsList().isEmpty())
         assertTrue(database.cachedActivityItemQueries.selectByType("SUBJECT").executeAsList().isEmpty())
+        assertTrue(database.cachedActivityItemQueries.selectByType("FOOD_INTAKE").executeAsList().isEmpty())
+        assertTrue(database.cachedActivityItemQueries.selectByType("FOOD_OUTFLOW").executeAsList().isEmpty())
         assertTrue(database.currentEstablishmentQueries.select().executeAsOneOrNull()?.establishmentId == null)
         assertTrue(database.cachedSurveyQueries.selectAll().executeAsList().isEmpty())
         assertTrue(database.pendingSurveyResponseQueries.selectAll().executeAsList().isEmpty())

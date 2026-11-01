@@ -3,9 +3,11 @@ package ar.com.ingenieriaalimentacion.presentation.feature.profile.request_estab
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ar.com.ingenieriaalimentacion.data.profile.EstablishmentRequestFailure
+import ar.com.ingenieriaalimentacion.domain.model.auth.EstablishmentLinkMode
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentRequestError
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetAvailableEstablishmentsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.RequestEstablishmentAccessUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.profile.SubscribeToEstablishmentsUseCase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,11 +20,13 @@ import kotlinx.coroutines.launch
 
 @OptIn(FlowPreview::class)
 class RequestEstablishmentViewModel(
+    mode: EstablishmentLinkMode,
     private val getAvailable: GetAvailableEstablishmentsUseCase,
     private val requestAccess: RequestEstablishmentAccessUseCase,
+    private val subscribe: SubscribeToEstablishmentsUseCase,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(RequestEstablishmentState())
+    private val _state = MutableStateFlow(RequestEstablishmentState(mode = mode))
     val state = _state.asStateFlow()
 
     private val query = MutableStateFlow("")
@@ -129,7 +133,12 @@ class RequestEstablishmentViewModel(
         if (!current.canSubmit) return
         _state.update { it.copy(isSubmitting = true, submitError = null) }
         viewModelScope.launch {
-            requestAccess(current.selectedIds.toList()).fold(
+            val ids = current.selectedIds.toList()
+            val result = when (current.mode) {
+                EstablishmentLinkMode.Subscribe -> subscribe(ids)
+                EstablishmentLinkMode.RequestAccess -> requestAccess(ids)
+            }
+            result.fold(
                 onSuccess = {
                     // Keep isSubmitting = true until navigation tears down this screen, so the
                     // button doesn't flash back to idle before we pop back.
@@ -140,9 +149,19 @@ class RequestEstablishmentViewModel(
                     val error = (throwable as? EstablishmentRequestFailure)?.error
                         ?: EstablishmentRequestError.Unknown(throwable)
                     _state.update { it.copy(isSubmitting = false, submitError = error) }
+                    if (error is EstablishmentRequestError.EstablishmentNotFound) resync()
                 },
             )
         }
+    }
+
+    /**
+     * A selected establishment no longer exists (the call is all-or-nothing, so nothing was
+     * linked): drop the selection and reload the catalog so the user picks again.
+     */
+    private suspend fun resync() {
+        _state.update { it.copy(selectedIds = emptySet()) }
+        reload(_state.value.query)
     }
 
     companion object {

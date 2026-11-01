@@ -68,10 +68,11 @@ class SurveyResponseApi(private val client: HttpClient) {
             }
             when (response.status.value) {
                 200 -> SurveyResponseEditOutcome.Applied(response.body())
-                400 -> SurveyResponseEditOutcome.InvalidData
+                400, 422 -> SurveyResponseEditOutcome.InvalidData
                 401 -> SurveyResponseEditOutcome.Unauthorized
                 403 -> SurveyResponseEditOutcome.Forbidden
                 404 -> SurveyResponseEditOutcome.NotFound
+                409 -> SurveyResponseEditOutcome.InvalidData
                 else -> SurveyResponseEditOutcome.Retryable(null)
             }
         }.getOrElse { t ->
@@ -103,7 +104,6 @@ sealed interface SurveyResponseUploadOutcome {
         val submittedByName: String?,
         val eventAt: String?,
     ) : SurveyResponseUploadOutcome
-
     data object InvalidData : SurveyResponseUploadOutcome
     data object Forbidden : SurveyResponseUploadOutcome
     data object NotFound : SurveyResponseUploadOutcome

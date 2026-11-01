@@ -9,6 +9,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Instant
 
 class MeasurementUploadUiTest {
 
@@ -139,12 +140,19 @@ class MeasurementUploadUiTest {
     }
 
     @Test
-    fun `identity, measurements and date are split into discrete fields`() {
+    fun `identity, measurements and time are split into discrete fields`() {
         val ui = upload(SyncState.Pending).toUi()
         assertEquals("DNI 42", ui.identity)
         assertEquals("70 kg · 172 cm", ui.measurements)
-        // 18:30 UTC; the date/time portion depends on TZ but the dd/MM HH:mm shape is present.
-        assertTrue(Regex("""\d{2}/\d{2} \d{2}:\d{2}""").matches(ui.measuredAtLabel))
+        // Time only — the day is carried by the list's date separator. The wall-clock value
+        // depends on TZ, but the HH:mm shape is present.
+        assertTrue(Regex("""\d{2}:\d{2}""").matches(ui.measuredAtLabel))
+    }
+
+    @Test
+    fun `measuredAtMillis carries the instant the list groups and sorts by`() {
+        val ui = upload(SyncState.Pending).toUi()
+        assertEquals(Instant.parse("2026-06-21T18:30:00Z").toEpochMilliseconds(), ui.measuredAtMillis)
     }
 
     @Test
@@ -162,9 +170,11 @@ class MeasurementUploadUiTest {
     }
 
     @Test
-    fun `garbage measuredAt falls back to the raw string`() {
+    fun `garbage measuredAt falls back to the raw string and carries no grouping instant`() {
         val ui = upload(SyncState.Pending, measuredAt = "not-a-date").toUi()
         assertEquals("not-a-date", ui.measuredAtLabel)
+        // Null rather than 0: the row groups under "Sin fecha" instead of being stamped 1970.
+        assertNull(ui.measuredAtMillis)
     }
 
     @Test

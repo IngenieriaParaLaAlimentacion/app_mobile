@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "488864014152",
+    "project_id": "inpla2026-66ccb",
+    "storage_bucket": "inpla2026-66ccb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:488864014152:android:1b157c6ac040f864f2dd7d",
+        "android_client_info": {
+          "package_name": "ar.com.ingenieriaalimentacion"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAVp8jXOJ3yEu3dXAREaNCSWuoEpmfGTHk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:488864014152:android:edbf76a33a164785f2dd7d",
+        "android_client_info": {
+          "package_name": "ar.com.ingenieriaalimentacion.tst"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAVp8jXOJ3yEu3dXAREaNCSWuoEpmfGTHk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,10 +1,20 @@
 package ar.com.ingenieriaalimentacion.di
 
+import ar.com.ingenieriaalimentacion.data.recipe.RecipeApi
 import ar.com.ingenieriaalimentacion.data.activity.ActivityApi
 import ar.com.ingenieriaalimentacion.data.auth.AuthApi
 import ar.com.ingenieriaalimentacion.data.establishment.EstablishmentApi
+import ar.com.ingenieriaalimentacion.data.establishment.characterization.CharacterizationApi
+import ar.com.ingenieriaalimentacion.data.food.FoodCatalogApi
+import ar.com.ingenieriaalimentacion.data.food.EstablishmentFoodMovementApi
+import ar.com.ingenieriaalimentacion.data.food.FoodIntakeApi
+import ar.com.ingenieriaalimentacion.data.food.ReceiptIntakeApi
+import ar.com.ingenieriaalimentacion.data.food.FoodOutflowApi
+import ar.com.ingenieriaalimentacion.data.food.FoodMovementActivityApi
+import ar.com.ingenieriaalimentacion.data.food.FoodStockApi
 import ar.com.ingenieriaalimentacion.data.measurement.MeasurementApi
 import ar.com.ingenieriaalimentacion.data.network.HttpClientFactory
+import ar.com.ingenieriaalimentacion.data.notification.PushDeviceApi
 import ar.com.ingenieriaalimentacion.data.profile.ProfileApi
 import ar.com.ingenieriaalimentacion.data.registration.RegistrationApi
 import ar.com.ingenieriaalimentacion.data.subject.SubjectApi
@@ -54,4 +64,14 @@ val clientsModule = module {
     single { SurveyApi(client = get()) }
     single { SurveyResponseApi(client = get()) }
     single { SurveyResponseActivityApi(client = get()) }
+    single { RecipeApi(client = get()) }
+    single { FoodCatalogApi(client = get()) }
+    single { FoodIntakeApi(client = get()) }
+    single { ReceiptIntakeApi(client = get(), json = get()) }
+    single { FoodOutflowApi(client = get()) }
+    single { FoodMovementActivityApi(client = get()) }
+    single { FoodStockApi(client = get()) }
+    single { EstablishmentFoodMovementApi(client = get()) }
+    single { PushDeviceApi(client = get()) }
+    single { CharacterizationApi(client = get()) }
 }

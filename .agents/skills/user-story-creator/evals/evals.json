@@ -1,0 +1,29 @@
+{
+  "skill_name": "user-story-creator",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Queremos avisarle al relevador cuando una carga que hizo offline finalmente falla. Armame las historias y subilas a GitHub, seguramente toca backend y app_mobile.",
+      "expected_output": "Inspects available repository evidence, begins a focused Spanish product interview instead of immediately drafting or publishing, keeps the agreement in conversation, and eventually asks the user to approve a proposed story split and owning repository for each story before creating issues.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Necesito una US para poder exportar desde el backoffice las respuestas filtradas de una encuesta. Ya existe exportación completa, debe conservar los permisos actuales y el archivo tiene que respetar los filtros visibles. No crees el issue todavía.",
+      "expected_output": "Uses the supplied decisions and repository evidence to ask only consequential unresolved questions, does not create external issues, explicitly negotiates the final story split and repository ownership, and then drafts in the repository's established user-story format after the user answers.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Implementá el issue #131 tal como está escrito y corré los tests.",
+      "expected_output": "The user-story skill should not take over an implementation-only task whose story is already agreed; the agent should proceed with the normal implementation workflow.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Creá una historia para el endpoint y otra para la pantalla móvil. Nuestro tablero está en https://github.com/orgs/IngenieriaParaLaAlimentacion/projects/1; cargá las dos ahí con los tags correctos.",
+      "expected_output": "Treats the organization Project separately from repository ownership, confirms the split, creates the API issue in IngenieriaParaLaAlimentacion/backend and the screen issue in IngenieriaParaLaAlimentacion/app_mobile, derives labels independently from each repository, uses fully qualified cross-repository links, adds both issues to Project 1, and verifies each Project item's repository field.",
+      "files": []
+    }
+  ]
+}

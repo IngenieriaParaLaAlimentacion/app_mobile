@@ -2,10 +2,17 @@ package ar.com.ingenieriaalimentacion.data.profile
 
 import ar.com.ingenieriaalimentacion.fake.FakeCurrentEstablishmentLocalStore
 import ar.com.ingenieriaalimentacion.fake.FakeEstablishmentLocalStore
+import ar.com.ingenieriaalimentacion.domain.model.establishment.CharacterizationStatus
+import ar.com.ingenieriaalimentacion.domain.model.establishment.EstablishmentCharacterization
+import ar.com.ingenieriaalimentacion.domain.model.establishment.Meal
+import ar.com.ingenieriaalimentacion.domain.model.establishment.Premises
+import kotlinx.serialization.json.jsonObject
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentAbsenceError
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentAbsenceNotice
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentRequestError
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
+import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
+import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithdrawalError
 import ar.com.ingenieriaalimentacion.domain.model.profile.ProfileError
 import ar.com.ingenieriaalimentacion.domain.model.profile.UpdateProfile
 import io.ktor.client.HttpClient
@@ -33,16 +40,21 @@ import kotlin.test.assertTrue
 class ProfileRepositoryImplTest {
 
     private fun repository(
+        local: FakeEstablishmentLocalStore = FakeEstablishmentLocalStore(),
+        current: FakeCurrentEstablishmentLocalStore = FakeCurrentEstablishmentLocalStore(),
+        // The production authed client leaves this off; tests of calls that opt in per request
+        // pass false so they exercise the same configuration.
+        expectSuccess: Boolean = true,
         handler: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData,
     ): ProfileRepositoryImpl {
         val client = HttpClient(MockEngine(handler)) {
-            expectSuccess = true
+            this.expectSuccess = expectSuccess
             install(ContentNegotiation) {
                 json(Json { ignoreUnknownKeys = true; encodeDefaults = true })
             }
             defaultRequest { url("https://api.example.com/") }
         }
-        return ProfileRepositoryImpl(ProfileApi(client), FakeEstablishmentLocalStore(), FakeCurrentEstablishmentLocalStore())
+        return ProfileRepositoryImpl(ProfileApi(client), local, current)
     }
 
     private fun respondJson(scope: MockRequestHandleScope, body: String, status: HttpStatusCode = HttpStatusCode.OK) =
@@ -106,6 +118,22 @@ class ProfileRepositoryImplTest {
         assertEquals(1, profile.establishments?.size)
         assertEquals(EstablishmentStatus.Approved, profile.establishments?.first()?.status)
         assertEquals("Comedor Norte", profile.establishments?.first()?.name)
+    }
+
+    @Test
+    fun `getMe maps the characterization status, absent when not reported`() = runTest {
+        val pending = establishmentJson.replace("\"status\": \"approved\"", "\"status\": \"approved\", \"characterization_status\": \"pending\"")
+        val repo = repository {
+            respondJson(
+                this,
+                """{"id":"u1","email":"a@b.com","name":"Ana","last_name":"García","role":"field_worker","establishments":[$pending, ${establishmentJson.replace("\"e1\"", "\"e2\"")}]}""",
+            )
+        }
+
+        val establishments = repo.getMe().getOrThrow().establishments!!
+
+        assertEquals(CharacterizationStatus.Pending, establishments[0].characterizationStatus)
+        assertNull(establishments[1].characterizationStatus)
     }
 
     @Test
@@ -219,13 +247,181 @@ class ProfileRepositoryImplTest {
         assertEquals(EstablishmentRequestError.EstablishmentNotFound, failure.error)
     }
 
+    @Test
+    fun `requestEstablishmentAccess merges the new relations into the cache`() = runTest {
+        val local = FakeEstablishmentLocalStore(
+            listOf(
+                EstablishmentWithStatus("e0", "Oeste", "Calle 0", 0.0, 0.0, "p0", "C", "P", EstablishmentStatus.Approved),
+                EstablishmentWithStatus("e1", "Norte", "Calle 1", 0.0, 0.0, "p1", "C", "P", EstablishmentStatus.Rejected),
+            ),
+        )
+        val repo = repository(local) {
+            respondJson(this, "[${establishmentJson.replace("approved", "pending")}]", HttpStatusCode.Created)
+        }
+
+        repo.requestEstablishmentAccess(listOf("e1")).getOrThrow()
+
+        assertEquals(listOf("e0", "e1"), local.rows.map { it.id })
+        assertEquals(EstablishmentStatus.Pending, local.rows.first { it.id == "e1" }.status)
+    }
+
+    // --- admin subscription (backend #151) ---
+
+    @Test
+    fun `subscribeToEstablishments posts all ids in one call and caches the approved relations`() = runTest {
+        val local = FakeEstablishmentLocalStore()
+        val calls = mutableListOf<String>()
+        var capturedBody: String? = null
+        val repo = repository(local) { request ->
+            calls += "${request.method.value} ${request.url.encodedPath}"
+            capturedBody = (request.body as? TextContent)?.text
+            respondJson(
+                this,
+                "[$establishmentJson, ${establishmentJson.replace("\"e1\"", "\"e2\"")}]",
+                HttpStatusCode.Created,
+            )
+        }
+
+        val relations = repo.subscribeToEstablishments(listOf("e1", "e2")).getOrThrow()
+
+        assertEquals(listOf("POST /api/v1/users/me/establishments/subscriptions"), calls)
+        assertEquals("""{"establishment_ids":["e1","e2"]}""", capturedBody)
+        assertTrue(relations.all { it.status == EstablishmentStatus.Approved })
+        assertEquals(listOf("e1", "e2"), local.rows.map { it.id })
+    }
+
+    @Test
+    fun `subscribeToEstablishments maps 404 to EstablishmentNotFound and caches nothing`() = runTest {
+        val local = FakeEstablishmentLocalStore()
+        val repo = repository(local) { respond("missing", HttpStatusCode.NotFound) }
+
+        val failure = repo.subscribeToEstablishments(listOf("e1", "e2")).exceptionOrNull()
+
+        assertTrue(failure is EstablishmentRequestFailure)
+        assertEquals(EstablishmentRequestError.EstablishmentNotFound, failure.error)
+        assertTrue(local.rows.isEmpty())
+    }
+
+    @Test
+    fun `unsubscribeFromEstablishments deletes with repeated query ids, evicts them and clears the current one`() = runTest {
+        val local = FakeEstablishmentLocalStore(
+            listOf(
+                EstablishmentWithStatus("e1", "Norte", "Calle 1", 0.0, 0.0, "p1", "C", "P", EstablishmentStatus.Approved),
+                EstablishmentWithStatus("e2", "Sur", "Calle 2", 0.0, 0.0, "p2", "C", "P", EstablishmentStatus.Approved),
+                EstablishmentWithStatus("e3", "Este", "Calle 3", 0.0, 0.0, "p3", "C", "P", EstablishmentStatus.Approved),
+            ),
+        )
+        val current = FakeCurrentEstablishmentLocalStore(initial = "e2")
+        var captured: String? = null
+        var capturedIds: List<String>? = null
+        val repo = repository(local, current) { request ->
+            captured = "${request.method.value} ${request.url.encodedPath}"
+            capturedIds = request.url.parameters.getAll("establishment_ids")
+            respond("", HttpStatusCode.NoContent)
+        }
+
+        repo.unsubscribeFromEstablishments(listOf("e1", "e2")).getOrThrow()
+
+        assertEquals("DELETE /api/v1/users/me/establishments/subscriptions", captured)
+        assertEquals(listOf("e1", "e2"), capturedIds)
+        assertEquals(listOf("e3"), local.rows.map { it.id })
+        assertNull(current.value)
+    }
+
+    @Test
+    fun `unsubscribeFromEstablishments maps 403 to Forbidden and keeps the cache`() = runTest {
+        val local = FakeEstablishmentLocalStore(
+            listOf(
+                EstablishmentWithStatus("e1", "Norte", "Calle 1", 0.0, 0.0, "p1", "C", "P", EstablishmentStatus.Approved),
+            ),
+        )
+        val repo = repository(local) { respond("nope", HttpStatusCode.Forbidden) }
+
+        val failure = repo.unsubscribeFromEstablishments(listOf("e1")).exceptionOrNull()
+
+        assertTrue(failure is EstablishmentWithdrawalFailure)
+        assertEquals(EstablishmentWithdrawalError.Forbidden, failure.error)
+        assertEquals(listOf("e1"), local.rows.map { it.id })
+    }
+
+    // --- withdraw from establishment ---
+
+    @Test
+    fun `withdrawFromEstablishment clears the current establishment only when it is the withdrawn one`() = runTest {
+        val current = FakeCurrentEstablishmentLocalStore(initial = "e2")
+        val repo = repository(current = current) { respondJson(this, "[$establishmentJson]") }
+
+        repo.withdrawFromEstablishment("e1").getOrThrow()
+        assertEquals("e2", current.value)
+
+        repo.withdrawFromEstablishment("e2").getOrThrow()
+        assertNull(current.value)
+    }
+
+    @Test
+    fun `withdrawFromEstablishment sends the id and evicts it from the cache`() = runTest {
+        val cached = listOf(
+            EstablishmentWithStatus("e1", "Norte", "Calle 1", 0.0, 0.0, "p1", "C", "P", EstablishmentStatus.Approved),
+            EstablishmentWithStatus("e2", "Sur", "Calle 2", 0.0, 0.0, "p2", "C", "P", EstablishmentStatus.Pending),
+        )
+        val local = FakeEstablishmentLocalStore(cached)
+        var capturedPath: String? = null
+        var capturedBody: String? = null
+        val repo = repository(local) { request ->
+            capturedPath = request.url.encodedPath
+            capturedBody = (request.body as? TextContent)?.text
+            respondJson(this, "[$establishmentJson]")
+        }
+
+        repo.withdrawFromEstablishment("e1").getOrThrow()
+
+        assertEquals("/api/v1/users/me/establishments/withdraw", capturedPath)
+        assertEquals("""{"establishment_ids":["e1"]}""", capturedBody)
+        assertEquals(listOf("e2"), local.rows.map { it.id })
+    }
+
+    @Test
+    fun `withdrawFromEstablishment maps 404 to EstablishmentNotFound and leaves the cache untouched`() = runTest {
+        val cached = listOf(
+            EstablishmentWithStatus("e1", "Norte", "Calle 1", 0.0, 0.0, "p1", "C", "P", EstablishmentStatus.Approved),
+        )
+        val local = FakeEstablishmentLocalStore(cached)
+        val repo = repository(local) { respond("missing", HttpStatusCode.NotFound) }
+
+        val failure = repo.withdrawFromEstablishment("e1").exceptionOrNull()
+
+        assertTrue(failure is EstablishmentWithdrawalFailure)
+        assertEquals(EstablishmentWithdrawalError.EstablishmentNotFound, failure.error)
+        assertEquals(listOf("e1"), local.rows.map { it.id })
+    }
+
+    @Test
+    fun `withdrawFromEstablishment maps 409 to NotWithdrawable`() = runTest {
+        val repo = repository { respond("conflict", HttpStatusCode.Conflict) }
+
+        val failure = repo.withdrawFromEstablishment("e1").exceptionOrNull()
+
+        assertTrue(failure is EstablishmentWithdrawalFailure)
+        assertEquals(EstablishmentWithdrawalError.NotWithdrawable, failure.error)
+    }
+
+    @Test
+    fun `withdrawFromEstablishment maps 401 to Unauthorized`() = runTest {
+        val repo = repository { respond("no token", HttpStatusCode.Unauthorized) }
+
+        val failure = repo.withdrawFromEstablishment("e1").exceptionOrNull()
+
+        assertTrue(failure is EstablishmentWithdrawalFailure)
+        assertEquals(EstablishmentWithdrawalError.Unauthorized, failure.error)
+    }
+
     // --- notify establishment absence ---
 
     @Test
     fun `notifyEstablishmentAbsence posts the notice with nulls for missing fields`() = runTest {
         var capturedPath: String? = null
         var capturedBody: String? = null
-        val repo = repository { request ->
+        val repo = repository(expectSuccess = false) { request ->
             capturedPath = request.url.encodedPath
             capturedBody = (request.body as? TextContent)?.text
             respondJson(
@@ -241,14 +437,51 @@ class ProfileRepositoryImplTest {
 
         assertEquals("/api/v1/establishments/requests", capturedPath)
         assertEquals(
-            """{"name":"Comedor Norte","formatted_address":"Av. Siempre Viva 742","city":null,"province":null}""",
+            """{"name":"Comedor Norte","formatted_address":"Av. Siempre Viva 742","city":null,"province":null,"characterization":null}""",
             capturedBody,
         )
     }
 
     @Test
+    fun `notifyEstablishmentAbsence sends the proposed ficha`() = runTest {
+        var capturedBody: String? = null
+        val repo = repository(expectSuccess = false) { request ->
+            capturedBody = (request.body as? TextContent)?.text
+            respondJson(this, """{"id":"r1"}""", HttpStatusCode.Created)
+        }
+
+        repo.notifyEstablishmentAbsence(
+            EstablishmentAbsenceNotice(
+                name = "Comedor",
+                formattedAddress = "Calle 1",
+                characterization = EstablishmentCharacterization(meals = setOf(Meal.Lunch), premises = Premises.Street),
+            ),
+        ).getOrThrow()
+
+        val ficha = Json.parseToJsonElement(capturedBody!!).jsonObject.getValue("characterization").jsonObject
+        assertEquals("[\"lunch\"]", ficha.getValue("meals").toString())
+        assertEquals("\"street\"", ficha.getValue("premises").toString())
+    }
+
+    @Test
+    fun `notifyEstablishmentAbsence reads the failed field from a 422`() = runTest {
+        val repo = repository(expectSuccess = false) {
+            respond(
+                content = """{"type":"/errors/validation-failed","status":422,"field":"characterization.premises_other"}""",
+                status = HttpStatusCode.UnprocessableEntity,
+                headers = headersOf(HttpHeaders.ContentType, "application/problem+json"),
+            )
+        }
+
+        val failure = repo.notifyEstablishmentAbsence(EstablishmentAbsenceNotice(name = "Comedor", formattedAddress = "Calle 1")).exceptionOrNull()
+
+        assertTrue(failure is EstablishmentAbsenceFailure)
+        assertEquals(EstablishmentAbsenceError.Validation("characterization.premises_other"), failure.error)
+    }
+
+    @Test
     fun `notifyEstablishmentAbsence maps 401 to Unauthorized`() = runTest {
-        val repo = repository { respond("no token", HttpStatusCode.Unauthorized) }
+        val repo = repository(expectSuccess = false) { respond("no token", HttpStatusCode.Unauthorized) }
 
         val failure = repo.notifyEstablishmentAbsence(EstablishmentAbsenceNotice(name = "Comedor", formattedAddress = "Calle 1")).exceptionOrNull()
 
@@ -258,27 +491,27 @@ class ProfileRepositoryImplTest {
 
     @Test
     fun `notifyEstablishmentAbsence maps 422 to Validation`() = runTest {
-        val repo = repository { respond("too long", HttpStatusCode.UnprocessableEntity) }
+        val repo = repository(expectSuccess = false) { respond("too long", HttpStatusCode.UnprocessableEntity) }
 
         val failure = repo.notifyEstablishmentAbsence(EstablishmentAbsenceNotice(name = "Comedor", formattedAddress = "Calle 1")).exceptionOrNull()
 
         assertTrue(failure is EstablishmentAbsenceFailure)
-        assertEquals(EstablishmentAbsenceError.Validation, failure.error)
+        assertEquals(EstablishmentAbsenceError.Validation(), failure.error)
     }
 
     @Test
     fun `notifyEstablishmentAbsence maps 400 to Validation`() = runTest {
-        val repo = repository { respond("bad request", HttpStatusCode.BadRequest) }
+        val repo = repository(expectSuccess = false) { respond("bad request", HttpStatusCode.BadRequest) }
 
         val failure = repo.notifyEstablishmentAbsence(EstablishmentAbsenceNotice(name = "Comedor", formattedAddress = "Calle 1")).exceptionOrNull()
 
         assertTrue(failure is EstablishmentAbsenceFailure)
-        assertEquals(EstablishmentAbsenceError.Validation, failure.error)
+        assertEquals(EstablishmentAbsenceError.Validation(), failure.error)
     }
 
     @Test
     fun `notifyEstablishmentAbsence maps 500 to Network`() = runTest {
-        val repo = repository { respond("boom", HttpStatusCode.InternalServerError) }
+        val repo = repository(expectSuccess = false) { respond("boom", HttpStatusCode.InternalServerError) }
 
         val failure = repo.notifyEstablishmentAbsence(EstablishmentAbsenceNotice(name = "Comedor", formattedAddress = "Calle 1")).exceptionOrNull()
 

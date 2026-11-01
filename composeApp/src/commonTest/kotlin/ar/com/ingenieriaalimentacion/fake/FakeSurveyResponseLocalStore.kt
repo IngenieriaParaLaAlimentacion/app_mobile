@@ -3,6 +3,7 @@ package ar.com.ingenieriaalimentacion.fake
 import ar.com.ingenieriaalimentacion.data.survey.local.SurveyResponseLocalStore
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseConflict
+import ar.com.ingenieriaalimentacion.domain.model.survey.MISSING_REQUIRED_RESPONSE_NUMBER_MESSAGE
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseUpload
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,6 +38,12 @@ class FakeSurveyResponseLocalStore(private val now: () -> Long = { 0L }) : Surve
     override suspend fun syncable(): List<SurveyResponseUpload> =
         rows.value.filter { it.syncState == SyncState.Pending }.sortedBy { it.createdAt }
 
+    override suspend fun awaitingNumberPolicy(): List<SurveyResponseUpload> =
+        rows.value.filter {
+            it.syncState == SyncState.Failed && it.responseNumber == null &&
+                it.errorMessage == MISSING_REQUIRED_RESPONSE_NUMBER_MESSAGE
+        }
+
     override suspend fun markSyncing(localId: String) =
         mutate(localId) { it.copy(syncState = SyncState.Syncing, updatedAt = now()) }
 
@@ -62,6 +69,17 @@ class FakeSurveyResponseLocalStore(private val now: () -> Long = { 0L }) : Surve
                 errorMessage = null,
                 conflict = conflict,
                 attemptCount = it.attemptCount + 1,
+                updatedAt = now(),
+            )
+        }
+
+    override suspend fun updateResponseNumber(localId: String, responseNumber: Int) =
+        mutate(localId) {
+            it.copy(
+                responseNumber = responseNumber,
+                syncState = SyncState.Pending,
+                errorMessage = null,
+                attemptCount = 0,
                 updatedAt = now(),
             )
         }

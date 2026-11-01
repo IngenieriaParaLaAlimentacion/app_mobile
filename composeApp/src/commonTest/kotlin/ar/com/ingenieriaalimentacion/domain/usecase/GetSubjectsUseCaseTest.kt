@@ -5,14 +5,14 @@ import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectPage
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
 import ar.com.ingenieriaalimentacion.domain.usecase.subject.GetSubjectsUseCase
 import ar.com.ingenieriaalimentacion.fake.FakeSubjectQueryRepository
-import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlinx.coroutines.test.runTest
 
 class GetSubjectsUseCaseTest {
 
-    private val ana = SubjectSummary("1", 30111222, "Ana", "Pérez", Sex.Female)
+    private val ana = SubjectSummary("1", 30111222, "Ana", "Pérez", Sex.Female, birthDate = kotlinx.datetime.LocalDate(1990, 1, 1))
 
     @Test
     fun `returns page from repository`() = runTest {

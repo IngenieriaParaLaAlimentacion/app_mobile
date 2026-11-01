@@ -3,6 +3,8 @@ package ar.com.ingenieriaalimentacion.domain.model.survey
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import kotlinx.serialization.Serializable
 
+const val MISSING_REQUIRED_RESPONSE_NUMBER_MESSAGE = "Falta el número de respuesta."
+
 /**
  * The chosen answer target for one response. Exactly one shape is valid per the survey's
  * [SurveyResponseTarget], and the sealed hierarchy is what makes "both a subject and an
@@ -45,6 +47,7 @@ data class NewSurveyResponse(
     val surveyId: String,
     val surveyName: String,
     val target: ResponseTargetRef,
+    val responseNumber: Int? = null,
     val answers: Map<String, SurveyAnswerValue>,
     /** Epoch millis when the relevador actually finished the interview (client clock). */
     val eventAtMs: Long,
@@ -54,7 +57,10 @@ data class NewSurveyResponse(
  *  `@Serializable` because it rides along on [SurveyResponseSummary], which round-trips through
  *  `CachedActivityItem.payloadJson`. */
 @Serializable
-data class ResponseConflict(val submittedByName: String, val eventAt: String)
+data class ResponseConflict(
+    val submittedByName: String,
+    val eventAt: String,
+)
 
 /** A locally-queued response plus its sync metadata. [localId] doubles as the SQLDelight PK
  *  and the wire idempotency `id` — same single-id design as [ar.com.ingenieriaalimentacion.domain.model.subject.SubjectUpload].
@@ -75,6 +81,7 @@ data class SurveyResponseUpload(
     val attemptCount: Int,
     val createdAt: Long,
     val updatedAt: Long,
+    val responseNumber: Int? = null,
 )
 
 fun SurveyResponseUpload.isEligibleAt(nowMs: Long): Boolean {

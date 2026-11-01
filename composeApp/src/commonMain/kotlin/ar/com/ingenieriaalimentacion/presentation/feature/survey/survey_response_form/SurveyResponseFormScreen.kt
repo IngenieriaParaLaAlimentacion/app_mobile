@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -22,12 +21,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ar.com.ingenieriaalimentacion.core.design_system.components.banner.AlBannerVariant
 import ar.com.ingenieriaalimentacion.core.design_system.components.banner.AlInlineBanner
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
+import ar.com.ingenieriaalimentacion.core.design_system.components.input.AlInput
+import ar.com.ingenieriaalimentacion.core.design_system.components.input.alInputScroll
+import androidx.compose.foundation.text.KeyboardOptions
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.components.toast.AlToast
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
@@ -120,7 +123,7 @@ private fun SurveyResponseFormBody(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .verticalScroll(scrollState)
+                    .alInputScroll(scrollState)
                     .padding(horizontal = AlTheme.spacing.lg)
                     .padding(top = AlTheme.spacing.lg, bottom = AlTheme.spacing.md),
                 verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.lg),
@@ -150,6 +153,15 @@ private fun SurveyResponseFormBody(
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
+                    AlInput(
+                        value = state.responseNumber.value,
+                        onValueChange = { onAction(SurveyResponseFormAction.ResponseNumberChanged(it)) },
+                        onFocusChange = { onAction(SurveyResponseFormAction.ResponseNumberFocusChanged(it)) },
+                        label = "Número de respuesta", required = state.requiresResponseNumber == true,
+                        error = state.responseNumber.displayError, enabled = !state.isSubmitting,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        scrollState = scrollState, isImeVisible = isImeVisible,
+                    )
                     Text(
                         text = "PREGUNTAS",
                         style = AlTheme.typography.caption.copy(

@@ -1,6 +1,11 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.home
 
 import ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlBadgeTone
+import ar.com.ingenieriaalimentacion.domain.model.auth.EstablishmentLinkMode
+import ar.com.ingenieriaalimentacion.domain.model.auth.canEditCharacterization
+import ar.com.ingenieriaalimentacion.domain.model.auth.establishmentLinkMode
+import ar.com.ingenieriaalimentacion.domain.model.auth.requiresApprovedEstablishment
+import ar.com.ingenieriaalimentacion.domain.model.establishment.CharacterizationStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 
 /**
@@ -21,7 +26,36 @@ data class HomeState(
     val currentEstablishment: EstablishmentWithStatus? = null,
     val establishmentOptions: List<EstablishmentWithStatus> = emptyList(),
     val showEstablishmentPicker: Boolean = false,
-)
+    /** Backend role once the profile loads; null while unknown (offline / not loaded yet). */
+    val role: String? = null,
+) {
+    /**
+     * Admins and analysts act as field workers only inside an approved establishment, so their
+     * quick actions wait for one to be selected. Field workers (and an unknown role) keep the
+     * current flow; the backend still enforces the link either way.
+     */
+    val quickActionsEnabled: Boolean
+        get() = role == null || !requiresApprovedEstablishment(role) || currentEstablishment != null
+
+    /**
+     * "Pendiente de ficha" under the establishment name, for roles that can complete it. Hidden
+     * while the role is unknown, so an analyst never gets a shortcut that ends in a 403.
+     */
+    val showsCharacterizationPending: Boolean
+        get() = currentEstablishment?.characterizationStatus == CharacterizationStatus.Pending &&
+            role?.let(::canEditCharacterization) == true
+
+    /** Why the quick actions are disabled, or null when they are enabled. */
+    val quickActionsHint: String?
+        get() = when {
+            quickActionsEnabled -> null
+            establishmentOptions.isNotEmpty() -> "Elegí un establecimiento aprobado para registrar datos."
+            establishmentLinkMode(role.orEmpty()) == EstablishmentLinkMode.Subscribe ->
+                "Suscribite a un establecimiento desde Perfil › Mis establecimientos para registrar datos."
+            else ->
+                "Solicitá acceso a un establecimiento desde Perfil › Mis establecimientos para registrar datos."
+        }
+}
 
 /** The single derived state the sync-status card renders. Precedence lives in [deriveState]. */
 sealed interface SyncStatusUi {
@@ -44,5 +78,7 @@ data class RecentActivityUi(
     val badgeTone: AlBadgeTone,
     val createdAt: Long,
 ) {
-    enum class Kind { Subject, Measurement, SurveyResponse }
+    /** Ingreso and salida are separate kinds, not one `Food` kind: this enum is the only carrier
+     *  for the row's leading icon, and direction is the row's headline fact. */
+    enum class Kind { Subject, Measurement, SurveyResponse, FoodIntake, FoodOutflow }
 }

@@ -27,8 +27,7 @@ class ProfileViewModel(
             ProfileAction.Load -> load()
             ProfileAction.RetryClick -> load()
             ProfileAction.EditClick -> emitEdit()
-            ProfileAction.MyEstablishmentsClick ->
-                _state.update { it.copy(destination = ProfileDestination.MyEstablishments) }
+            ProfileAction.MyEstablishmentsClick -> emitMyEstablishments()
             ProfileAction.SignOutClick ->
                 _state.update { it.copy(showSignOutConfirm = true) }
             ProfileAction.ConfirmSignOut -> performSignOut()
@@ -55,6 +54,11 @@ class ProfileViewModel(
                 ),
             )
         }
+    }
+
+    private fun emitMyEstablishments() {
+        val profile = _state.value.profile ?: return
+        _state.update { it.copy(destination = ProfileDestination.MyEstablishments(profile.role)) }
     }
 
     private fun load() {

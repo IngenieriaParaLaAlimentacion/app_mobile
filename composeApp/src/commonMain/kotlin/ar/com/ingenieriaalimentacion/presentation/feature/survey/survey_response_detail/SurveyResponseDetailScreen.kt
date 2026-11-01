@@ -29,6 +29,7 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.banner.AlInli
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButtonVariant
 import ar.com.ingenieriaalimentacion.core.design_system.components.card.AlCard
+import ar.com.ingenieriaalimentacion.core.design_system.components.header.AlSectionLabel
 import ar.com.ingenieriaalimentacion.core.design_system.components.scaffold.AlScaffold
 import ar.com.ingenieriaalimentacion.core.design_system.components.toast.AlToast
 import ar.com.ingenieriaalimentacion.core.design_system.components.top_app_bar.AlBackTopAppBar
@@ -133,6 +134,7 @@ fun SurveyResponseDetailScreen(
                             ResponseMetaHeader(
                                 targetLabel = state.targetLabel,
                                 eventAtLabel = state.eventAtLabel,
+                                responseNumber = state.responseNumber,
                             )
 
                             AnsweredQuestionsCard(answeredQuestions = state.answeredQuestions)
@@ -177,8 +179,15 @@ fun SurveyResponseDetailScreen(
 }
 
 @Composable
-private fun ResponseMetaHeader(targetLabel: String, eventAtLabel: String) {
+private fun ResponseMetaHeader(targetLabel: String, eventAtLabel: String, responseNumber: Int?) {
     Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
+        responseNumber?.let {
+            Text(
+                text = "N.º $it",
+                style = AlTheme.typography.dataSmall,
+                color = AlTheme.colors.textMuted,
+            )
+        }
         Row(
             horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
@@ -217,11 +226,7 @@ private fun ResponseMetaHeader(targetLabel: String, eventAtLabel: String) {
 @Composable
 private fun AnsweredQuestionsCard(answeredQuestions: List<AnsweredQuestionUi>) {
     Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
-        Text(
-            text = "RESPUESTAS",
-            style = AlTheme.typography.caption.copy(fontWeight = FontWeight.SemiBold, letterSpacing = 0.5.sp),
-            color = AlTheme.colors.textMuted,
-        )
+        AlSectionLabel(text = "Respuestas")
         AlCard {
             answeredQuestions.forEachIndexed { index, answered ->
                 Column(

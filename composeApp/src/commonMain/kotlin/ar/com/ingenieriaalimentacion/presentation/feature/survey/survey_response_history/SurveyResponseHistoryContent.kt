@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -27,13 +27,16 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButt
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButtonVariant
 import ar.com.ingenieriaalimentacion.core.design_system.components.dialog.AlConfirmDialog
 import ar.com.ingenieriaalimentacion.core.design_system.components.dialog.AlConfirmTone
+import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlDateSeparator
 import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlListRow
 import ar.com.ingenieriaalimentacion.core.design_system.components.pill.AlPill
 import ar.com.ingenieriaalimentacion.core.design_system.components.pill.AlPillTone
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseConflict
+import ar.com.ingenieriaalimentacion.domain.model.survey.needsRequiredResponseNumber
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseSummary
+import ar.com.ingenieriaalimentacion.presentation.common.today
 import com.komoui.components.Spinner
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.datetime.TimeZone
@@ -50,11 +53,19 @@ fun SurveyResponseHistoryContent(
     val currentState by rememberUpdatedState(state)
     // Discard destroys answers that were never sent, so it is always confirmed first.
     var pendingDiscard by remember { mutableStateOf<SurveyResponseSummary?>(null) }
+    val zone = TimeZone.currentSystemDefault()
+    val days = remember(state.items) {
+        // "Hoy"/"Ayer" resolve against the day this list was last built; every new or synced
+        // response rebuilds it, so the labels cannot drift far past midnight.
+        state.items.toDayGroups(today = today(zone), zone = zone)
+    }
+    // Headers occupy list slots too, so the near-end check counts lines, not responses.
+    val lineCount by rememberUpdatedState(days.size + state.items.size)
 
     LaunchedEffect(listState) {
         snapshotFlow {
             val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
-            last >= currentState.items.lastIndex - LOAD_MORE_THRESHOLD
+            last >= lineCount - 1 - LOAD_MORE_THRESHOLD
         }.distinctUntilChanged().collect { nearEnd ->
             if (nearEnd && currentState.canLoadMore) onAction(SurveyResponseHistoryAction.LoadMore)
         }
@@ -75,12 +86,28 @@ fun SurveyResponseHistoryContent(
             state = listState,
             modifier = modifier.fillMaxSize(),
         ) {
-            items(items = state.items, key = { it.id }) { item ->
-                SurveyResponseHistoryRow(
-                    item = item,
-                    onAction = onAction,
-                    onRequestDiscard = { pendingDiscard = it },
-                )
+            days.forEachIndexed { dayIndex, day ->
+                stickyHeader(key = day.key, contentType = "date-separator") {
+                    AlDateSeparator(
+                        label = day.label,
+                        // `sm`, not `xs`: the hub's segmented control adds its own `md` below, so
+                        // 16 + 8 is the `lg` that separates one day's block from the next.
+                        topPadding = if (dayIndex == 0) AlTheme.spacing.sm else AlTheme.spacing.lg,
+                    )
+                }
+                itemsIndexed(
+                    items = day.items,
+                    key = { _, item -> item.id },
+                    contentType = { _, _ -> "response" },
+                ) { index, item ->
+                    SurveyResponseHistoryRow(
+                        item = item,
+                        // The last row of a day closes its block: the next header is the divider.
+                        showDivider = index != day.items.lastIndex,
+                        onAction = onAction,
+                        onRequestDiscard = { pendingDiscard = it },
+                    )
+                }
             }
             if (state.isLoadingMore) {
                 item {
@@ -114,13 +141,14 @@ fun SurveyResponseHistoryContent(
 @Composable
 private fun SurveyResponseHistoryRow(
     item: SurveyResponseSummary,
+    showDivider: Boolean,
     onAction: (SurveyResponseHistoryAction) -> Unit,
     onRequestDiscard: (SurveyResponseSummary) -> Unit,
 ) {
     // A conflict outranks the raw sync state: the row is FAILED underneath, but "Error" would
     // read as something a retry could fix, and nothing here can be retried.
     val (label, tone) = when {
-        item.conflict != null -> "Conflicto" to AlPillTone.Danger
+        item.conflict != null && item.syncState == SyncState.Failed -> "Conflicto" to AlPillTone.Danger
         else -> when (item.syncState) {
             SyncState.Pending -> "Pendiente" to AlPillTone.Warning
             SyncState.Syncing -> "Sincronizando" to AlPillTone.Neutral
@@ -135,10 +163,20 @@ private fun SurveyResponseHistoryRow(
             title = item.surveyName,
             subtitle = item.targetLabel ?: "Anónima",
             onClick = { onAction(SurveyResponseHistoryAction.ResponseClick(item.surveyId, item.id)) },
-            trailing = { AlPill(text = label, tone = tone) },
+            trailing = {
+                item.responseNumber?.let {
+                    Text(
+                        text = "N $it",
+                        style = AlTheme.typography.dataSmall,
+                        color = AlTheme.colors.textMuted,
+                    )
+                }
+                AlPill(text = label, tone = tone)
+            },
+            showDivider = showDivider,
         )
         when {
-            item.conflict != null -> Column(
+            item.conflict != null && item.syncState == SyncState.Failed -> Column(
                 modifier = Modifier.padding(horizontal = AlTheme.spacing.md, vertical = AlTheme.spacing.xs),
                 verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs),
             ) {
@@ -147,9 +185,18 @@ private fun SurveyResponseHistoryRow(
                     style = AlTheme.typography.caption,
                     color = AlTheme.colors.textMuted,
                 )
-                // No Reintentar: another response already owns this survey+target, so a retry
-                // could only conflict again.
                 AlButton(onClick = { onRequestDiscard(item) }) { Text("Descartar") }
+            }
+
+            item.needsRequiredResponseNumber -> Column(
+                modifier = Modifier.padding(horizontal = AlTheme.spacing.md, vertical = AlTheme.spacing.xs),
+                verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs),
+            ) {
+                item.errorMessage?.let { Text(it, style = AlTheme.typography.caption, color = AlTheme.colors.textMuted) }
+                Row(horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
+                    AlButton(onClick = { onAction(SurveyResponseHistoryAction.FixResponseNumberClick(item.id, item.surveyName)) }) { Text("Agregar número") }
+                    AlButton(onClick = { onRequestDiscard(item) }, variant = AlButtonVariant.Outline) { Text("Descartar") }
+                }
             }
 
             item.syncState == SyncState.Failed -> Column(

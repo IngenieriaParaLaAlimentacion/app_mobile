@@ -25,6 +25,7 @@ data class SurveyResponseEditUpload(
     val attemptCount: Int,
     val createdAt: Long,
     val updatedAt: Long,
+    val responseNumber: Int? = null,
 )
 
 fun SurveyResponseEditUpload.isEligibleAt(nowMs: Long): Boolean {

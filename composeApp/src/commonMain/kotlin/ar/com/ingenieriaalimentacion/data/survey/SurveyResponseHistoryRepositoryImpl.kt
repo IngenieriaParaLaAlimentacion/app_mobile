@@ -102,6 +102,7 @@ class SurveyResponseHistoryRepositoryImpl(
                     targetId = response.subjectId ?: response.establishmentId,
                     targetLabel = local.find(responseId)?.target?.label,
                     submittedById = response.submittedById,
+                    responseNumber = response.responseNumber,
                     answers = response.answers,
                     eventAt = response.eventAt,
                 )
@@ -127,6 +128,7 @@ class SurveyResponseHistoryRepositoryImpl(
             targetLabel = upload.target.label,
             // null → "this device's own submission" per SurveyResponseDetail's contract.
             submittedById = null,
+            responseNumber = upload.responseNumber,
             answers = answers,
             eventAt = upload.eventAt,
         ).getOrNull()?.let { Result.success(it) }
@@ -138,6 +140,7 @@ class SurveyResponseHistoryRepositoryImpl(
         targetId: String?,
         targetLabel: String?,
         submittedById: String?,
+        responseNumber: Int?,
         answers: Map<String, JsonElement>,
         eventAt: String,
     ): Result<SurveyResponseDetail> {
@@ -155,6 +158,7 @@ class SurveyResponseHistoryRepositoryImpl(
                 targetId = targetId,
                 targetLabel = targetLabel,
                 submittedById = submittedById,
+                responseNumber = responseNumber,
                 answers = answers.toAnswerValues(survey.questions),
                 eventAtMs = Instant.parse(eventAt).toEpochMilliseconds(),
             )

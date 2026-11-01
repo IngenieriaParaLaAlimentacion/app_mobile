@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -30,10 +31,15 @@ import ar.com.ingenieriaalimentacion.core.design_system.components.badge.AlStatu
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButtonVariant
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlIconButton
+import ar.com.ingenieriaalimentacion.core.design_system.components.list.AlDateSeparator
 import ar.com.ingenieriaalimentacion.core.design_system.theme.AlTheme
+import ar.com.ingenieriaalimentacion.presentation.common.dayOf
+import ar.com.ingenieriaalimentacion.presentation.common.groupByDay
+import ar.com.ingenieriaalimentacion.presentation.common.today
 import ingenieria_alimentacion.composeapp.generated.resources.Res
 import ingenieria_alimentacion.composeapp.generated.resources.ic_mingcute_delete
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.datetime.TimeZone
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -53,11 +59,18 @@ fun SubjectUploadsContent(
 ) {
     val listState = rememberLazyListState()
     val currentState by rememberUpdatedState(state)
+    val zone = TimeZone.currentSystemDefault()
+    val days = remember(state.uploads) {
+        // Grouped on the registration time — the same field the repository sorts by.
+        state.uploads.groupByDay(today(zone)) { dayOf(it.createdAtMillis, zone) }
+    }
+    // Headers occupy list slots too, so the near-end check counts lines, not subjects.
+    val lineCount by rememberUpdatedState(days.size + state.uploads.size)
 
     LaunchedEffect(listState) {
         snapshotFlow {
             val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
-            last >= currentState.uploads.lastIndex - LOAD_MORE_THRESHOLD
+            last >= lineCount - 1 - LOAD_MORE_THRESHOLD
         }.distinctUntilChanged().collect { nearEnd ->
             if (nearEnd && currentState.canLoadMore) onAction(SubjectUploadsAction.LoadMore)
         }
@@ -75,8 +88,18 @@ fun SubjectUploadsContent(
         )
 
         else -> LazyColumn(modifier.fillMaxSize(), state = listState) {
-            items(state.uploads, key = { it.localId }) { upload ->
-                SubjectUploadRow(upload = upload, onAction = onAction)
+            days.forEachIndexed { dayIndex, day ->
+                stickyHeader(key = day.key, contentType = "date-separator") {
+                    AlDateSeparator(
+                        label = day.label,
+                        // `sm`, not `xs`: the hub's segmented control adds its own `md` below, so
+                        // 16 + 8 is the `lg` that separates one day's block from the next.
+                        topPadding = if (dayIndex == 0) AlTheme.spacing.sm else AlTheme.spacing.lg,
+                    )
+                }
+                items(day.items, key = { it.localId }, contentType = { "subject" }) { upload ->
+                    SubjectUploadRow(upload = upload, onAction = onAction)
+                }
             }
             if (state.isLoadingMore) {
                 item {

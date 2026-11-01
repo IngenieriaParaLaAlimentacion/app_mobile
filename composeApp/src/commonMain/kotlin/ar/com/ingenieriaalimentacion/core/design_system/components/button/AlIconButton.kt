@@ -28,19 +28,22 @@ fun AlIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     tint: Color = AlTheme.colors.textMuted,
+    enabled: Boolean = true,
 ) {
     Box(
         modifier = modifier
             .size(40.dp)
             .clip(CircleShape)
-            .clickable(onClick = onClick),
+            .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = vectorResource(icon),
             contentDescription = contentDescription,
             modifier = Modifier.size(20.dp),
-            tint = tint,
+            tint = if (enabled) tint else tint.copy(alpha = DISABLED_ALPHA),
         )
     }
 }
+
+private const val DISABLED_ALPHA = 0.38f

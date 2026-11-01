@@ -15,4 +15,5 @@ data class MeasurementRequest(
     @SerialName("weight_kg") val weightKg: Double,
     @SerialName("height_cm") val heightCm: Double,
     @SerialName("measured_at") val measuredAt: String, // ISO 8601 UTC (…Z)
+    val observation: String? = null,
 )

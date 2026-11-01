@@ -9,7 +9,15 @@ import ar.com.ingenieriaalimentacion.presentation.feature.auth.forgot_password.f
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.login.loginScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.reset_password.resetPasswordScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.verify_email.verifyEmailScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.establishment.characterization.edit_characterization.editCharacterizationScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.establishment.select_establishment.selectEstablishmentScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_intake.createFoodIntakeScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.food.receipt_food_intake.receiptFoodIntakeScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.food.create_food_outflow.createFoodOutflowScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_food_movement_detail.establishmentFoodMovementDetailScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.food.establishment_food_movement_history.establishmentFoodMovementHistoryScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.food.food_overview.foodOverviewScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.food.food_stock.foodStockScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.get_started.getStartedScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.measurement.create_measurement.createMeasurementScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.profile.edit.editProfileScreen
@@ -23,6 +31,8 @@ import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_list.sur
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_detail.surveyResponseDetailScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_edit.surveyResponseEditScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_form.surveyResponseFormScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_number_fix.surveyResponseNumberFixScreen
+import ar.com.ingenieriaalimentacion.presentation.feature.food.recipes.recipesScreen
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 
 @Composable
@@ -41,11 +51,20 @@ fun AppNavHost(
             selectEstablishmentScreen(navController)
             createSubjectScreen(navController)
             createMeasurementScreen(navController)
+            recipesScreen(navController)
+            foodOverviewScreen(navController)
+            createFoodIntakeScreen(navController)
+            receiptFoodIntakeScreen(navController)
+            createFoodOutflowScreen(navController)
+            foodStockScreen(navController)
+            establishmentFoodMovementHistoryScreen(navController)
+            establishmentFoodMovementDetailScreen(navController)
             selectSubjectScreen(navController)
             editProfileScreen(navController)
             requestEstablishmentScreen(navController)
             notifyEstablishmentScreen(navController)
             myEstablishmentsScreen(navController)
+            editCharacterizationScreen(navController)
             resetPasswordScreen(navController)
             verifyEmailScreen(navController)
             forgotPasswordScreen(navController)
@@ -53,6 +72,7 @@ fun AppNavHost(
             surveyResponseFormScreen(navController)
             surveyResponseDetailScreen(navController)
             surveyResponseEditScreen(navController)
+            surveyResponseNumberFixScreen(navController)
             composable<Route.AuthedShell> {
                 AuthedShell(
                     onSignOut = {

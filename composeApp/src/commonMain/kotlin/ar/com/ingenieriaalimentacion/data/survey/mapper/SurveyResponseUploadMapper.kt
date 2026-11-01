@@ -24,10 +24,13 @@ internal fun PendingSurveyResponse.toDomain(): SurveyResponseUpload = SurveyResp
     errorMessage = errorMessage,
     // conflictBy is the discriminator: conflictAt can legitimately be blank if the server omitted
     // event_at, but a row is only ever a conflict if a submitter name was written with it.
-    conflict = conflictBy?.let { ResponseConflict(submittedByName = it, eventAt = conflictAt.orEmpty()) },
+    conflict = conflictBy?.let {
+        ResponseConflict(it, conflictAt.orEmpty())
+    },
     attemptCount = attemptCount.toInt(),
     createdAt = createdAt,
     updatedAt = updatedAt,
+    responseNumber = responseNumber?.toInt(),
 )
 
 /** A row whose `responseTarget` says subject/establishment but whose `targetId` is NULL is
@@ -58,6 +61,7 @@ internal fun SurveyResponseUpload.toRequest(
     id = localId,
     subjectId = (target as? ResponseTargetRef.Subject)?.let { subjectIdOverride ?: it.id },
     establishmentId = (target as? ResponseTargetRef.Establishment)?.id,
+    responseNumber = responseNumber,
     answers = json.decodeFromString<Map<String, JsonElement>>(answersJson),
     eventAt = eventAt,
 )

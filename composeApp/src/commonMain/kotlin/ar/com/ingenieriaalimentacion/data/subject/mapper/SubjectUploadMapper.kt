@@ -56,6 +56,7 @@ internal fun SubjectUpload.toSummary(): SubjectSummary = SubjectSummary(
     name = name,
     lastName = lastName,
     sex = sex,
+    birthDate = birthDate,
 )
 
 /** Queued upload → POST body. The [SubjectUpload.localId] doubles as the idempotency `id`. */

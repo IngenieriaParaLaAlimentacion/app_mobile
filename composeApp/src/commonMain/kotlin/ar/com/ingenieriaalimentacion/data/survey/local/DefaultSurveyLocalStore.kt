@@ -39,6 +39,7 @@ class DefaultSurveyLocalStore(
         queries.transaction {
             surveys.forEach { survey ->
                 val existingDetailJson = queries.selectById(survey.id).executeAsOneOrNull()?.detailJson
+                    ?.withResponseNumberPolicy(survey.requiresResponseNumber)
                 queries.insertOrReplace(
                     id = survey.id,
                     name = survey.name,
@@ -47,6 +48,7 @@ class DefaultSurveyLocalStore(
                     questionCount = survey.questionCount.toLong(),
                     detailJson = existingDetailJson,
                     updatedAt = nowMs,
+                    requiresResponseNumber = survey.requiresResponseNumber?.let { if (it) 1L else 0L },
                 )
             }
         }
@@ -61,6 +63,7 @@ class DefaultSurveyLocalStore(
             questionCount = detail.questions.size.toLong(),
             detailJson = json.encodeToString(detail),
             updatedAt = now(),
+            requiresResponseNumber = detail.requiresResponseNumber?.let { if (it) 1L else 0L },
         )
     }
 
@@ -83,8 +86,10 @@ class DefaultSurveyLocalStore(
                     responseTarget = survey.responseTarget.toDbString(),
                     isActive = if (survey.isActive) 1L else 0L,
                     questionCount = survey.questionCount.toLong(),
-                    detailJson = existingDetailJson[survey.id],
+                    detailJson = existingDetailJson[survey.id]
+                        ?.withResponseNumberPolicy(survey.requiresResponseNumber),
                     updatedAt = nowMs,
+                    requiresResponseNumber = survey.requiresResponseNumber?.let { if (it) 1L else 0L },
                 )
             }
         }
@@ -93,4 +98,10 @@ class DefaultSurveyLocalStore(
     override suspend fun idsMissingDetail(): List<String> = withContext(dispatcher) {
         queries.selectIdsMissingDetail().executeAsList()
     }
+
+    private fun String.withResponseNumberPolicy(required: Boolean?): String = runCatching {
+        json.encodeToString(
+            json.decodeFromString<SurveyDetail>(this).copy(requiresResponseNumber = required),
+        )
+    }.getOrDefault(this)
 }

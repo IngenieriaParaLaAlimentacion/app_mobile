@@ -26,7 +26,7 @@ fun AlFieldLabel(text: String, modifier: Modifier = Modifier, required: Boolean 
     }
     Text(
         text = content,
-        style = AlTheme.typography.bodyStrong,
+        style = AlTheme.typography.label,
         color = AlTheme.colors.textBase,
         modifier = modifier,
     )

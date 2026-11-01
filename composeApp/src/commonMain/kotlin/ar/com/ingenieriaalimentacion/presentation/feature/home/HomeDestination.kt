@@ -6,4 +6,9 @@ sealed class HomeDestination {
     data object NavigateToCreateMeasurement : HomeDestination()
     data object NavigateToHistory : HomeDestination()   // switch to the History tab
     data object NavigateToSurveyList : HomeDestination()
+    data object NavigateToFoodOverview : HomeDestination()
+    data class NavigateToEditCharacterization(
+        val establishmentId: String,
+        val establishmentName: String,
+    ) : HomeDestination()
 }

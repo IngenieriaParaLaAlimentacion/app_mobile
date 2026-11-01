@@ -12,10 +12,10 @@ App Android e iOS del proyecto **Ingeniería para la Alimentación**, desarrolla
 
 - [Manual de usuario en línea](https://ingenieriaparalaalimentacion.github.io/app_mobile/), con búsqueda, navegación por capítulos y descarga del PDF. También está disponible en el repositorio en [HTML](docs/manual-usuario/index.html) y [PDF](docs/manual-usuario/manual.pdf). Los pasos y las capturas corresponden a Android.
 - [Instalar y actualizar la app de prueba](docs/guia-instalacion-testers.md).
-- [Compilar y ejecutar iOS en un simulador](docs/ios-desarrollo-local.md).
-- [Configurar notificaciones iOS](docs/push-notifications-ios.md).
-- [Traspaso y distribución](docs/traspaso-app-mobile.md).
-- [Funcionamiento técnico de recetas](docs/recipe-recommendations.md).
+- [Compilar y ejecutar iOS en un simulador](docs/ios-local-development.md) (en inglés).
+- [Configurar notificaciones iOS](docs/ios-push-notifications.md) (en inglés).
+- [Traspaso y distribución](docs/traspaso-app-mobile.md). La última versión está en un [Google Doc](https://docs.google.com/document/d/1me0E1EmsKoR4xRyncyNFgfimNXf9t_r8/edit?usp=sharing) (requiere cuenta `@fi.uba.ar`).
+- [Funcionamiento técnico de recetas](docs/recipe-recommendations.md) (en inglés).
 - [Convenciones de desarrollo](claude.md).
 
 ---
@@ -29,7 +29,7 @@ App Android e iOS del proyecto **Ingeniería para la Alimentación**, desarrolla
 | Android Studio | Con soporte para Kotlin Multiplatform | Para desarrollar Android desde el IDE |
 | Xcode | Con un runtime de iOS Simulator | Solo para iOS; requiere macOS |
 
-El proyecto incluye destinos para dispositivos y simuladores Apple Silicon (`iosArm64` e `iosSimulatorArm64`). Consultá el [alcance de la validación iOS](docs/ios-desarrollo-local.md#validación-realizada-el-28-de-octubre-de-2026).
+El proyecto incluye destinos para dispositivos y simuladores Apple Silicon (`iosArm64` e `iosSimulatorArm64`). Consultá el [alcance de la validación iOS](docs/ios-local-development.md#validation-performed).
 
 ---
 
@@ -60,7 +60,7 @@ Completá `local.properties`, que está ignorado por Git:
 | `api_url_prod` | No | URL del backend de producción. Si está vacía, usa la definida en `composeApp/build.gradle.kts` |
 | `web_host_tst`, `web_host_prod` | No | Hosts de los enlaces de verificación de email |
 
-Para notificaciones Android, agregá el `google-services.json` del entorno en `composeApp/src/tst/` o `composeApp/src/prod/`. Las compilaciones Android que procesan Google Services requieren una configuración válida para el paquete elegido. La [guía de iOS](docs/ios-desarrollo-local.md) explica la configuración de Firebase para esa plataforma. La firma y distribución Android usan los archivos locales descritos en el [documento de traspaso](docs/traspaso-app-mobile.md).
+Para notificaciones Android, agregá el `google-services.json` del entorno en `composeApp/src/tst/` o `composeApp/src/prod/`. Las compilaciones Android que procesan Google Services requieren una configuración válida para el paquete elegido. La [guía de iOS](docs/ios-local-development.md) explica la configuración de Firebase para esa plataforma. La firma y distribución Android usan los archivos locales descritos en el [documento de traspaso](docs/traspaso-app-mobile.md).
 
 ---
 
@@ -89,7 +89,7 @@ Ejecutá cada comando por separado desde la raíz del repositorio:
 
 Abrí `iosApp/iosApp.xcodeproj`, seleccioná `iosApp-tst` o `iosApp-prod` y ejecutá sobre un iPhone Simulator. Los esquemas seleccionan explícitamente el backend; `tst` requiere `api_url_tst` en `local.properties`.
 
-El simulador no requiere una cuenta Apple. La [guía de desarrollo local iOS](docs/ios-desarrollo-local.md) incluye los comandos de compilación sin firma y las limitaciones de las pruebas realizadas.
+El simulador no requiere una cuenta Apple. La [guía de desarrollo local iOS](docs/ios-local-development.md) incluye los comandos de compilación sin firma y las limitaciones de las pruebas realizadas.
 
 ---
 

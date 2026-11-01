@@ -10,13 +10,13 @@ Android and iOS app for the **Ingeniería para la Alimentación** project, built
 
 ## Documentation
 
-> The linked guides and the user manual are written in Spanish.
+> The technical guides are in English. The handover document, the tester installation guide and the user manual are in Spanish.
 
 - [Online user manual](https://ingenieriaparalaalimentacion.github.io/app_mobile/), with search, chapter navigation and PDF download. Also available in the repository as [HTML](docs/manual-usuario/index.html) and [PDF](docs/manual-usuario/manual.pdf). Steps and screenshots are for Android.
 - [Install and update the test app](docs/guia-instalacion-testers.md).
-- [Build and run iOS on a simulator](docs/ios-desarrollo-local.md).
-- [Set up iOS notifications](docs/push-notifications-ios.md).
-- [Handover and distribution](docs/traspaso-app-mobile.md).
+- [Build and run iOS on a simulator](docs/ios-local-development.md).
+- [Set up iOS notifications](docs/ios-push-notifications.md).
+- [Handover and distribution](docs/traspaso-app-mobile.md). The latest version is in a [Google Doc](https://docs.google.com/document/d/1me0E1EmsKoR4xRyncyNFgfimNXf9t_r8/edit?usp=sharing) (requires an `@fi.uba.ar` account).
 - [Recipe recommendations: technical overview](docs/recipe-recommendations.md).
 - [Development conventions](claude.md).
 
@@ -31,7 +31,7 @@ Android and iOS app for the **Ingeniería para la Alimentación** project, built
 | Android Studio | With Kotlin Multiplatform support | To develop Android from the IDE |
 | Xcode | With an iOS Simulator runtime | iOS only; requires macOS |
 
-The project includes targets for Apple Silicon devices and simulators (`iosArm64` and `iosSimulatorArm64`). See the [scope of the iOS validation](docs/ios-desarrollo-local.md#validación-realizada-el-28-de-octubre-de-2026).
+The project includes targets for Apple Silicon devices and simulators (`iosArm64` and `iosSimulatorArm64`). See the [scope of the iOS validation](docs/ios-local-development.md#validation-performed).
 
 ---
 
@@ -62,7 +62,7 @@ Fill in `local.properties`, which is ignored by Git:
 | `api_url_prod` | No | Production backend URL. When empty, it uses the one defined in `composeApp/build.gradle.kts` |
 | `web_host_tst`, `web_host_prod` | No | Hosts for the email verification links |
 
-For Android notifications, add the environment's `google-services.json` to `composeApp/src/tst/` or `composeApp/src/prod/`. Android builds that process Google Services need a valid configuration for the chosen package. The [iOS guide](docs/ios-desarrollo-local.md) explains the Firebase setup for that platform. Android signing and distribution use the local files described in the [handover document](docs/traspaso-app-mobile.md).
+For Android notifications, add the environment's `google-services.json` to `composeApp/src/tst/` or `composeApp/src/prod/`. Android builds that process Google Services need a valid configuration for the chosen package. The [iOS guide](docs/ios-local-development.md) explains the Firebase setup for that platform. Android signing and distribution use the local files described in the [handover document](docs/traspaso-app-mobile.md).
 
 ---
 
@@ -91,7 +91,7 @@ Run each command separately from the repository root:
 
 Open `iosApp/iosApp.xcodeproj`, select `iosApp-tst` or `iosApp-prod` and run on an iPhone Simulator. The schemes explicitly select the backend; `tst` requires `api_url_tst` in `local.properties`.
 
-The simulator does not need an Apple account. The [local iOS development guide](docs/ios-desarrollo-local.md) includes the unsigned build commands and the limits of the testing done.
+The simulator does not need an Apple account. The [local iOS development guide](docs/ios-local-development.md) includes the unsigned build commands and the limits of the testing done.
 
 ---
 

@@ -220,7 +220,7 @@ iOS has a checked-in Xcode project at `iosApp/iosApp.xcodeproj`. Shared schemes
 `iosApp/Configuration/{Tst,Prod}.xcconfig` sets `APP_ENVIRONMENT` and distinct bundle IDs;
 `scripts/build-ios-framework.sh` passes that environment to Gradle explicitly. Custom
 configurations set `KOTLIN_FRAMEWORK_BUILD_TYPE` to Debug or Release. Build environments
-sequentially. Simulator builds do not need an Apple account; see `docs/ios-desarrollo-local.md`.
+sequentially. Simulator builds do not need an Apple account; see `docs/ios-local-development.md`.
 
 ## Working documents
 
@@ -262,6 +262,6 @@ Every variant is flavored — there is no plain `assembleDebug`.
 
 ### iOS
 Open `iosApp/iosApp.xcodeproj` and select `iosApp-tst` or `iosApp-prod` with an
-Apple Silicon iPhone Simulator. See [local iOS development](docs/ios-desarrollo-local.md)
-for unsigned CLI builds and [push notification setup](docs/push-notifications-ios.md)
+Apple Silicon iPhone Simulator. See [local iOS development](docs/ios-local-development.md)
+for unsigned CLI builds and [push notification setup](docs/ios-push-notifications.md)
 for Firebase and APNs provisioning.

@@ -1,8 +1,8 @@
 # Ingeniería en Alimentación · App móvil
 
-[![en](https://img.shields.io/badge/lang-en-red.svg)](README.md)
-[![Kotlin](https://img.shields.io/badge/kotlin-2.3.20-7F52FF.svg)](gradle/libs.versions.toml)
-[![Compose Multiplatform](https://img.shields.io/badge/compose%20multiplatform-1.10.3-4285F4.svg)](gradle/libs.versions.toml)
+[![en](https://img.shields.io/badge/lang-en-red.svg?logo=googletranslate&logoColor=white)](README.md)
+[![Kotlin](https://img.shields.io/badge/kotlin-2.3.20-7F52FF.svg?logo=kotlin&logoColor=white)](gradle/libs.versions.toml)
+[![Compose Multiplatform](https://img.shields.io/badge/compose%20multiplatform-1.10.3-4285F4.svg?logo=jetpackcompose&logoColor=white)](gradle/libs.versions.toml)
 
 App Android e iOS del proyecto **Ingeniería para la Alimentación**, desarrollada con Kotlin y Compose Multiplatform. Permite registrar sujetos, mediciones y encuestas, gestionar alimentos y consultar recetas. Los sujetos, las mediciones y las respuestas de encuestas se guardan localmente y se sincronizan con el backend.
 
@@ -16,7 +16,7 @@ App Android e iOS del proyecto **Ingeniería para la Alimentación**, desarrolla
 - [Configurar notificaciones iOS](docs/ios-push-notifications.md) (en inglés).
 - [Traspaso y distribución](docs/traspaso-app-mobile.md). La última versión está en un [Google Doc](https://docs.google.com/document/d/1me0E1EmsKoR4xRyncyNFgfimNXf9t_r8/edit?usp=sharing) (requiere cuenta `@fi.uba.ar`).
 - [Funcionamiento técnico de recetas](docs/recipe-recommendations.md) (en inglés).
-- [Convenciones de desarrollo](claude.md).
+- [Convenciones de desarrollo](CLAUDE.md).
 
 ---
 

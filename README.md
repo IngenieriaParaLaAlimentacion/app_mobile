@@ -1,8 +1,8 @@
 # Ingeniería en Alimentación · Mobile App
 
-[![es](https://img.shields.io/badge/lang-es-red.svg)](README.es.md)
-[![Kotlin](https://img.shields.io/badge/kotlin-2.3.20-7F52FF.svg)](gradle/libs.versions.toml)
-[![Compose Multiplatform](https://img.shields.io/badge/compose%20multiplatform-1.10.3-4285F4.svg)](gradle/libs.versions.toml)
+[![es](https://img.shields.io/badge/lang-es-red.svg?logo=googletranslate&logoColor=white)](README.es.md)
+[![Kotlin](https://img.shields.io/badge/kotlin-2.3.20-7F52FF.svg?logo=kotlin&logoColor=white)](gradle/libs.versions.toml)
+[![Compose Multiplatform](https://img.shields.io/badge/compose%20multiplatform-1.10.3-4285F4.svg?logo=jetpackcompose&logoColor=white)](gradle/libs.versions.toml)
 
 Android and iOS app for the **Ingeniería para la Alimentación** project, built with Kotlin and Compose Multiplatform. It lets users register subjects, measurements and surveys, manage foods and browse recipes. Subjects, measurements and survey answers are stored locally and synced with the backend.
 
@@ -18,7 +18,7 @@ Android and iOS app for the **Ingeniería para la Alimentación** project, built
 - [Set up iOS notifications](docs/ios-push-notifications.md).
 - [Handover and distribution](docs/traspaso-app-mobile.md). The latest version is in a [Google Doc](https://docs.google.com/document/d/1me0E1EmsKoR4xRyncyNFgfimNXf9t_r8/edit?usp=sharing) (requires an `@fi.uba.ar` account).
 - [Recipe recommendations: technical overview](docs/recipe-recommendations.md).
-- [Development conventions](claude.md).
+- [Development conventions](CLAUDE.md).
 
 ---
 

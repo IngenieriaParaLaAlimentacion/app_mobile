@@ -53,7 +53,7 @@ Common types: `feat`, `fix`, `docs`, `refactor`, `ci`, `chore`.
 
 ## Code conventions
 
-Conventions for architecture, theme, icons, form validation and navigation are in [`claude.md`](claude.md) (in Spanish). The key points:
+Conventions for architecture, theme, icons, form validation and navigation are in [`CLAUDE.md`](CLAUDE.md). The key points:
 
 - Clean Architecture with MVVM. Screens follow the `Action`, `Destination`, `Navigation`, `Screen`, `State` and `ViewModel` structure.
 - Colors and components come from `core/design_system/`. Literal hex values only exist in `theme/Palette.kt`.

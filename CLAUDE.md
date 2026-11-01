@@ -4,7 +4,34 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Ingeniería en Alimentación — Compose Multiplatform mobile app targeting Android and iOS.
+Ingeniería en Alimentación — Compose Multiplatform mobile app targeting Android and iOS, a
+client of the project's REST backend. Field workers and establishment managers use it to
+register subjects, measurements (height/weight), surveys and food stock, and to get recipe
+proposals. Subjects, measurements and survey answers are stored locally (SQLDelight) and
+synced with the backend, so features must keep working offline.
+
+UI strings and validation messages are in Spanish; code (identifiers, comments) and technical
+documentation are in English.
+
+### Stack
+
+| Layer | Technology |
+|---|---|
+| Language | Kotlin (Multiplatform) |
+| UI | Compose Multiplatform, KomoUI wrapped by the `Al*` components |
+| Navigation | Navigation Compose (typed routes) |
+| DI | Koin |
+| Networking | Ktor client |
+| Local storage | SQLDelight |
+| Push | Firebase Cloud Messaging |
+| Tests | `kotlin.test` + Turbine, run on the Android JVM target |
+
+Versions live in `gradle/libs.versions.toml`.
+
+### Features
+
+One folder per feature under `presentation/feature/`: `auth`, `get_started`, `register`,
+`home`, `history`, `profile`, `subject`, `measurement`, `survey`, `establishment`, `food`.
 
 ### Components
 - `/composeApp/src/commonMain/kotlin/ar/com/ingenieriaalimentacion/` — shared Kotlin source
@@ -222,10 +249,27 @@ iOS has a checked-in Xcode project at `iosApp/iosApp.xcodeproj`. Shared schemes
 configurations set `KOTLIN_FRAMEWORK_BUILD_TYPE` to Debug or Release. Build environments
 sequentially. Simulator builds do not need an Apple account; see `docs/ios-local-development.md`.
 
-## Working documents
+## Documentation
 
-Keep temporary plans, research notes, and PR drafts in the git-ignored `.context/`
-directory. Maintain project documentation intended for the team in `docs/`.
+Project documentation for the team lives in `docs/`; the entry points are `README.md`
+(Spanish: `README.es.md`) and `CONTRIBUTING.md`. Keep temporary plans, research notes, and
+PR drafts in the git-ignored `.context/` directory.
+
+Technical docs are written in English. Docs aimed at the client or non-technical users are in
+Spanish. Do not keep the same document in both languages (the READMEs are the only exception).
+
+| Document | Language | Read it when |
+|---|---|---|
+| `CONTRIBUTING.md` | English | Branch names, commit format, PR rules, CI |
+| `docs/ios-local-development.md` | English | Building and running iOS, environments, validation scope |
+| `docs/ios-push-notifications.md` | English | Firebase, APNs, and signing for iOS push |
+| `docs/recipe-recommendations.md` | English | Recipe flow and its backend API dependency |
+| `docs/traspaso-app-mobile.md` | Spanish | Handover, distribution channels, release procedure, store publishing |
+| `docs/guia-instalacion-testers.md` | Spanish | Install/update guide for testers (non-technical) |
+| `docs/manual-usuario/` | Spanish | End-user manual; see its `mantenimiento.md` to update it |
+
+When you add, rename, or remove a document under `docs/`, update this table and the
+documentation list in both READMEs.
 
 ## Git workflow
 
@@ -238,6 +282,9 @@ Gitflow-lite with two long-lived branches:
 
 When creating a PR, target `develop` unless the user explicitly asks for a release, in which case
 open a `develop` → `main` PR.
+
+Branch prefixes (`feat/*`, `feature/*`, `fix/*`, `refactor/*`, `docs/*`, `chore/*`) are enforced by
+CI, and commits follow Conventional Commits. See `CONTRIBUTING.md`.
 
 ## Commands
 
@@ -259,6 +306,10 @@ Every variant is flavored — there is no plain `assembleDebug`.
 ```bash
 ./gradlew :composeApp:testProdDebugUnitTest --no-daemon
 ```
+Tests live in `commonTest` and `androidUnitTest`, mirroring the source packages
+(`app`, `core`, `data`, `domain`, `presentation`). Shared fakes are in the `fake` package: reuse
+them instead of mocking. View model flows are tested with Turbine. There are no UI tests and no
+iOS simulator tests; CI runs this same command.
 
 ### iOS
 Open `iosApp/iosApp.xcodeproj` and select `iosApp-tst` or `iosApp-prod` with an

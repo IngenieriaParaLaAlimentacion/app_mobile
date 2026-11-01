@@ -1,87 +1,143 @@
-# Ingeniería en Alimentación · App móvil
+# Ingeniería en Alimentación · Mobile App
 
-App Android e iOS desarrollada con Kotlin y Compose Multiplatform. Permite registrar sujetos, mediciones y encuestas, gestionar alimentos y consultar recetas. Los sujetos, las mediciones y las respuestas de encuestas se guardan localmente y se sincronizan con el backend.
+[![es](https://img.shields.io/badge/lang-es-red.svg?logo=googletranslate&logoColor=white)](README.es.md)
+[![Kotlin](https://img.shields.io/badge/kotlin-2.3.20-7F52FF.svg?logo=kotlin&logoColor=white)](gradle/libs.versions.toml)
+[![Compose Multiplatform](https://img.shields.io/badge/compose%20multiplatform-1.10.3-4285F4.svg?logo=jetpackcompose&logoColor=white)](gradle/libs.versions.toml)
 
-## Documentación
+Android and iOS app for the **Ingeniería para la Alimentación** project, built with Kotlin and Compose Multiplatform. It lets users register subjects, measurements and surveys, manage foods and browse recipes. Subjects, measurements and survey answers are stored locally and synced with the backend.
 
-- [Manual de usuario en línea](https://ingenieriaparalaalimentacion.github.io/app_mobile/), con búsqueda, navegación por capítulos y descarga del PDF. También está disponible en el repositorio en [HTML](docs/manual-usuario/index.html) y [PDF](docs/manual-usuario/manual.pdf). Los pasos y las capturas corresponden a Android.
-- [Instalar y actualizar la app de prueba](docs/guia-instalacion-testers.md).
-- [Compilar y ejecutar iOS en un simulador](docs/ios-desarrollo-local.md).
-- [Configurar notificaciones iOS](docs/push-notifications-ios.md).
-- [Traspaso y distribución](docs/traspaso-app-mobile.md).
-- [Funcionamiento técnico de recetas](docs/recipe-recommendations.md).
-- [Convenciones de desarrollo](claude.md).
+---
 
-## Requisitos
+## Documentation
 
-- JDK 21 para ejecutar Gradle.
-- Android SDK con API 36. La app requiere Android 8.0 (API 26) o posterior.
-- Android Studio con soporte para Kotlin Multiplatform para desarrollar Android desde el IDE.
-- Para iOS: Mac con Xcode y un runtime de iOS Simulator. El proyecto incluye destinos para dispositivos y simuladores Apple Silicon (`iosArm64` e `iosSimulatorArm64`). Consultá el [alcance de la validación iOS](docs/ios-desarrollo-local.md#validación-realizada-el-28-de-octubre-de-2026).
+> The technical guides are in English. The handover document, the tester installation guide and the user manual are in Spanish.
 
-## Configurar el proyecto
+- [Online user manual](https://ingenieriaparalaalimentacion.github.io/app_mobile/), with search, chapter navigation and PDF download. Also available in the repository as [HTML](docs/manual-usuario/index.html) and [PDF](docs/manual-usuario/manual.pdf). Steps and screenshots are for Android.
+- [Install and update the test app](docs/guia-instalacion-testers.md).
+- [Build and run iOS on a simulator](docs/ios-local-development.md).
+- [Set up iOS notifications](docs/ios-push-notifications.md).
+- [Handover and distribution](docs/traspaso-app-mobile.md). The latest version is in a [Google Doc](https://docs.google.com/document/d/1me0E1EmsKoR4xRyncyNFgfimNXf9t_r8/edit?usp=sharing) (requires an `@fi.uba.ar` account).
+- [Recipe recommendations: technical overview](docs/recipe-recommendations.md).
+- [Development conventions](CLAUDE.md).
 
-1. Copiá `local.properties.example` a `local.properties` si todavía no existe.
-2. Completá `sdk.dir` con la ruta de tu Android SDK, o definí `ANDROID_HOME`.
-3. Para el entorno de prueba, completá `api_url_tst` con la URL del backend, incluida la barra final.
-4. Seleccioná JDK 21 antes de ejecutar Gradle. En macOS:
+---
 
-	```bash
-	export JAVA_HOME=$(/usr/libexec/java_home -v 21)
-	```
+## Prerequisites
 
-`local.properties` está ignorado por Git. `api_url_prod` es opcional y usa la URL de producción definida en `composeApp/build.gradle.kts` cuando está vacío. `web_host_tst` y `web_host_prod` permiten cambiar los hosts de los enlaces de verificación de email.
+| Tool | Minimum version | Notes |
+|------|-----------------|-------|
+| JDK | 21 | Used to run Gradle |
+| Android SDK | API 36 | The app requires Android 8.0 (API 26) or later |
+| Android Studio | With Kotlin Multiplatform support | To develop Android from the IDE |
+| Xcode | With an iOS Simulator runtime | iOS only; requires macOS |
 
-Para notificaciones Android, agregá el `google-services.json` del entorno en `composeApp/src/tst/` o `composeApp/src/prod/`. Las compilaciones Android que procesan Google Services requieren una configuración válida para el paquete elegido. La [guía de iOS](docs/ios-desarrollo-local.md) explica la configuración de Firebase para esa plataforma. La firma y distribución Android usan los archivos locales descritos en el [documento de traspaso](docs/traspaso-app-mobile.md).
+The project includes targets for Apple Silicon devices and simulators (`iosArm64` and `iosSimulatorArm64`). See the [scope of the iOS validation](docs/ios-local-development.md#validation-performed).
 
-## Compilar Android
+---
 
-Las variantes `tst` y `prod` usan paquetes distintos y pueden coexistir sin compartir sesión ni datos locales.
-
-Ejecutá cada comando por separado desde la raíz del repositorio:
+## Installation
 
 ```bash
+# 1. Clone the repository
+git clone https://github.com/IngenieriaParaLaAlimentacion/app_mobile.git
+cd app_mobile
+
+# 2. Create the local configuration
+cp local.properties.example local.properties
+
+# 3. Select JDK 21 (macOS)
+export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+```
+
+---
+
+## Configuration
+
+Fill in `local.properties`, which is ignored by Git:
+
+| Key | Required | Description |
+|-----|----------|-------------|
+| `sdk.dir` | Yes* | Path to the Android SDK. *Alternative: set `ANDROID_HOME` |
+| `api_url_tst` | Yes, for `tst` | Test backend URL, including the trailing slash |
+| `api_url_prod` | No | Production backend URL. When empty, it uses the one defined in `composeApp/build.gradle.kts` |
+| `web_host_tst`, `web_host_prod` | No | Hosts for the email verification links |
+
+For Android notifications, add the environment's `google-services.json` to `composeApp/src/tst/` or `composeApp/src/prod/`. Android builds that process Google Services need a valid configuration for the chosen package. The [iOS guide](docs/ios-local-development.md) explains the Firebase setup for that platform. Android signing and distribution use the local files described in the [handover document](docs/traspaso-app-mobile.md).
+
+---
+
+## Running
+
+### Android
+
+The `tst` and `prod` variants use different packages and can coexist without sharing session or local data.
+
+Run each command separately from the repository root:
+
+```bash
+# Quick type check (commonMain)
 ./scripts/compile.sh
+
+# Debug APKs
 ./gradlew :composeApp:assembleTstDebug --no-daemon
 ./gradlew :composeApp:assembleProdDebug --no-daemon
 ```
 
-`scripts/compile.sh` selecciona JDK 21 en macOS y compila los metadatos de `commonMain`. Esa comprobación no reemplaza una compilación Android o iOS. Los APK de depuración quedan en `composeApp/build/outputs/apk/<entorno>/debug/`.
+`scripts/compile.sh` selects JDK 21 on macOS and compiles the `commonMain` metadata. That check does not replace an Android or iOS build. APKs are written to `composeApp/build/outputs/apk/<environment>/debug/`.
 
-Compilá un entorno por invocación de Gradle. BuildKonfig genera una sola configuración compartida y rechaza la selección implícita de ambos entornos en la misma invocación. La selección sigue este orden: `-PtargetEnvironment=tst|prod`, entorno inferido del nombre de la tarea y, finalmente, `tst`.
+> Build one environment per Gradle invocation. BuildKonfig generates a single shared configuration and rejects implicitly selecting both environments. Selection follows this order: `-PtargetEnvironment=tst|prod`, the environment inferred from the task name, and finally `tst`.
 
-## Ejecutar iOS
+### iOS
 
-Abrí `iosApp/iosApp.xcodeproj`, seleccioná `iosApp-tst` o `iosApp-prod` y ejecutá sobre un iPhone Simulator. Los esquemas seleccionan explícitamente el backend; `tst` requiere `api_url_tst` en `local.properties`.
+Open `iosApp/iosApp.xcodeproj`, select `iosApp-tst` or `iosApp-prod` and run on an iPhone Simulator. The schemes explicitly select the backend; `tst` requires `api_url_tst` in `local.properties`.
 
-El simulador no requiere una cuenta Apple. La [guía de desarrollo local iOS](docs/ios-desarrollo-local.md) incluye los comandos de compilación sin firma y las limitaciones de las pruebas realizadas.
+The simulator does not need an Apple account. The [local iOS development guide](docs/ios-local-development.md) includes the unsigned build commands and the limits of the testing done.
 
-## Ejecutar las pruebas
+---
 
-Con JDK 21 y Android SDK configurados:
+## Tests
+
+With JDK 21 and the Android SDK configured:
 
 ```bash
 ./gradlew :composeApp:testProdDebugUnitTest -PtargetEnvironment=prod --no-daemon
 ```
 
-El workflow [CI](.github/workflows/ci.yml) ejecuta `commonTest` y `androidUnitTest` sobre el destino Android JVM en pull requests y pushes a `develop` y `main`. También admite ejecución manual y conserva los informes HTML y JUnit XML, incluso si fallan las pruebas. No necesita credenciales del backend, firma de distribución ni emulador.
+The [CI](.github/workflows/ci.yml) workflow runs `commonTest` and `androidUnitTest` on the Android JVM target for pull requests and pushes to `develop` and `main`. It can also be run manually and keeps the HTML and JUnit XML reports even when tests fail. It needs no backend credentials, distribution signing or emulator.
 
-Esta suite no ejecuta pruebas de interfaz ni pruebas en el simulador iOS.
+This suite does not run UI tests or tests on the iOS simulator.
 
-## Estructura del código
+---
 
-La app usa Clean Architecture, MVVM, Koin para inyección de dependencias y Navigation Compose para navegación.
+## Code structure
 
-El código compartido está en `composeApp/src/commonMain/kotlin/ar/com/ingenieriaalimentacion/`:
+The app uses Clean Architecture, MVVM, Koin for dependency injection and Navigation Compose for navigation.
 
-- `app/`: `App`, `AppNavHost`, `AppViewModel` y `AuthedShell`, con la navegación de las pestañas autenticadas.
-- `core/design_system/`: tema, tipografía y componentes reutilizables. `core/validation/` contiene las reglas de formularios.
-- `data/`: clientes HTTP, DTO, mappers, repositorios, almacenamiento local y sincronización. Los esquemas SQLDelight viven en `composeApp/src/commonMain/sqldelight/`.
-- `domain/`: modelos, interfaces de repositorio, casos de uso y contratos de sincronización.
-- `di/`: módulos de Koin, con implementaciones de plataforma mediante `expect` y `actual`.
-- `presentation/feature/`: pantallas agrupadas por funcionalidad, con acciones, destinos, navegación, estado y view models.
-- `presentation/navigation/`: rutas tipadas, enlaces externos y resultados de navegación.
+Shared code lives in `composeApp/src/commonMain/kotlin/ar/com/ingenieriaalimentacion/`:
 
-`composeApp/src/androidMain/` e `iosMain/` contienen las implementaciones específicas de cada plataforma. `iosApp/` contiene la aplicación Swift y su proyecto Xcode.
+| Folder | Contents |
+|--------|----------|
+| `app/` | `App`, `AppNavHost`, `AppViewModel` and `AuthedShell`, which handles navigation for the authenticated tabs |
+| `core/design_system/` | Theme, typography and reusable components |
+| `core/validation/` | Form validation rules |
+| `data/` | HTTP clients, DTOs, mappers, repositories, local storage and sync. SQLDelight schemas live in `composeApp/src/commonMain/sqldelight/` |
+| `domain/` | Models, repository interfaces, use cases and sync contracts |
+| `di/` | Koin modules, with platform implementations through `expect` and `actual` |
+| `presentation/feature/` | Screens grouped by feature, with actions, destinations, navigation, state and view models |
+| `presentation/navigation/` | Typed routes, external links and navigation results |
 
-Para agregar una pantalla, seguí una funcionalidad similar, declarala en `presentation/navigation/Route.kt` y registrala en `app/AppNavHost.kt`. Las pestañas Inicio, Historial y Perfil se registran en `app/AuthedShell.kt`. Registrá sus dependencias en `di/`.
+`composeApp/src/androidMain/` and `iosMain/` contain the platform-specific implementations. `iosApp/` contains the Swift app and its Xcode project.
+
+To add a screen, follow a similar feature, declare it in `presentation/navigation/Route.kt` and register it in `app/AppNavHost.kt`. The Home, History and Profile tabs are registered in `app/AuthedShell.kt`. Register its dependencies in `di/`.
+
+---
+
+## Contributing
+
+Read the [contributing guide](CONTRIBUTING.md) before opening a PR: branches, commits and review.
+
+---
+
+## License
+
+Academic project — **grupo-193**.

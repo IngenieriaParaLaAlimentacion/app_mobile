@@ -2,6 +2,8 @@
 
 Ingeniería en Alimentación. Fuentes consultadas el 28 de octubre de 2026.
 
+> Para la última versión de este documento, consultá el [Google Doc de traspaso](https://docs.google.com/document/d/1me0E1EmsKoR4xRyncyNFgfimNXf9t_r8/edit?usp=sharing). Solo se puede abrir con una cuenta `@fi.uba.ar`.
+
 ## 1. Qué se entrega y cómo se descarga hoy
 
 Android se descarga por Firebase App Distribution. El equipo administra el servicio con un Gmail dedicado al proyecto. La entrega incluye esa cuenta, el control del proyecto Firebase, las claves de firma, el código fuente y las instrucciones para publicar nuevas versiones.

@@ -1,13 +1,14 @@
 package ar.com.ingenieriaalimentacion.data.profile.local
 
+import ar.com.ingenieriaalimentacion.data.auth.SessionLifecycle
 import ar.com.ingenieriaalimentacion.data.db.CachedEstablishment
 import ar.com.ingenieriaalimentacion.data.db.CachedEstablishmentQueries
+import ar.com.ingenieriaalimentacion.data.db.queryForOwner
 import ar.com.ingenieriaalimentacion.domain.model.establishment.CharacterizationStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 /**
  * SQLDelight-backed [EstablishmentLocalStore]. Writes stamp `updatedAt` via the injected [now]
@@ -16,37 +17,45 @@ import kotlinx.coroutines.withContext
 class DefaultEstablishmentLocalStore(
     private val queries: CachedEstablishmentQueries,
     private val now: () -> Long,
+    private val lifecycle: SessionLifecycle,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : EstablishmentLocalStore {
 
-    override suspend fun getAll(): List<EstablishmentWithStatus> = withContext(dispatcher) {
+    override suspend fun getAll(): List<EstablishmentWithStatus> = lifecycle.queryForOwner(dispatcher) {
         queries.selectAll().executeAsList().map { it.toDomain() }
     }
 
     override suspend fun replaceAll(items: List<EstablishmentWithStatus>): Unit =
-        withContext(dispatcher) {
-            val stamp = now()
+        lifecycle.queryForOwner(dispatcher) { queries.transaction { replace(items) } }
+
+    override suspend fun update(transform: (List<EstablishmentWithStatus>) -> List<EstablishmentWithStatus>) =
+        lifecycle.queryForOwner(dispatcher) {
             queries.transaction {
-                queries.deleteAll()
-                items.forEach { item ->
-                    queries.insert(
-                        id = item.id,
-                        name = item.name,
-                        formattedAddress = item.formattedAddress,
-                        latitude = item.latitude,
-                        longitude = item.longitude,
-                        placeId = item.placeId,
-                        city = item.city,
-                        province = item.province,
-                        status = item.status.name,
-                        characterizationStatus = item.characterizationStatus?.name,
-                        updatedAt = stamp,
-                    )
-                }
+                replace(transform(queries.selectAll().executeAsList().map { it.toDomain() }))
             }
         }
 
-    override suspend fun clear(): Unit = withContext(dispatcher) {
+    private fun replace(items: List<EstablishmentWithStatus>) {
+        val stamp = now()
+        queries.deleteAll()
+        items.forEach { item ->
+            queries.insert(
+                id = item.id,
+                name = item.name,
+                formattedAddress = item.formattedAddress,
+                latitude = item.latitude,
+                longitude = item.longitude,
+                placeId = item.placeId,
+                city = item.city,
+                province = item.province,
+                status = item.status.name,
+                characterizationStatus = item.characterizationStatus?.name,
+                updatedAt = stamp,
+            )
+        }
+    }
+
+    override suspend fun clear(): Unit = lifecycle.queryForOwner(dispatcher) {
         queries.deleteAll()
     }
 }

@@ -8,7 +8,6 @@ class SignOutUseCase(
     private val unregisterPushDevice: UnregisterPushDeviceUseCase,
 ) {
     suspend operator fun invoke() {
-        unregisterPushDevice()
-        repository.signOut()
+        repository.signOut { unregisterPushDevice() }
     }
 }

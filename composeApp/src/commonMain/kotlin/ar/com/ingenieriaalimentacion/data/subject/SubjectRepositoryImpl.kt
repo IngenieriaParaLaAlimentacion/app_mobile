@@ -1,5 +1,7 @@
 package ar.com.ingenieriaalimentacion.data.subject
 
+import ar.com.ingenieriaalimentacion.data.auth.SessionLifecycle
+import ar.com.ingenieriaalimentacion.data.auth.scopedResult
 import ar.com.ingenieriaalimentacion.data.subject.local.SubjectLocalStore
 import ar.com.ingenieriaalimentacion.data.subject.mapper.toPendingUpload
 import ar.com.ingenieriaalimentacion.data.subject.mapper.toRequest
@@ -24,9 +26,10 @@ class SubjectRepositoryImpl(
     private val local: SubjectLocalStore,
     private val idGenerator: IdGenerator,
     private val now: () -> Long,
+    private val lifecycle: SessionLifecycle,
 ) : SubjectRepository {
 
-    override suspend fun enqueue(newSubject: NewSubject): Result<String> = runCatching {
+    override suspend fun enqueue(newSubject: NewSubject): Result<String> = lifecycle.scopedResult {
         val localId = idGenerator.newId()
         local.insert(newSubject.toPendingUpload(id = localId, now = now()))
         localId
@@ -34,7 +37,9 @@ class SubjectRepositoryImpl(
 
     override fun observeUploads(): Flow<List<SubjectUpload>> = local.observeAll()
 
-    override suspend fun syncPending(): SyncSummary {
+    override suspend fun syncPending(): SyncSummary = lifecycle.scoped { syncOwnedPending() }
+
+    private suspend fun syncOwnedPending(): SyncSummary {
         var synced = 0
         var merged = 0
         var failed = 0
@@ -82,15 +87,13 @@ class SubjectRepositoryImpl(
             true
         }
 
-    override suspend fun retry(localId: String): Result<Unit> = runCatching { local.resetForRetry(localId) }
+    override suspend fun retry(localId: String): Result<Unit> = lifecycle.scopedResult { local.resetForRetry(localId) }
 
-    override suspend fun delete(localId: String): Result<Unit> = runCatching { local.delete(localId) }
+    override suspend fun delete(localId: String): Result<Unit> = lifecycle.scopedResult { local.delete(localId) }
 
-    override suspend fun resetStuckSyncing() {
-        local.resetStuckSyncing()
-    }
+    override suspend fun resetStuckSyncing() = lifecycle.scoped { local.resetStuckSyncing() }
 
-    override suspend fun pruneTerminal(olderThan: Duration) {
+    override suspend fun pruneTerminal(olderThan: Duration) = lifecycle.scoped {
         local.pruneTerminalOlderThan(now() - olderThan.inWholeMilliseconds)
     }
 }

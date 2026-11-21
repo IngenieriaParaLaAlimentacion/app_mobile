@@ -1,5 +1,7 @@
 package ar.com.ingenieriaalimentacion.domain.usecase.auth
 
+import ar.com.ingenieriaalimentacion.domain.model.auth.SessionStatus
+import ar.com.ingenieriaalimentacion.domain.model.auth.UserSession
 import ar.com.ingenieriaalimentacion.domain.usecase.notification.UnregisterPushDeviceUseCase
 import ar.com.ingenieriaalimentacion.fake.FakeAuthRepository
 import ar.com.ingenieriaalimentacion.fake.FakePushDeviceRepository
@@ -12,7 +14,9 @@ class ResetPasswordUseCaseTest {
     @Test
     fun `successful reset unregisters before signing out`() = runTest {
         val events = mutableListOf<String>()
-        val auth = FakeAuthRepository(events)
+        val auth = FakeAuthRepository(events).apply {
+            emit(SessionStatus.Authenticated(UserSession("access", "refresh"), generation = "generation"))
+        }
         val push = FakePushDeviceRepository(events)
 
         val result = ResetPasswordUseCase(auth, UnregisterPushDeviceUseCase(push))("token", "new-password")

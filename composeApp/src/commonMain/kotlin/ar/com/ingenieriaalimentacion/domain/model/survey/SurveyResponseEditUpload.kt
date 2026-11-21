@@ -4,12 +4,8 @@ import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 
 /**
  * A locally-queued edit *attempt*. [editId] is a UUID that is a SEPARATE idempotency key
- * from [responseId] — the response being edited. A fresh [editId] is minted only the first
- * time an edit is enqueued for a given [responseId]; while that edit attempt is still PENDING
- * (never transmitted), later local edits overwrite it in place rather than minting a new id
- * (see `SurveyResponseEditRepositoryImpl.enqueueEdit`) — reusing an id that already reached
- * the server would silently no-op, but overwriting a row that was never sent carries no such
- * risk.
+ * from [responseId]. An unsent edit can be updated in place. Once claimed for sync,
+ * its request stays fixed so retrying the idempotency key sends the same edit.
  */
 data class SurveyResponseEditUpload(
     val editId: String,

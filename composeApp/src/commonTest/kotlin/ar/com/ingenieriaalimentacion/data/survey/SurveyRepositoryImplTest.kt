@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.survey
 
+import ar.com.ingenieriaalimentacion.fake.activeSessionLifecycle
 import ar.com.ingenieriaalimentacion.domain.model.survey.Survey
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyDetail
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseTarget
@@ -61,7 +62,7 @@ class SurveyRepositoryImplTest {
         val store = FakeSurveyLocalStore()
         val api = api { respondPage(this, page(remoteSurvey("s1", "Survey One"))) }
 
-        val result = SurveyRepositoryImpl(api, store).getAvailable(page = 1, pageSize = 20)
+        val result = SurveyRepositoryImpl(api, store, activeSessionLifecycle()).getAvailable(page = 1, pageSize = 20)
 
         val paged = result.getOrThrow()
         assertEquals(listOf("s1"), paged.items.map { it.id })
@@ -81,7 +82,7 @@ class SurveyRepositoryImplTest {
         }
         val api = api { respondError(HttpStatusCode.InternalServerError) }
 
-        val result = SurveyRepositoryImpl(api, store).getAvailable(page = 1, pageSize = 20)
+        val result = SurveyRepositoryImpl(api, store, activeSessionLifecycle()).getAvailable(page = 1, pageSize = 20)
 
         val paged = result.getOrThrow()
         assertEquals(listOf("cached-active"), paged.items.map { it.id })
@@ -95,7 +96,7 @@ class SurveyRepositoryImplTest {
         val store = FakeSurveyLocalStore()
         val api = api { respondError(HttpStatusCode.InternalServerError) }
 
-        val result = SurveyRepositoryImpl(api, store).getAvailable(page = 1, pageSize = 20)
+        val result = SurveyRepositoryImpl(api, store, activeSessionLifecycle()).getAvailable(page = 1, pageSize = 20)
 
         assertTrue(result.isFailure)
     }
@@ -107,7 +108,7 @@ class SurveyRepositoryImplTest {
         }
         val api = api { respondError(HttpStatusCode.InternalServerError) }
 
-        val result = SurveyRepositoryImpl(api, store).getAvailable(page = 2, pageSize = 20)
+        val result = SurveyRepositoryImpl(api, store, activeSessionLifecycle()).getAvailable(page = 2, pageSize = 20)
 
         assertTrue(result.isFailure)
     }
@@ -123,7 +124,7 @@ class SurveyRepositoryImplTest {
             }
         }
 
-        SurveyRepositoryImpl(api, store).warmAvailableSurveys()
+        SurveyRepositoryImpl(api, store, activeSessionLifecycle()).warmAvailableSurveys()
 
         assertEquals(1, store.replaceAllSummariesCallCount)
         assertEquals(listOf("s1", "s2"), store.getSummaries().map { it.id }.sorted())
@@ -139,7 +140,7 @@ class SurveyRepositoryImplTest {
             }
         }
 
-        SurveyRepositoryImpl(api, store).warmAvailableSurveys()
+        SurveyRepositoryImpl(api, store, activeSessionLifecycle()).warmAvailableSurveys()
 
         assertEquals(0, store.replaceAllSummariesCallCount)
         assertTrue(store.getSummaries().isEmpty())
@@ -165,7 +166,7 @@ class SurveyRepositoryImplTest {
         store.upsertSummaries(listOf(Survey(id = "s1", name = "Survey One", responseTarget = SurveyResponseTarget.Establishment, isActive = true, questionCount = 3)))
         store.upsertDetail(SurveyDetail(id = "s1", name = "Survey One", responseTarget = SurveyResponseTarget.Establishment, isActive = true, questions = emptyList()))
 
-        SurveyRepositoryImpl(api, store).warmAvailableSurveys()
+        SurveyRepositoryImpl(api, store, activeSessionLifecycle()).warmAvailableSurveys()
 
         assertEquals(listOf("s2"), detailCalls)
         assertEquals("s2", store.findDetail("s2")?.id)
@@ -185,7 +186,7 @@ class SurveyRepositoryImplTest {
             }
         }
 
-        SurveyRepositoryImpl(api, store).warmAvailableSurveys()
+        SurveyRepositoryImpl(api, store, activeSessionLifecycle()).warmAvailableSurveys()
 
         assertNull(store.findDetail("s1"))
         assertEquals("s2", store.findDetail("s2")?.id)
@@ -204,7 +205,7 @@ class SurveyRepositoryImplTest {
             }
         }
 
-        SurveyRepositoryImpl(api, store).warmAvailableSurveys()
+        SurveyRepositoryImpl(api, store, activeSessionLifecycle()).warmAvailableSurveys()
 
         assertEquals(0, store.replaceAllSummariesCallCount)
         assertEquals(listOf("s1", "s2", "s3", "s4", "s5"), store.getSummaries().map { it.id }.sorted())

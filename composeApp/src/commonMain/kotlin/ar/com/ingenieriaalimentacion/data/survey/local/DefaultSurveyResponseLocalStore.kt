@@ -1,8 +1,9 @@
 package ar.com.ingenieriaalimentacion.data.survey.local
 
-import app.cash.sqldelight.coroutines.asFlow
-import app.cash.sqldelight.coroutines.mapToList
+import ar.com.ingenieriaalimentacion.data.auth.SessionLifecycle
 import ar.com.ingenieriaalimentacion.data.db.PendingSurveyResponseQueries
+import ar.com.ingenieriaalimentacion.data.db.observeForOwner
+import ar.com.ingenieriaalimentacion.data.db.queryForOwner
 import ar.com.ingenieriaalimentacion.data.survey.mapper.toDomain
 import ar.com.ingenieriaalimentacion.data.survey.mapper.toSurveyDbString
 import ar.com.ingenieriaalimentacion.data.survey.mapper.toDbString
@@ -13,8 +14,6 @@ import ar.com.ingenieriaalimentacion.domain.model.survey.label
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
 
 /**
  * SQLDelight-backed [SurveyResponseLocalStore]. All writes stamp `updatedAt` via the injected [now]
@@ -23,23 +22,27 @@ import kotlinx.coroutines.withContext
  */
 class DefaultSurveyResponseLocalStore(
     private val queries: PendingSurveyResponseQueries,
+    private val lifecycle: SessionLifecycle,
     private val now: () -> Long,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : SurveyResponseLocalStore {
 
     override fun observeAll(): Flow<List<SurveyResponseUpload>> =
-        queries.selectAll().asFlow().mapToList(dispatcher).map { rows -> rows.map { it.toDomain() } }
+        observeForOwner(lifecycle, dispatcher, emptyList(), queries::selectAll) { query ->
+            query.executeAsList().map { it.toDomain() }
+        }
 
-    override suspend fun all(): List<SurveyResponseUpload> = withContext(dispatcher) {
-        queries.selectAll().executeAsList().map { it.toDomain() }
+    override suspend fun all(): List<SurveyResponseUpload> = lifecycle.queryForOwner(dispatcher) { owner ->
+        queries.selectAll(ownerUserId = owner).executeAsList().map { it.toDomain() }
     }
 
-    override suspend fun find(localId: String): SurveyResponseUpload? = withContext(dispatcher) {
-        queries.selectById(localId).executeAsOneOrNull()?.toDomain()
+    override suspend fun find(localId: String): SurveyResponseUpload? = lifecycle.queryForOwner(dispatcher) { owner ->
+        queries.selectById(ownerUserId = owner, localId = localId).executeAsOneOrNull()?.toDomain()
     }
 
-    override suspend fun insert(upload: SurveyResponseUpload): Unit = withContext(dispatcher) {
+    override suspend fun insert(upload: SurveyResponseUpload): Unit = lifecycle.queryForOwner(dispatcher) { owner ->
         queries.insert(
+            ownerUserId = owner,
             localId = upload.localId,
             surveyId = upload.surveyId,
             surveyName = upload.surveyName,
@@ -60,29 +63,30 @@ class DefaultSurveyResponseLocalStore(
         )
     }
 
-    override suspend fun syncable(): List<SurveyResponseUpload> = withContext(dispatcher) {
-        queries.selectSyncable().executeAsList().map { it.toDomain() }
+    override suspend fun syncable(): List<SurveyResponseUpload> = lifecycle.queryForOwner(dispatcher) { owner ->
+        queries.selectSyncable(ownerUserId = owner).executeAsList().map { it.toDomain() }
     }
 
-    override suspend fun awaitingNumberPolicy(): List<SurveyResponseUpload> = withContext(dispatcher) {
-        queries.selectAwaitingNumberPolicy().executeAsList().map { it.toDomain() }
+    override suspend fun awaitingNumberPolicy(): List<SurveyResponseUpload> = lifecycle.queryForOwner(dispatcher) { owner ->
+        queries.selectAwaitingNumberPolicy(ownerUserId = owner).executeAsList().map { it.toDomain() }
     }
 
-    override suspend fun markSyncing(localId: String): Unit = withContext(dispatcher) {
-        queries.markSyncing(updatedAt = now(), localId = localId)
+    override suspend fun markSyncing(localId: String): Unit = lifecycle.queryForOwner(dispatcher) { owner ->
+        queries.markSyncing(updatedAt = now(), localId = localId, ownerUserId = owner)
     }
 
-    override suspend fun markSynced(localId: String, canonicalId: String): Unit = withContext(dispatcher) {
-        queries.markSynced(canonicalId = canonicalId, updatedAt = now(), localId = localId)
+    override suspend fun markSynced(localId: String, canonicalId: String): Unit = lifecycle.queryForOwner(dispatcher) { owner ->
+        queries.markSynced(canonicalId = canonicalId, updatedAt = now(), localId = localId, ownerUserId = owner)
     }
 
-    override suspend fun markFailed(localId: String, reason: String): Unit = withContext(dispatcher) {
-        queries.markFailed(errorMessage = reason, updatedAt = now(), localId = localId)
+    override suspend fun markFailed(localId: String, reason: String): Unit = lifecycle.queryForOwner(dispatcher) { owner ->
+        queries.markFailed(errorMessage = reason, updatedAt = now(), localId = localId, ownerUserId = owner)
     }
 
     override suspend fun markConflict(localId: String, conflict: ResponseConflict): Unit =
-        withContext(dispatcher) {
+        lifecycle.queryForOwner(dispatcher) { owner ->
             queries.markConflict(
+                ownerUserId = owner,
                 conflictBy = conflict.submittedByName,
                 conflictAt = conflict.eventAt,
                 updatedAt = now(),
@@ -91,27 +95,27 @@ class DefaultSurveyResponseLocalStore(
         }
 
     override suspend fun updateResponseNumber(localId: String, responseNumber: Int): Unit =
-        withContext(dispatcher) {
-            queries.updateResponseNumber(responseNumber.toLong(), now(), localId)
+        lifecycle.queryForOwner(dispatcher) { owner ->
+            queries.updateResponseNumber(responseNumber = responseNumber.toLong(), updatedAt = now(), localId = localId, ownerUserId = owner)
         }
 
-    override suspend fun delete(localId: String): Unit = withContext(dispatcher) {
-        queries.deleteById(localId)
+    override suspend fun delete(localId: String): Unit = lifecycle.queryForOwner(dispatcher) { owner ->
+        queries.deleteById(ownerUserId = owner, localId = localId)
     }
 
-    override suspend fun bumpRetry(localId: String, reason: String): Unit = withContext(dispatcher) {
-        queries.bumpRetry(errorMessage = reason, updatedAt = now(), localId = localId)
+    override suspend fun bumpRetry(localId: String, reason: String): Unit = lifecycle.queryForOwner(dispatcher) { owner ->
+        queries.bumpRetry(errorMessage = reason, updatedAt = now(), localId = localId, ownerUserId = owner)
     }
 
-    override suspend fun resetForRetry(localId: String): Unit = withContext(dispatcher) {
-        queries.resetForRetry(updatedAt = now(), localId = localId)
+    override suspend fun resetForRetry(localId: String): Unit = lifecycle.queryForOwner(dispatcher) { owner ->
+        queries.resetForRetry(updatedAt = now(), localId = localId, ownerUserId = owner)
     }
 
-    override suspend fun resetStuckSyncing(): Unit = withContext(dispatcher) {
-        queries.resetSyncingToPending(updatedAt = now())
+    override suspend fun resetStuckSyncing(): Unit = lifecycle.queryForOwner(dispatcher) { owner ->
+        queries.resetSyncingToPending(updatedAt = now(), ownerUserId = owner)
     }
 
-    override suspend fun pruneTerminalOlderThan(cutoff: Long): Unit = withContext(dispatcher) {
-        queries.pruneTerminalOlderThan(cutoff)
+    override suspend fun pruneTerminalOlderThan(cutoff: Long): Unit = lifecycle.queryForOwner(dispatcher) { owner ->
+        queries.pruneTerminalOlderThan(ownerUserId = owner, cutoff = cutoff)
     }
 }

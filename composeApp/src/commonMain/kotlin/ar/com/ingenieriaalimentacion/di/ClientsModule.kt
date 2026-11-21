@@ -3,6 +3,8 @@ package ar.com.ingenieriaalimentacion.di
 import ar.com.ingenieriaalimentacion.data.recipe.RecipeApi
 import ar.com.ingenieriaalimentacion.data.activity.ActivityApi
 import ar.com.ingenieriaalimentacion.data.auth.AuthApi
+import ar.com.ingenieriaalimentacion.data.auth.SessionLifecycle
+import ar.com.ingenieriaalimentacion.data.device.DeviceIdProvider
 import ar.com.ingenieriaalimentacion.data.establishment.EstablishmentApi
 import ar.com.ingenieriaalimentacion.data.establishment.characterization.CharacterizationApi
 import ar.com.ingenieriaalimentacion.data.food.FoodCatalogApi
@@ -21,11 +23,8 @@ import ar.com.ingenieriaalimentacion.data.subject.SubjectApi
 import ar.com.ingenieriaalimentacion.data.survey.SurveyApi
 import ar.com.ingenieriaalimentacion.data.survey.SurveyResponseActivityApi
 import ar.com.ingenieriaalimentacion.data.survey.SurveyResponseApi
-import ar.com.ingenieriaalimentacion.domain.model.auth.SessionStatus
-import ar.com.ingenieriaalimentacion.domain.repository.SessionManager
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.json.Json
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
@@ -33,8 +32,7 @@ import org.koin.dsl.module
 val clientsModule = module {
     single<Json> { HttpClientFactory.json() }
 
-    // Internal mutable status sink shared by HttpClient (refresh path) and AuthRepository.
-    single<MutableStateFlow<SessionStatus>> { MutableStateFlow(SessionStatus.Initializing) }
+    single { SessionLifecycle(store = get(), cache = get(), ids = get()) }
 
     // Refresh client (no Auth plugin) — used by AuthApi only.
     single<HttpClient>(named("refresh")) {
@@ -50,10 +48,9 @@ val clientsModule = module {
         HttpClientFactory.createAuthedClient(
             engine = get<HttpClientEngine>(),
             json = get(),
-            sessionManager = get<SessionManager>(),
+            lifecycle = get(),
             authApi = get(),
-            statusSink = get(),
-            deviceIdProvider = get(),
+            getDeviceId = get<DeviceIdProvider>()::getOrCreate,
         )
     }
 

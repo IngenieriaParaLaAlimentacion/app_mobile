@@ -1,11 +1,11 @@
 package ar.com.ingenieriaalimentacion.data.network
 
 import ar.com.ingenieriaalimentacion.data.auth.AuthApi
-import ar.com.ingenieriaalimentacion.data.device.DeviceIdProvider
-import ar.com.ingenieriaalimentacion.domain.model.auth.SessionSource
-import ar.com.ingenieriaalimentacion.domain.model.auth.SessionStatus
-import ar.com.ingenieriaalimentacion.domain.model.auth.UserSession
-import ar.com.ingenieriaalimentacion.domain.repository.SessionManager
+import ar.com.ingenieriaalimentacion.data.auth.AuthFailure
+import ar.com.ingenieriaalimentacion.data.auth.SessionEnded
+import ar.com.ingenieriaalimentacion.data.auth.SessionExit
+import ar.com.ingenieriaalimentacion.data.auth.SessionLifecycle
+import ar.com.ingenieriaalimentacion.domain.model.auth.AuthError
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.auth.Auth
@@ -19,7 +19,8 @@ import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.url
 import io.ktor.serialization.kotlinx.json.json
-import kotlinx.coroutines.flow.MutableStateFlow
+import io.ktor.http.HttpHeaders
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.Json
 
 object HttpClientFactory {
@@ -38,6 +39,7 @@ object HttpClientFactory {
             // the error body and `.body()` would fail deserializing it into the success DTO.
             expectSuccess = true
             install(ContentNegotiation) { json(json) }
+            install(HttpTimeout)
             install(Logging) {
                 logger = object : Logger { override fun log(message: String) = println(message) }
                 // Method/URL/status on tst, silent on prod. Deliberately INFO and not
@@ -51,10 +53,9 @@ object HttpClientFactory {
     fun createAuthedClient(
         engine: HttpClientEngine,
         json: Json,
-        sessionManager: SessionManager,
+        lifecycle: SessionLifecycle,
         authApi: AuthApi,
-        statusSink: MutableStateFlow<SessionStatus>,
-        deviceIdProvider: DeviceIdProvider,
+        getDeviceId: suspend () -> String,
     ): HttpClient = HttpClient(engine) {
         install(ContentNegotiation) { json(json) }
         install(HttpTimeout)
@@ -65,31 +66,37 @@ object HttpClientFactory {
             level = if (ApiConfig.IS_PROD) LogLevel.NONE else LogLevel.INFO
         }
         defaultRequest { url(ApiConfig.BASE_URL) }
+        install(SessionClientPlugin) { this.lifecycle = lifecycle }
         install(Auth) {
             bearer {
+                cacheTokens = false
+                nonCancellableRefresh = true
                 loadTokens {
-                    sessionManager.loadSessionOrNull()?.let { BearerTokens(it.accessToken, it.refreshToken) }
+                    lifecycle.active()?.session?.let { BearerTokens(it.accessToken, it.refreshToken) }
                 }
                 refreshTokens {
-                    val current = sessionManager.loadSessionOrNull() ?: run {
-                        statusSink.value = SessionStatus.NotAuthenticated(isSignOut = false)
-                        return@refreshTokens null
+                    val lease = response.call.request.attributes[RequestSessionLease]
+                    val current = lifecycle.sessionFor(lease)?.session ?: throw SessionEnded()
+                    val sent = response.call.request.headers[HttpHeaders.Authorization]
+                        ?: return@refreshTokens null
+                    if (sent != "Bearer ${current.accessToken}") {
+                        return@refreshTokens BearerTokens(current.accessToken, current.refreshToken)
                     }
-                    val deviceId = deviceIdProvider.getOrCreate()
-                    runCatching { authApi.refresh(current.refreshToken, deviceId) }.fold(
-                        onSuccess = { fresh: UserSession ->
-                            val merged = fresh.copy(user = fresh.user ?: current.user)
-                            sessionManager.saveSession(merged)
-                            statusSink.value = SessionStatus.Authenticated(merged, SessionSource.Refresh(current))
-                            BearerTokens(merged.accessToken, merged.refreshToken)
-                        },
-                        onFailure = { cause ->
-                            sessionManager.deleteSession()
-                            statusSink.value = SessionStatus.RefreshFailure(cause.message ?: "refresh failed")
-                            statusSink.value = SessionStatus.NotAuthenticated(isSignOut = false)
-                            null
-                        },
-                    )
+                    val fresh = try {
+                        authApi.refresh(current.refreshToken, getDeviceId())
+                    } catch (cancellation: CancellationException) {
+                        throw cancellation
+                    } catch (failure: Exception) {
+                        if ((failure as? AuthFailure)?.error == AuthError.AccountBlocked) {
+                            lifecycle.end(lease, SessionExit.Blocked)
+                            throw SessionEnded()
+                        }
+                        if (lifecycle.failRefreshIfCurrent(lease, current.refreshToken)) return@refreshTokens null
+                        val rotated = lifecycle.sessionFor(lease)?.session ?: throw SessionEnded()
+                        return@refreshTokens BearerTokens(rotated.accessToken, rotated.refreshToken)
+                    }
+                    val rotated = lifecycle.completeRefresh(lease, current.refreshToken, fresh) ?: throw SessionEnded()
+                    BearerTokens(rotated.accessToken, rotated.refreshToken)
                 }
                 sendWithoutRequest { true }
             }

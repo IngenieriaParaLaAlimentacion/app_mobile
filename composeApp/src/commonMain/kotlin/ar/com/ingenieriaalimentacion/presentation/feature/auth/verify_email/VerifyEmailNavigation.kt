@@ -8,7 +8,7 @@ import androidx.navigation.toRoute
 import ar.com.ingenieriaalimentacion.presentation.navigation.DeepLinks
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 
-fun NavGraphBuilder.verifyEmailScreen(navController: NavController) {
+fun NavGraphBuilder.verifyEmailScreen(navController: NavController, startScreen: Route) {
     composable<Route.VerifyEmail>(
         deepLinks = listOf(
             navDeepLink { uriPattern = DeepLinks.VERIFY_EMAIL_URI_PATTERN },
@@ -17,7 +17,7 @@ fun NavGraphBuilder.verifyEmailScreen(navController: NavController) {
         val route: Route.VerifyEmail = entry.toRoute()
         VerifyEmailScreenRoot(
             route = route,
-            navigate = { destination -> navigate(destination, navController) },
+            navigate = { destination -> navigate(destination, navController, startScreen) },
         )
     }
 }
@@ -25,23 +25,14 @@ fun NavGraphBuilder.verifyEmailScreen(navController: NavController) {
 internal fun navigate(
     destination: VerifyEmailDestination,
     navController: NavController,
+    startScreen: Route,
 ) {
     when (destination) {
         VerifyEmailDestination.Exit -> {
-            // A link opened from outside leaves [start destination, VerifyEmail] on the back
-            // stack, and the start destination already reflects the session (GetStarted when
-            // signed out, AuthedShell when signed in). Popping is therefore correct in both
-            // cases and never signs anyone out.
             if (navController.previousBackStackEntry != null) {
                 navController.popBackStack()
             } else {
-                // Only VerifyEmail on the stack: rebuild from the graph's start route.
-                val start = navController.graph.startDestinationRoute
-                if (start != null) {
-                    navController.navigate(start) { popUpTo(0) { inclusive = true } }
-                } else {
-                    navController.navigate(Route.GetStarted) { popUpTo(0) { inclusive = true } }
-                }
+                navController.navigate(startScreen) { popUpTo(0) { inclusive = true } }
             }
         }
     }

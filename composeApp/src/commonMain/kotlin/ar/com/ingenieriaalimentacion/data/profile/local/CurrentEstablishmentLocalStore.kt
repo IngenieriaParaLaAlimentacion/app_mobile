@@ -7,4 +7,5 @@ package ar.com.ingenieriaalimentacion.data.profile.local
 interface CurrentEstablishmentLocalStore {
     suspend fun get(): String?
     suspend fun set(establishmentId: String?)
+    suspend fun clearIfSelected(establishmentId: String)
 }

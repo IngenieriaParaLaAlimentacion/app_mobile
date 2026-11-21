@@ -12,6 +12,7 @@ import ar.com.ingenieriaalimentacion.domain.util.IdGenerator
 import ar.com.ingenieriaalimentacion.fake.FakeSurveyResponseEditLocalStore
 import ar.com.ingenieriaalimentacion.fake.FakeSurveyResponseLocalStore
 import ar.com.ingenieriaalimentacion.fake.FakeSurveyRepository
+import ar.com.ingenieriaalimentacion.fake.activeSessionLifecycle
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -25,10 +26,14 @@ import io.ktor.client.request.url
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.OutgoingContent
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -58,15 +63,21 @@ class SurveyResponseEditSyncEngineTest {
     }
 
     private var idCounter = 0
-    private val repo = SurveyResponseEditRepositoryImpl(
-        api = api,
-        local = editStore,
-        responses = responseStore,
-        surveys = surveys,
-        idGenerator = object : IdGenerator { override fun newId() = "generated-edit-${idCounter++}" },
-        json = json,
-        now = now,
-    )
+    private lateinit var repo: SurveyResponseEditRepositoryImpl
+
+    @BeforeTest
+    fun setupRepository() = runTest {
+        repo = SurveyResponseEditRepositoryImpl(
+            api = api,
+            local = editStore,
+            responses = responseStore,
+            surveys = surveys,
+            idGenerator = object : IdGenerator { override fun newId() = "generated-edit-${idCounter++}" },
+            json = json,
+            now = now,
+            lifecycle = activeSessionLifecycle(),
+        )
+    }
 
     private fun jsonHeaders() = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
 
@@ -305,4 +316,45 @@ class SurveyResponseEditSyncEngineTest {
         assertEquals(2, editStore.snapshot().size)
         assertNotEquals(firstEditId, editStore.snapshot().last().editId)
     }
+    @Test
+    fun `retry after unavailable response sends the original edit and a later edit has its own key`() = runTest {
+        val uploads = mutableListOf<Pair<String, String>>()
+        responder = { request ->
+            val bytes = (request.body as OutgoingContent.ByteArrayContent).bytes()
+            val body = json.parseToJsonElement(bytes.decodeToString()).jsonObject
+            val id = body.getValue("id").jsonPrimitive.content
+            uploads.add(id to body.getValue("answers").jsonObject.getValue("q1").jsonPrimitive.content)
+            if (uploads.size == 1) {
+                respondError(HttpStatusCode.ServiceUnavailable)
+            } else {
+                respond(successBody("r1"), HttpStatusCode.OK, jsonHeaders())
+            }
+        }
+        repo.enqueueEdit(
+            responseId = "r1",
+            surveyId = "s1",
+            surveyName = "Encuesta",
+            establishmentName = "Norte",
+            answers = mapOf("q1" to SurveyAnswerValue.SingleChoice("opt-2")),
+            eventAtMs = 1_000L,
+        ).getOrThrow()
+        assertEquals(1, repo.syncPending().stillPending)
+        val original = uploads.single()
+
+        currentTime = 10_000L
+        repo.enqueueEdit(
+            responseId = "r1",
+            surveyId = "s1",
+            surveyName = "Encuesta",
+            establishmentName = "Norte",
+            answers = mapOf("q1" to SurveyAnswerValue.SingleChoice("opt-3")),
+            eventAtMs = 2_000L,
+        ).getOrThrow()
+        val laterId = editStore.snapshot().last().editId
+        assertNotEquals(original.first, laterId)
+
+        assertEquals(2, repo.syncPending().synced)
+        assertEquals(listOf(original, original, laterId to "opt-3"), uploads)
+    }
+
 }

@@ -164,7 +164,7 @@ class ProfileViewModelTest {
     }
 
     @Test
-    fun `ConfirmSignOut signs out and emits LoggedOut`() = runTest(dispatcher) {
+    fun `ConfirmSignOut signs out and closes the dialog`() = runTest(dispatcher) {
         val repo = FakeProfileRepository().apply { meResult = Result.success(nonManager) }
         val authRepo = FakeAuthRepository()
         val vm = viewModel(repo, authRepo)
@@ -174,8 +174,8 @@ class ProfileViewModelTest {
             vm.onAction(ProfileAction.SignOutClick)
             awaitState { it.showSignOutConfirm }
             vm.onAction(ProfileAction.ConfirmSignOut)
-            val state = awaitState { it.destination != null }
-            assertEquals(ProfileDestination.LoggedOut, state.destination)
+            val state = awaitState { !it.showSignOutConfirm }
+            assertEquals(null, state.destination)
             assertFalse(state.showSignOutConfirm)
             assertEquals(1, authRepo.signOutCount)
             cancelAndIgnoreRemainingEvents()

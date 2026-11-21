@@ -22,7 +22,7 @@ class RegisterPushDeviceUseCaseTest {
     @Test
     fun `forwards refreshed token when authenticated`() = runTest {
         val auth = FakeAuthRepository().apply {
-            emit(SessionStatus.Authenticated(UserSession("access", "refresh")))
+            emit(SessionStatus.Authenticated(UserSession("access", "refresh"), generation = "generation-1"))
         }
         val push = FakePushDeviceRepository()
 

@@ -27,13 +27,21 @@ class FakeAuthRepository(
     override suspend fun signIn(credentials: Credentials): Result<UserSession> =
         Result.failure(IllegalStateException("not used"))
 
-    override suspend fun signOut() {
+    override suspend fun signOut(beforeLogout: suspend () -> Unit) {
+        beforeLogout()
         sharedEvents?.add("authSignOut")
         signOutCount++
     }
 
-    override suspend fun resetPassword(token: String, newPassword: String): Result<Unit> {
+    override suspend fun resetPassword(
+        token: String,
+        newPassword: String,
+        beforeLogout: suspend () -> Unit,
+    ): Result<Unit> {
         sharedEvents?.add("resetPassword")
+        if (resetPasswordResult.isSuccess && sessionStatus.value is SessionStatus.Authenticated) {
+            signOut(beforeLogout)
+        }
         return resetPasswordResult
     }
 

@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.profile.local
 
+import ar.com.ingenieriaalimentacion.fake.activeSessionLifecycle
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import ar.com.ingenieriaalimentacion.data.db.AppDatabase
 import kotlinx.coroutines.Dispatchers
@@ -14,11 +15,11 @@ class DefaultCurrentEstablishmentLocalStoreTest {
     private lateinit var store: DefaultCurrentEstablishmentLocalStore
 
     @BeforeTest
-    fun setup() {
+    fun setup() = runTest {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         AppDatabase.Schema.create(driver)
         val queries = AppDatabase(driver).currentEstablishmentQueries
-        store = DefaultCurrentEstablishmentLocalStore(queries, now = { 10L }, dispatcher = Dispatchers.Unconfined)
+        store = DefaultCurrentEstablishmentLocalStore(queries, now = { 10L }, lifecycle = activeSessionLifecycle(), dispatcher = Dispatchers.Unconfined)
     }
 
     @Test

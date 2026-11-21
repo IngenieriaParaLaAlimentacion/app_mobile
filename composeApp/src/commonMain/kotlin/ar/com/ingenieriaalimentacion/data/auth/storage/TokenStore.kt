@@ -9,7 +9,7 @@ package ar.com.ingenieriaalimentacion.data.auth.storage
  *   `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`.
  *   Per https://developer.apple.com/documentation/security/keychain-services.
  *
- * Used by `TokenStoreSessionManager` to persist a JSON-serialized `UserSession`.
+ * Used by `TokenStoreSessionManager` to persist a JSON-serialized session record.
  */
 expect class TokenStore {
     suspend fun get(): String?

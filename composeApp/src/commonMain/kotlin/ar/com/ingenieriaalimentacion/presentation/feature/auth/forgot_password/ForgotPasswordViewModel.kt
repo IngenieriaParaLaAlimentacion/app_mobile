@@ -72,6 +72,7 @@ class ForgotPasswordViewModel(
         return when (error) {
             AuthError.Network ->
                 "No pudimos conectarnos. Verificá tu conexión e intentá nuevamente."
+            AuthError.AccountBlocked,
             AuthError.AccountPendingValidation,
             AuthError.InvalidCredentials,
             AuthError.InvalidOrExpiredToken,

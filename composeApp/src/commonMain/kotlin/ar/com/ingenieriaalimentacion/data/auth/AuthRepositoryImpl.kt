@@ -5,73 +5,73 @@ import ar.com.ingenieriaalimentacion.domain.model.auth.AuthError
 import ar.com.ingenieriaalimentacion.domain.model.auth.Credentials
 import ar.com.ingenieriaalimentacion.domain.model.auth.EmailVerificationError
 import ar.com.ingenieriaalimentacion.domain.model.auth.EmailVerificationFailure
-import ar.com.ingenieriaalimentacion.domain.model.auth.SessionSource
 import ar.com.ingenieriaalimentacion.domain.model.auth.SessionStatus
 import ar.com.ingenieriaalimentacion.domain.model.auth.UserSession
 import ar.com.ingenieriaalimentacion.domain.repository.AuthRepository
-import ar.com.ingenieriaalimentacion.domain.repository.SessionManager
-import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
-import io.ktor.client.plugins.auth.authProviders
-import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 
 class AuthRepositoryImpl(
     private val api: AuthApi,
-    private val sessionManager: SessionManager,
-    private val httpClient: HttpClient,
-    private val statusSink: MutableStateFlow<SessionStatus>,
+    private val lifecycle: SessionLifecycle,
     private val deviceIdProvider: DeviceIdProvider,
 ) : AuthRepository {
 
-    override val sessionStatus: StateFlow<SessionStatus> = statusSink.asStateFlow()
+    override val sessionStatus: StateFlow<SessionStatus> = lifecycle.status
 
-    override suspend fun bootstrap() {
-        if (statusSink.value !is SessionStatus.Initializing) return
-        val stored = sessionManager.loadSessionOrNull()
-        statusSink.value = if (stored != null) {
-            SessionStatus.Authenticated(stored, SessionSource.Storage)
-        } else {
-            SessionStatus.NotAuthenticated(isSignOut = false)
-        }
-    }
+    override suspend fun bootstrap() = lifecycle.bootstrap()
 
-    override suspend fun signIn(credentials: Credentials): Result<UserSession> = runCatching {
+    override suspend fun signIn(credentials: Credentials): Result<UserSession> = authResult {
+        val ticket = lifecycle.beginSignIn()
         val deviceId = deviceIdProvider.getOrCreate()
         val session = api.signIn(credentials.email, credentials.password, deviceId)
-        sessionManager.saveSession(session)
-        clearBearerCache()
-        statusSink.value = SessionStatus.Authenticated(session, SessionSource.SignIn)
+        lifecycle.completeSignIn(ticket, session)
         session
-    }.recoverCatching { throwable ->
-        throw AuthFailure(mapToAuthError(throwable), throwable)
     }
 
-    override suspend fun signOut() {
-        // Best-effort server invalidation; always clear local state.
-        val refreshToken = (statusSink.value as? SessionStatus.Authenticated)?.session?.refreshToken
-        if (refreshToken != null) {
-            val deviceId = deviceIdProvider.getOrCreate()
-            runCatching { api.logout(refreshToken, deviceId) }
-        }
-        sessionManager.deleteSession()
-        clearBearerCache()
-        statusSink.value = SessionStatus.NotAuthenticated(isSignOut = true)
+    override suspend fun signOut(beforeLogout: suspend () -> Unit) {
+        val lease = lifecycle.leaseOrNull() ?: return
+        close(lease, SessionExit.SignedOut, beforeLogout)
     }
 
-    override suspend fun resetPassword(token: String, newPassword: String): Result<Unit> = runCatching {
+    override suspend fun resetPassword(
+        token: String,
+        newPassword: String,
+        beforeLogout: suspend () -> Unit,
+    ): Result<Unit> = authResult(::mapResetError) {
+        val lease = lifecycle.leaseOrNull()
         api.resetPassword(token, newPassword)
-    }.recoverCatching { throwable ->
-        throw AuthFailure(mapResetError(throwable), throwable)
+        if (lease != null) close(lease, SessionExit.PasswordReset, beforeLogout)
     }
 
-    override suspend fun requestPasswordRecovery(email: String): Result<Unit> = runCatching {
+    private suspend fun close(lease: SessionLease, exit: SessionExit, beforeLogout: suspend () -> Unit) {
+        try {
+            withContext(lease) {
+                if (lifecycle.sessionFor(lease) == null) return@withContext
+                bestEffort(beforeLogout)
+                val refreshToken = lifecycle.sessionFor(lease)?.session?.refreshToken ?: return@withContext
+                bestEffort { api.logout(refreshToken, deviceIdProvider.getOrCreate()) }
+            }
+        } finally {
+            lifecycle.end(lease, exit)
+        }
+    }
+
+    private suspend fun bestEffort(operation: suspend () -> Unit) {
+        try {
+            operation()
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (_: Exception) {
+            // Local sign-out proceeds when the server cannot be reached.
+        }
+    }
+
+    override suspend fun requestPasswordRecovery(email: String): Result<Unit> = authResult(::mapRequestRecoveryError) {
         api.requestPasswordRecovery(email)
-    }.recoverCatching { throwable ->
-        throw AuthFailure(mapRequestRecoveryError(throwable), throwable)
     }
 
     // Deliberately does not read or change the session: verification is independent of login.
@@ -90,20 +90,17 @@ class AuthRepositoryImpl(
         cause: Throwable? = null,
     ): Result<Unit> = Result.failure(EmailVerificationFailure(error, cause))
 
-    private fun clearBearerCache() {
-        httpClient.authProviders
-            .filterIsInstance<BearerAuthProvider>()
-            .firstOrNull()
-            ?.clearToken()
-    }
-
-    private fun mapToAuthError(throwable: Throwable): AuthError = when {
-        throwable is ResponseException && throwable.response.status == HttpStatusCode.Unauthorized ->
-            AuthError.InvalidCredentials
-        throwable is ResponseException && throwable.response.status == HttpStatusCode.Forbidden ->
-            AuthError.AccountPendingValidation
-        throwable is ResponseException -> AuthError.Network
-        else -> AuthError.Unknown(throwable)
+    private inline fun <T> authResult(
+        mapError: (Throwable) -> AuthError = { AuthError.Unknown(it) },
+        operation: () -> T,
+    ): Result<T> = try {
+        Result.success(operation())
+    } catch (cancellation: CancellationException) {
+        throw cancellation
+    } catch (failure: AuthFailure) {
+        Result.failure(failure)
+    } catch (failure: Exception) {
+        Result.failure(AuthFailure(mapError(failure), failure))
     }
 
     private fun mapResetError(throwable: Throwable): AuthError = when {
@@ -121,6 +118,5 @@ class AuthRepositoryImpl(
 
 /**
  * Wraps a typed [AuthError] for callers that bubble it through `Result.failure(...)`.
- * Future Login feature will pattern-match on `error` to render messages.
  */
 class AuthFailure(val error: AuthError, cause: Throwable? = null) : Exception(error.toString(), cause)

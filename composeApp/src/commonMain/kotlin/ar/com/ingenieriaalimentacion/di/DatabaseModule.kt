@@ -32,5 +32,5 @@ val databaseModule = module {
             get<SurveyResponseEditRepository>(),
         )
     }
-    single { SyncCoordinator(engines = get(), connectivity = get(), scope = get()) }
+    single { SyncCoordinator(engines = get(), connectivity = get(), scope = get<AppScope>(), lifecycle = get()) }
 }

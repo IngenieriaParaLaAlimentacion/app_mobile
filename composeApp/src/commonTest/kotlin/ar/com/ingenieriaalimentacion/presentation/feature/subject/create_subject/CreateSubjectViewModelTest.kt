@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.subject.create_subject
 
+import ar.com.ingenieriaalimentacion.fake.inactiveSessionLifecycle
 import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
@@ -42,7 +43,7 @@ class CreateSubjectViewModelTest {
         repo: FakeSubjectRepository,
         route: Route.CreateSubject = Route.CreateSubject(),
     ): CreateSubjectViewModel {
-        val coordinator = SyncCoordinator(listOf(repo), FakeConnectivityObserver(), AppScope())
+        val coordinator = SyncCoordinator(listOf(repo), FakeConnectivityObserver(), AppScope(), inactiveSessionLifecycle())
         return CreateSubjectViewModel(route, CreateSubjectUseCase(repo), coordinator)
     }
 

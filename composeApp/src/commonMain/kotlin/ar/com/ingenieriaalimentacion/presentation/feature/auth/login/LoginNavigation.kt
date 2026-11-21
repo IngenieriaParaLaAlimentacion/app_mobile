@@ -10,10 +10,11 @@ import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 fun NavController.navigateToLogin(navOptions: NavOptions? = null) =
     navigate(Route.Login, navOptions)
 
-fun NavGraphBuilder.loginScreen(navController: NavController) {
+fun NavGraphBuilder.loginScreen(navController: NavController, showBlockNotice: Boolean) {
     composable<Route.Login> {
         LoginScreenRoot(
             navigate = { destination -> navigate(destination, navController) },
+            showBlockNotice = showBlockNotice,
         )
     }
 }
@@ -23,10 +24,6 @@ internal fun navigate(
     navController: NavController,
 ) {
     when (destination) {
-        LoginDestination.Home ->
-            navController.navigate(Route.AuthedShell) {
-                popUpTo(0) { inclusive = true }
-            }
         LoginDestination.ForgotPassword -> navController.navigateToForgotPassword()
         LoginDestination.Back -> { navController.popBackStack() }
     }

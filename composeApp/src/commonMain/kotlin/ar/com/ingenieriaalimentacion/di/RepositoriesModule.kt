@@ -82,9 +82,7 @@ val repositoriesModule = module {
     single<AuthRepository> {
         AuthRepositoryImpl(
             api = get(),
-            sessionManager = get(),
-            httpClient = get(),
-            statusSink = get(),
+            lifecycle = get(),
             deviceIdProvider = get(),
         )
     }
@@ -94,23 +92,25 @@ val repositoriesModule = module {
     }
     single<RegistrationRepository> { RegistrationRepositoryImpl(api = get()) }
     single<SubjectLocalStore> {
-        DefaultSubjectLocalStore(queries = get(), now = { Clock.System.now().toEpochMilliseconds() })
+        DefaultSubjectLocalStore(lifecycle = get(), queries = get(), now = { Clock.System.now().toEpochMilliseconds() })
     }
     single<IdGenerator> { UuidGenerator() }
     single<SubjectRepository> {
         SubjectRepositoryImpl(
+            lifecycle = get(),
             api = get(),
             local = get(),
             idGenerator = get(),
             now = { Clock.System.now().toEpochMilliseconds() },
         )
     }
-    single<SubjectQueryRepository> { SubjectQueryRepositoryImpl(api = get(), local = get()) }
+    single<SubjectQueryRepository> { SubjectQueryRepositoryImpl(lifecycle = get(), api = get(), local = get()) }
     single<MeasurementLocalStore> {
-        DefaultMeasurementLocalStore(queries = get(), now = { Clock.System.now().toEpochMilliseconds() })
+        DefaultMeasurementLocalStore(lifecycle = get(), queries = get(), now = { Clock.System.now().toEpochMilliseconds() })
     }
     single<MeasurementRepository> {
         MeasurementRepositoryImpl(
+            lifecycle = get(),
             api = get(),
             local = get(),
             subjects = get(),
@@ -119,34 +119,36 @@ val repositoriesModule = module {
         )
     }
     single<EstablishmentLocalStore> {
-        DefaultEstablishmentLocalStore(queries = get(), now = { Clock.System.now().toEpochMilliseconds() })
+        DefaultEstablishmentLocalStore(lifecycle = get(), queries = get(), now = { Clock.System.now().toEpochMilliseconds() })
     }
     single<CurrentEstablishmentLocalStore> {
-        DefaultCurrentEstablishmentLocalStore(queries = get(), now = { Clock.System.now().toEpochMilliseconds() })
+        DefaultCurrentEstablishmentLocalStore(lifecycle = get(), queries = get(), now = { Clock.System.now().toEpochMilliseconds() })
     }
     single<ProfileRepository> {
-        ProfileRepositoryImpl(api = get(), local = get(), currentEstablishment = get())
+        ProfileRepositoryImpl(lifecycle = get(), api = get(), local = get(), currentEstablishment = get())
     }
-    single<ActivityLocalStore> { DefaultActivityLocalStore(queries = get()) }
+    single<ActivityLocalStore> { DefaultActivityLocalStore(lifecycle = get(), queries = get()) }
     single<SubjectHistoryRepository> {
-        SubjectHistoryRepositoryImpl(api = get(), cache = get(), queue = get(), json = get(named("auth")))
+        SubjectHistoryRepositoryImpl(lifecycle = get(), api = get(), cache = get(), queue = get(), json = get(named("auth")))
     }
     single<MeasurementHistoryRepository> {
-        MeasurementHistoryRepositoryImpl(api = get(), cache = get(), queue = get(), json = get(named("auth")))
+        MeasurementHistoryRepositoryImpl(lifecycle = get(), api = get(), cache = get(), queue = get(), json = get(named("auth")))
     }
     single<SurveyLocalStore> {
         DefaultSurveyLocalStore(
+            lifecycle = get(),
             queries = get(),
             json = get(named("auth")),
             now = { Clock.System.now().toEpochMilliseconds() },
         )
     }
-    single<SurveyRepository> { SurveyRepositoryImpl(api = get(), local = get()) }
+    single<SurveyRepository> { SurveyRepositoryImpl(lifecycle = get(), api = get(), local = get()) }
     single<SurveyResponseLocalStore> {
-        DefaultSurveyResponseLocalStore(queries = get(), now = { Clock.System.now().toEpochMilliseconds() })
+        DefaultSurveyResponseLocalStore(lifecycle = get(), queries = get(), now = { Clock.System.now().toEpochMilliseconds() })
     }
     single<SurveyResponseRepository> {
         SurveyResponseRepositoryImpl(
+            lifecycle = get(),
             api = get(),
             local = get(),
             subjects = get(),
@@ -157,10 +159,11 @@ val repositoriesModule = module {
         )
     }
     single<SurveyResponseEditLocalStore> {
-        DefaultSurveyResponseEditLocalStore(queries = get(), now = { Clock.System.now().toEpochMilliseconds() })
+        DefaultSurveyResponseEditLocalStore(lifecycle = get(), queries = get(), now = { Clock.System.now().toEpochMilliseconds() })
     }
     single<SurveyResponseEditRepository> {
         SurveyResponseEditRepositoryImpl(
+            lifecycle = get(),
             api = get(),
             local = get(),
             responses = get(),
@@ -182,10 +185,11 @@ val repositoriesModule = module {
         PushDeviceRepositoryImpl(api = get(), deviceIdProvider = get(), tokenProvider = get())
     }
     single<FoodMovementHistoryRepository> {
-        FoodMovementHistoryRepositoryImpl(api = get(), cache = get(), json = get(named("auth")))
+        FoodMovementHistoryRepositoryImpl(lifecycle = get(), api = get(), cache = get(), json = get(named("auth")))
     }
     single<SurveyResponseHistoryRepository> {
         SurveyResponseHistoryRepositoryImpl(
+            lifecycle = get(),
             api = get(),
             activityApi = get(),
             local = get(),

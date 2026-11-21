@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.survey.local
 
+import ar.com.ingenieriaalimentacion.fake.activeSessionLifecycle
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import ar.com.ingenieriaalimentacion.data.db.AppDatabase
 import ar.com.ingenieriaalimentacion.domain.model.survey.Survey
@@ -20,11 +21,11 @@ class DefaultSurveyLocalStoreTest {
     private var time = 100L
 
     @BeforeTest
-    fun setup() {
+    fun setup() = runTest {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         AppDatabase.Schema.create(driver)
         val queries = AppDatabase(driver).cachedSurveyQueries
-        store = DefaultSurveyLocalStore(queries, json = Json, now = { time }, dispatcher = Dispatchers.Unconfined)
+        store = DefaultSurveyLocalStore(queries, json = Json, now = { time }, lifecycle = activeSessionLifecycle(), dispatcher = Dispatchers.Unconfined)
     }
 
     private fun survey(

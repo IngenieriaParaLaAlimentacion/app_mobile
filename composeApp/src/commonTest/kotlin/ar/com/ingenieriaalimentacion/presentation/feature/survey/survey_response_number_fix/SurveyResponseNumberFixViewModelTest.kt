@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_number_fix
 
+import ar.com.ingenieriaalimentacion.fake.inactiveSessionLifecycle
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.di.AppScope
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.UpdateSurveyResponseNumberUseCase
@@ -35,7 +36,7 @@ class SurveyResponseNumberFixViewModelTest {
         val viewModel = SurveyResponseNumberFixViewModel(
             Route.SurveyResponseNumberFix("local-1", "Encuesta"),
             UpdateSurveyResponseNumberUseCase(repository),
-            SyncCoordinator(listOf(repository), FakeConnectivityObserver(), AppScope()),
+            SyncCoordinator(listOf(repository), FakeConnectivityObserver(), AppScope(), inactiveSessionLifecycle()),
         )
 
         viewModel.onAction(SurveyResponseNumberFixAction.NumberChanged("42"))
@@ -52,7 +53,7 @@ class SurveyResponseNumberFixViewModelTest {
         val viewModel = SurveyResponseNumberFixViewModel(
             Route.SurveyResponseNumberFix("local-1", "Encuesta"),
             UpdateSurveyResponseNumberUseCase(repository),
-            SyncCoordinator(listOf(repository), FakeConnectivityObserver(), AppScope()),
+            SyncCoordinator(listOf(repository), FakeConnectivityObserver(), AppScope(), inactiveSessionLifecycle()),
         )
 
         viewModel.onAction(SurveyResponseNumberFixAction.NumberChanged("1000000"))

@@ -7,34 +7,19 @@ import kotlinx.coroutines.flow.Flow
  *  [SurveyResponseLocalStore], keyed by its own `editId`. The concrete
  *  [DefaultSurveyResponseEditLocalStore] wraps SQLDelight; tests use a fake. */
 interface SurveyResponseEditLocalStore {
-    /** The still-unsent edit attempt for [responseId], if any — the coalescing lookup
-     *  `SurveyResponseEditRepositoryImpl.enqueueEdit` uses to overwrite in place instead of
-     *  minting a new idempotency key. */
-    suspend fun findPendingForResponse(responseId: String): SurveyResponseEditUpload?
-
-    /** The most recent edit attempt (any state) for [responseId], reactively — lets the detail
-     *  screen surface a dead-lettered (FAILED) edit instead of it silently vanishing. */
+    /** The latest edit, including a failed edit the response detail can surface. */
     fun observeLatestForResponse(responseId: String): Flow<SurveyResponseEditUpload?>
 
-    /** Overwrite a not-yet-transmitted edit in place — same `editId`. Refreshes the denormalized
-     *  [surveyName]/[establishmentName] too, so a second offline edit doesn't leave them stale. */
-    suspend fun updatePending(
-        editId: String,
-        surveyName: String,
-        establishmentName: String,
-        answersJson: String,
-        eventAt: String,
-        responseNumber: Int?,
-        now: Long,
-    )
-
-    suspend fun insert(edit: SurveyResponseEditUpload)
+    /** Save a new edit, coalescing with an unsent pending edit if one exists. */
+    suspend fun enqueue(edit: SurveyResponseEditUpload)
 
     /** All PENDING rows; backoff gating is applied in Kotlin by the caller. */
     suspend fun syncable(): List<SurveyResponseEditUpload>
     suspend fun awaitingNumberPolicy(): List<SurveyResponseEditUpload>
 
-    suspend fun markSyncing(editId: String)
+    /** Atomically claim the exact candidate before sending its immutable request. */
+    suspend fun claimForSync(edit: SurveyResponseEditUpload): Boolean
+
     suspend fun markSynced(editId: String)
 
     /** Terminal failure: bumps attemptCount and sets a user-facing reason. */

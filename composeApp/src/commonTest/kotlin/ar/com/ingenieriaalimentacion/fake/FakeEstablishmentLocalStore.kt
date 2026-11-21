@@ -23,6 +23,10 @@ class FakeEstablishmentLocalStore(
         replaceCount++
     }
 
+    override suspend fun update(transform: (List<EstablishmentWithStatus>) -> List<EstablishmentWithStatus>) {
+        replaceAll(transform(rows))
+    }
+
     override suspend fun clear() {
         rows = emptyList()
         clearCount++

@@ -12,6 +12,10 @@ class FakeCurrentEstablishmentLocalStore(
 
     override suspend fun get(): String? = value
 
+    override suspend fun clearIfSelected(establishmentId: String) {
+        if (value == establishmentId) value = null
+    }
+
     override suspend fun set(establishmentId: String?) {
         value = establishmentId
     }

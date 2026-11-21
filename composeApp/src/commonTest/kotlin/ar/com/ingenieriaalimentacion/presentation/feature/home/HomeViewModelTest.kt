@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.home
 
+import ar.com.ingenieriaalimentacion.fake.inactiveSessionLifecycle
 import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
@@ -95,7 +96,7 @@ class HomeViewModelTest {
         profileRepo: FakeProfileRepository,
         connectivity: FakeConnectivityObserver = FakeConnectivityObserver(initial = true),
     ): HomeViewModel {
-        val coordinator = SyncCoordinator(emptyList(), connectivity, AppScope())
+        val coordinator = SyncCoordinator(emptyList(), connectivity, AppScope(), inactiveSessionLifecycle())
         return HomeViewModel(
             getFoodMovementHistory = GetFoodMovementHistoryPageUseCase(foodMovementRepo),
             observeSubjectUploads = ObserveSubjectUploadsUseCase(subjectRepo),

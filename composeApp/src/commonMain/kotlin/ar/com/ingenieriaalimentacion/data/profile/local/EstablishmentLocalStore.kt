@@ -16,5 +16,6 @@ interface EstablishmentLocalStore {
     /** Transactional overwrite: replaces the entire cache with [items]. */
     suspend fun replaceAll(items: List<EstablishmentWithStatus>)
 
+    suspend fun update(transform: (List<EstablishmentWithStatus>) -> List<EstablishmentWithStatus>)
     suspend fun clear()
 }

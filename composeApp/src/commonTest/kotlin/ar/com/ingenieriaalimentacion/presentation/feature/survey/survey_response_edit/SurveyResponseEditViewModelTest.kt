@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_edit
 
+import ar.com.ingenieriaalimentacion.fake.inactiveSessionLifecycle
 import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
@@ -82,7 +83,7 @@ class SurveyResponseEditViewModelTest {
         },
         editRepo: FakeSurveyResponseEditRepository = FakeSurveyResponseEditRepository(),
     ): SurveyResponseEditViewModel {
-        val coordinator = SyncCoordinator(listOf(editRepo), FakeConnectivityObserver(), AppScope())
+        val coordinator = SyncCoordinator(listOf(editRepo), FakeConnectivityObserver(), AppScope(), inactiveSessionLifecycle())
         return SurveyResponseEditViewModel(
             route = Route.SurveyResponseEdit(surveyId = "s1", responseId = "r1"),
             getSurveyResponseDetail = GetSurveyResponseDetailUseCase(historyRepo),

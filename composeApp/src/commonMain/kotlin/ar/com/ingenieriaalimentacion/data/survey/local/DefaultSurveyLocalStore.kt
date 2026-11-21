@@ -1,13 +1,14 @@
 package ar.com.ingenieriaalimentacion.data.survey.local
 
+import ar.com.ingenieriaalimentacion.data.auth.SessionLifecycle
 import ar.com.ingenieriaalimentacion.data.db.CachedSurveyQueries
+import ar.com.ingenieriaalimentacion.data.db.queryForOwner
 import ar.com.ingenieriaalimentacion.data.survey.mapper.toDbString
 import ar.com.ingenieriaalimentacion.data.survey.mapper.toDomainSurvey
 import ar.com.ingenieriaalimentacion.domain.model.survey.Survey
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyDetail
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -22,16 +23,17 @@ class DefaultSurveyLocalStore(
     private val queries: CachedSurveyQueries,
     private val json: Json,
     private val now: () -> Long,
+    private val lifecycle: SessionLifecycle,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : SurveyLocalStore {
 
-    override suspend fun findDetail(surveyId: String): SurveyDetail? = withContext(dispatcher) {
+    override suspend fun findDetail(surveyId: String): SurveyDetail? = lifecycle.queryForOwner(dispatcher) {
         queries.selectById(surveyId).executeAsOneOrNull()?.detailJson?.let { raw ->
             runCatching { json.decodeFromString<SurveyDetail>(raw) }.getOrNull()
         }
     }
 
-    override suspend fun upsertSummaries(surveys: List<Survey>): Unit = withContext(dispatcher) {
+    override suspend fun upsertSummaries(surveys: List<Survey>): Unit = lifecycle.queryForOwner(dispatcher) {
         val nowMs = now()
         // One transaction, not one per survey: batches the reads+writes and — since SQLDelight
         // serializes transactions against other statements on the same connection — closes the
@@ -54,7 +56,7 @@ class DefaultSurveyLocalStore(
         }
     }
 
-    override suspend fun upsertDetail(detail: SurveyDetail): Unit = withContext(dispatcher) {
+    override suspend fun upsertDetail(detail: SurveyDetail): Unit = lifecycle.queryForOwner(dispatcher) {
         queries.insertOrReplace(
             id = detail.id,
             name = detail.name,
@@ -67,11 +69,11 @@ class DefaultSurveyLocalStore(
         )
     }
 
-    override suspend fun getSummaries(): List<Survey> = withContext(dispatcher) {
+    override suspend fun getSummaries(): List<Survey> = lifecycle.queryForOwner(dispatcher) {
         queries.selectAll().executeAsList().map { it.toDomainSurvey() }
     }
 
-    override suspend fun replaceAllSummaries(surveys: List<Survey>): Unit = withContext(dispatcher) {
+    override suspend fun replaceAllSummaries(surveys: List<Survey>): Unit = lifecycle.queryForOwner(dispatcher) {
         val nowMs = now()
         queries.transaction {
             // Snapshot existing detailJson before wiping so the replace never loses a cached detail.
@@ -95,7 +97,7 @@ class DefaultSurveyLocalStore(
         }
     }
 
-    override suspend fun idsMissingDetail(): List<String> = withContext(dispatcher) {
+    override suspend fun idsMissingDetail(): List<String> = lifecycle.queryForOwner(dispatcher) {
         queries.selectIdsMissingDetail().executeAsList()
     }
 

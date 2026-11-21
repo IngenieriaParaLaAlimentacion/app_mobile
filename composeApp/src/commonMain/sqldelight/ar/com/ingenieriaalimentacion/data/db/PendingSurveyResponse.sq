@@ -27,74 +27,77 @@ CREATE TABLE PendingSurveyResponse (
     attemptCount   INTEGER NOT NULL DEFAULT 0,
     createdAt      INTEGER NOT NULL,
     updatedAt      INTEGER NOT NULL,
-    responseNumber INTEGER
+    responseNumber INTEGER,
+    ownerUserId    TEXT
 );
 
 CREATE INDEX PendingSurveyResponse_state ON PendingSurveyResponse(syncState);
 
+CREATE INDEX PendingSurveyResponse_owner_state ON PendingSurveyResponse(ownerUserId, syncState);
+
 insert:
 INSERT INTO PendingSurveyResponse(localId, surveyId, surveyName, responseTarget, targetId,
     targetLabel, answersJson, eventAt, syncState, canonicalId, errorMessage, conflictBy,
-    conflictAt, attemptCount, createdAt, updatedAt, responseNumber)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    conflictAt, attemptCount, createdAt, updatedAt, responseNumber, ownerUserId)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectAll:
-SELECT * FROM PendingSurveyResponse ORDER BY createdAt DESC;
+SELECT * FROM PendingSurveyResponse WHERE ownerUserId = :ownerUserId ORDER BY createdAt DESC;
 
 selectSyncable:
-SELECT * FROM PendingSurveyResponse WHERE syncState = 'PENDING' ORDER BY createdAt ASC;
+SELECT * FROM PendingSurveyResponse WHERE ownerUserId = :ownerUserId AND syncState = 'PENDING' ORDER BY createdAt ASC;
 
 selectAwaitingNumberPolicy:
 SELECT * FROM PendingSurveyResponse
-WHERE syncState = 'FAILED'
+WHERE ownerUserId = :ownerUserId AND syncState = 'FAILED'
   AND responseNumber IS NULL
   AND errorMessage = 'Falta el número de respuesta.';
 
 selectById:
-SELECT * FROM PendingSurveyResponse WHERE localId = ?;
+SELECT * FROM PendingSurveyResponse WHERE ownerUserId = :ownerUserId AND localId = :localId;
 
 bumpRetry:
 UPDATE PendingSurveyResponse SET syncState = 'PENDING', attemptCount = attemptCount + 1,
-    errorMessage = ?, updatedAt = ? WHERE localId = ?;
+    errorMessage = ?, updatedAt = ? WHERE ownerUserId = :ownerUserId AND localId = :localId;
 
 markSyncing:
-UPDATE PendingSurveyResponse SET syncState = 'SYNCING', updatedAt = ? WHERE localId = ?;
+UPDATE PendingSurveyResponse SET syncState = 'SYNCING', updatedAt = ? WHERE ownerUserId = :ownerUserId AND localId = :localId;
 
 resetSyncingToPending:
-UPDATE PendingSurveyResponse SET syncState = 'PENDING', updatedAt = ? WHERE syncState = 'SYNCING';
+UPDATE PendingSurveyResponse SET syncState = 'PENDING', updatedAt = ? WHERE ownerUserId = :ownerUserId AND syncState = 'SYNCING';
 
 pruneTerminalOlderThan:            -- FAILED only — SYNCED rows are exempt (kept as the local
 DELETE FROM PendingSurveyResponse  -- source of truth for offline edit pre-fill; see Phase 3).
-WHERE syncState = 'FAILED' AND updatedAt < :cutoff;
+WHERE ownerUserId = :ownerUserId AND syncState = 'FAILED' AND updatedAt < :cutoff;
 
 markSynced:
 UPDATE PendingSurveyResponse SET syncState = 'SYNCED', canonicalId = ?, errorMessage = NULL,
     conflictBy = NULL, conflictAt = NULL,
-    updatedAt = ? WHERE localId = ?;
+    updatedAt = ? WHERE ownerUserId = :ownerUserId AND localId = :localId;
 
 markFailed:
 UPDATE PendingSurveyResponse SET syncState = 'FAILED', errorMessage = ?,
-    attemptCount = attemptCount + 1, updatedAt = ? WHERE localId = ?;
+    attemptCount = attemptCount + 1, updatedAt = ? WHERE ownerUserId = :ownerUserId AND localId = :localId;
 
 -- Terminal by construction: SurveyResponseUpload.isEligibleAt returns false while conflict != null,
 -- so the backoff sweep never picks this row up again. Only an explicit Descartar clears it.
 markConflict:
 UPDATE PendingSurveyResponse SET syncState = 'FAILED', errorMessage = NULL, conflictBy = ?,
-    conflictAt = ?, attemptCount = attemptCount + 1, updatedAt = ? WHERE localId = ?;
+    conflictAt = ?, attemptCount = attemptCount + 1, updatedAt = ? WHERE ownerUserId = :ownerUserId AND localId = :localId;
 
 -- Clears the conflict columns too. The UI never offers Reintentar on a conflicted row, but if it
 -- ever did, leaving them set would wedge the row in a PENDING state that isEligibleAt permanently
 -- skips: invisible to the sweep and no longer rendered as a conflict.
 resetForRetry:
 UPDATE PendingSurveyResponse SET syncState = 'PENDING', errorMessage = NULL, conflictBy = NULL,
-    conflictAt = NULL, attemptCount = 0, updatedAt = ? WHERE localId = ?;
+    conflictAt = NULL, attemptCount = 0, updatedAt = ? WHERE ownerUserId = :ownerUserId AND localId = :localId;
 
 updateResponseNumber:
 UPDATE PendingSurveyResponse SET responseNumber = ?, syncState = 'PENDING', errorMessage = NULL,
-    attemptCount = 0, updatedAt = ? WHERE localId = ?;
+    attemptCount = 0, updatedAt = ? WHERE ownerUserId = :ownerUserId AND localId = :localId;
 
 deleteById:
-DELETE FROM PendingSurveyResponse WHERE localId = ?;
+DELETE FROM PendingSurveyResponse WHERE ownerUserId = :ownerUserId AND localId = :localId;
 
-deleteAll:
-DELETE FROM PendingSurveyResponse;
+deleteForOwner:
+DELETE FROM PendingSurveyResponse WHERE ownerUserId = :ownerUserId;

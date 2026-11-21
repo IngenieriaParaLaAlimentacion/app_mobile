@@ -1,6 +1,7 @@
 package ar.com.ingenieriaalimentacion.data.subject
 
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
+import ar.com.ingenieriaalimentacion.fake.activeSessionLifecycle
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -37,12 +38,12 @@ class SubjectApiTest {
     """.trimIndent()
 
     // Mirrors the authed client: no `expectSuccess`, so list() must check the status itself.
-    private fun repository(handler: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData): SubjectQueryRepositoryImpl {
+    private suspend fun repository(handler: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData): SubjectQueryRepositoryImpl {
         val client = HttpClient(MockEngine(handler)) {
             install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
             defaultRequest { url("https://api.example.com/") }
         }
-        return SubjectQueryRepositoryImpl(SubjectApi(client), ar.com.ingenieriaalimentacion.fake.FakeSubjectLocalStore())
+        return SubjectQueryRepositoryImpl(SubjectApi(client), ar.com.ingenieriaalimentacion.fake.FakeSubjectLocalStore(), activeSessionLifecycle())
     }
 
     @Test

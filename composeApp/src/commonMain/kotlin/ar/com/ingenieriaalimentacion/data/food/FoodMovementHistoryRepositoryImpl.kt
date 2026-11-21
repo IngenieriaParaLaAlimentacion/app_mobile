@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.food
 
+import ar.com.ingenieriaalimentacion.data.auth.SessionLifecycle
 import ar.com.ingenieriaalimentacion.data.activity.local.ActivityItemType
 import ar.com.ingenieriaalimentacion.data.activity.local.ActivityLocalStore
 import ar.com.ingenieriaalimentacion.data.activity.local.CachedActivityRow
@@ -8,6 +9,7 @@ import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovement
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementDirection
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementHistoryPage
 import ar.com.ingenieriaalimentacion.domain.repository.FoodMovementHistoryRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.serialization.json.Json
@@ -27,18 +29,21 @@ class FoodMovementHistoryRepositoryImpl(
     private val api: FoodMovementActivityApi,
     private val cache: ActivityLocalStore,
     private val json: Json,
+    private val lifecycle: SessionLifecycle,
 ) : FoodMovementHistoryRepository {
 
-    override fun observeLocalMerged(): Flow<List<FoodMovement>> = combine(
-        cache.observe(ActivityItemType.FOOD_INTAKE),
-        cache.observe(ActivityItemType.FOOD_OUTFLOW),
-    ) { intakes, outflows ->
-        (intakes + outflows).decodeAndSort()
+    override fun observeLocalMerged(): Flow<List<FoodMovement>> = lifecycle.observe {
+        combine(
+            cache.observe(ActivityItemType.FOOD_INTAKE),
+            cache.observe(ActivityItemType.FOOD_OUTFLOW),
+        ) { intakes, outflows ->
+            (intakes + outflows).decodeAndSort()
+        }
     }
 
-    override suspend fun getPage(page: Int, pageSize: Int): Result<FoodMovementHistoryPage> {
+    override suspend fun getPage(page: Int, pageSize: Int): Result<FoodMovementHistoryPage> = lifecycle.scoped {
         val remote = runCatching { api.list(page, pageSize) }
-        return remote.fold(
+        return@scoped remote.fold(
             onSuccess = { response ->
                 val movements = response.items.mapNotNull { it.toDomain() }
                 persist(movements)
@@ -55,6 +60,7 @@ class FoodMovementHistoryRepositoryImpl(
                 )
             },
             onFailure = { error ->
+                if (error is CancellationException) throw error
                 // Offline: serve the requested cached page instead of failing. Mirrors
                 // SubjectHistoryRepositoryImpl / SurveyResponseHistoryRepositoryImpl, minus the
                 // queue half (there is no food-movement queue).

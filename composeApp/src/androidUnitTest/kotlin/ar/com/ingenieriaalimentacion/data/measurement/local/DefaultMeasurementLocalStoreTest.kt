@@ -1,9 +1,11 @@
 package ar.com.ingenieriaalimentacion.data.measurement.local
 
+import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import ar.com.ingenieriaalimentacion.data.db.AppDatabase
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementUpload
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
+import ar.com.ingenieriaalimentacion.fake.activeSessionLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -18,11 +20,11 @@ class DefaultMeasurementLocalStoreTest {
     private var time = 100L
 
     @BeforeTest
-    fun setup() {
+    fun setup() = runTest {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         AppDatabase.Schema.create(driver)
         val queries = AppDatabase(driver).pendingMeasurementQueries
-        store = DefaultMeasurementLocalStore(queries, now = { time }, dispatcher = Dispatchers.Unconfined)
+        store = DefaultMeasurementLocalStore(queries, lifecycle = activeSessionLifecycle(), now = { time }, dispatcher = Dispatchers.Unconfined)
     }
 
     private fun row(
@@ -127,7 +129,7 @@ class DefaultMeasurementLocalStoreTest {
     }
 
     @Test
-    fun `v10 queue upgrade preserves existing queued rows with null observation`() = runTest {
+    fun `queue upgrade preserves and quarantines earlier measurement rows`() = runTest {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         driver.execute(null, """
             CREATE TABLE PendingMeasurement (
@@ -143,15 +145,37 @@ class DefaultMeasurementLocalStoreTest {
             INSERT INTO PendingMeasurement VALUES ('old', 's', 'Ana', 'García', 42, 'e', 'Escuela',
                 72.5, 170.0, '2026-06-21T18:30:00Z', 'PENDING', NULL, 0, NULL, NULL, 10, 10)
         """.trimIndent(), 0)
+        driver.execute(null, "CREATE TABLE PendingSubject (syncState TEXT NOT NULL)", 0)
+        driver.execute(null, "CREATE TABLE PendingSurveyResponse (syncState TEXT NOT NULL)", 0)
+        driver.execute(
+            null,
+            "CREATE TABLE PendingSurveyResponseEdit (responseId TEXT NOT NULL, syncState TEXT NOT NULL)",
+            0,
+        )
         AppDatabase.Schema.migrate(driver, 10L, 11L)
-        val upgraded = DefaultMeasurementLocalStore(AppDatabase(driver).pendingMeasurementQueries,
-            now = { time }, dispatcher = Dispatchers.Unconfined)
-        val old = upgraded.syncable().single()
-        assertEquals("old", old.localId)
-        assertEquals(72.5, old.weightKg)
-        assertEquals(null, old.observation)
+        AppDatabase.Schema.migrate(driver, 11L, AppDatabase.Schema.version)
+        driver.executeQuery(
+            null,
+            "SELECT localId, weightKg, observation FROM PendingMeasurement WHERE ownerUserId IS NULL",
+            { cursor ->
+                assertTrue(cursor.next().value)
+                assertEquals("old", cursor.getString(0))
+                assertEquals(72.5, cursor.getDouble(1))
+                assertEquals(null, cursor.getString(2))
+                QueryResult.Value(Unit)
+            },
+            0,
+        ).value
+        val upgraded = DefaultMeasurementLocalStore(
+            AppDatabase(driver).pendingMeasurementQueries,
+            lifecycle = activeSessionLifecycle(),
+            now = { time },
+            dispatcher = Dispatchers.Unconfined,
+        )
+        assertTrue(upgraded.syncable().isEmpty())
         upgraded.insert(row("new").copy(observation = "Observación nueva"))
-        assertEquals("Observación nueva", upgraded.all().first { it.localId == "new" }.observation)
+        assertEquals(listOf("new"), upgraded.syncable().map { it.localId })
+        assertEquals("Observación nueva", upgraded.all().single().observation)
         driver.close()
     }
 

@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.survey
 
+import ar.com.ingenieriaalimentacion.data.auth.SessionLifecycle
 import ar.com.ingenieriaalimentacion.data.survey.local.SurveyLocalStore
 import ar.com.ingenieriaalimentacion.data.survey.mapper.toDomain
 import ar.com.ingenieriaalimentacion.data.survey.mapper.toDomainOrNull
@@ -9,6 +10,7 @@ import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyFeatureError
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyFeatureFailure
 import ar.com.ingenieriaalimentacion.domain.repository.PagedSurveys
 import ar.com.ingenieriaalimentacion.domain.repository.SurveyRepository
+import kotlinx.coroutines.CancellationException
 
 /**
  * [getAvailable] is network-first — availability is time-sensitive, so a live page always wins —
@@ -20,30 +22,32 @@ import ar.com.ingenieriaalimentacion.domain.repository.SurveyRepository
 class SurveyRepositoryImpl(
     private val api: SurveyApi,
     private val local: SurveyLocalStore,
+    private val lifecycle: SessionLifecycle,
 ) : SurveyRepository {
 
-    override suspend fun getAvailable(page: Int, pageSize: Int): Result<PagedSurveys> {
+    override suspend fun getAvailable(page: Int, pageSize: Int): Result<PagedSurveys> = lifecycle.scoped {
         val remote = runCatching {
             val response = api.available(page, pageSize)
             local.upsertSummaries(response.items.mapNotNull { it.toDomainOrNull() })
             response.toDomain()
         }
-        if (remote.isSuccess || page != 1) return remote
+        remote.onFailure { if (it is CancellationException) throw it }
+        if (remote.isSuccess || page != 1) return@scoped remote
 
         // Offline fallback: serve the cached snapshot as one self-contained page (totalPages = 1),
         // same shape as SubjectQueryRepositoryImpl's fallback. Active-only: the server never returns
         // inactive surveys from /available, so cached inactive rows must not resurface offline.
         val cached = local.getSummaries().filter { it.isActive }
-        return if (cached.isNotEmpty()) {
+        return@scoped if (cached.isNotEmpty()) {
             Result.success(PagedSurveys(items = cached, page = 1, totalPages = 1, fromCache = true))
         } else {
             remote
         }
     }
 
-    override suspend fun getDetail(surveyId: String): Result<SurveyDetail> {
-        local.findDetail(surveyId)?.let { return Result.success(it) }
-        return when (val outcome = api.detail(surveyId)) {
+    override suspend fun getDetail(surveyId: String): Result<SurveyDetail> = lifecycle.scoped {
+        local.findDetail(surveyId)?.let { return@scoped Result.success(it) }
+        return@scoped when (val outcome = api.detail(surveyId)) {
             is SurveyDetailOutcome.Found -> {
                 val detail = outcome.response.toDomain()
                 local.upsertDetail(detail)
@@ -56,7 +60,7 @@ class SurveyRepositoryImpl(
         }
     }
 
-    override suspend fun warmAvailableSurveys() {
+    override suspend fun warmAvailableSurveys(): Unit = lifecycle.scoped {
         // 1. Full snapshot: page through /available. Any page failing aborts the replace (a partial
         //    snapshot must not delete surveys that live on unfetched pages) but keeps upsert progress
         //    already written by getAvailable's write-through.
@@ -64,7 +68,8 @@ class SurveyRepositoryImpl(
         var page = 1
         var totalPages: Int
         do {
-            val result = runCatching { api.available(page, WARM_PAGE_SIZE) }.getOrNull() ?: return
+            val result = runCatching { api.available(page, WARM_PAGE_SIZE) }
+                .onFailure { if (it is CancellationException) throw it }.getOrNull() ?: return@scoped
             all += result.items.mapNotNull { it.toDomainOrNull() }
             totalPages = result.totalPages
             page++

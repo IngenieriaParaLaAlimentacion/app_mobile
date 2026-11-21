@@ -1,7 +1,6 @@
 package ar.com.ingenieriaalimentacion.di
 
 import ar.com.ingenieriaalimentacion.domain.usecase.activity.WarmActivityCacheUseCase
-import ar.com.ingenieriaalimentacion.domain.usecase.auth.ClearLocalDataUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.InitializeAuthUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.ObserveSessionStatusUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.RequestPasswordRecoveryUseCase
@@ -77,7 +76,6 @@ val useCasesModule = module {
     factory { UnregisterPushDeviceUseCase(repository = get()) }
     factory { SelectEstablishmentFromPushUseCase(profileRepository = get()) }
     factory { SignOutUseCase(repository = get(), unregisterPushDevice = get()) }
-    factory { ClearLocalDataUseCase(get()) }
     factory { ResetPasswordUseCase(repository = get(), unregisterPushDevice = get()) }
     factory { RequestPasswordRecoveryUseCase(get()) }
     factory { VerifyEmailUseCase(get()) }

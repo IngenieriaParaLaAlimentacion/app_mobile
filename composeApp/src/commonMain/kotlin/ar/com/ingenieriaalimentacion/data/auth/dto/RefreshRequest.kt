@@ -7,4 +7,5 @@ import kotlinx.serialization.Serializable
 data class RefreshRequest(
     @SerialName("refresh_token") val refreshToken: String,
     @SerialName("device_id") val deviceId: String,
+    @SerialName("report_user_blocked") val reportUserBlocked: Boolean,
 )

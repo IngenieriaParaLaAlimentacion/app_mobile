@@ -15,6 +15,7 @@ import ar.com.ingenieriaalimentacion.domain.util.IdGenerator
 import ar.com.ingenieriaalimentacion.fake.FakeSubjectLocalStore
 import ar.com.ingenieriaalimentacion.fake.FakeSurveyResponseLocalStore
 import ar.com.ingenieriaalimentacion.fake.FakeSurveyRepository
+import ar.com.ingenieriaalimentacion.fake.activeSessionLifecycle
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -34,6 +35,7 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.Json
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -81,15 +83,21 @@ class SurveyResponseSyncEngineTest {
         )
     }
 
-    private val repo = SurveyResponseRepositoryImpl(
-        api = api,
-        local = store,
-        subjects = subjects,
-        surveys = surveys,
-        idGenerator = object : IdGenerator { override fun newId() = "generated" },
-        json = json,
-        now = now,
-    )
+    private lateinit var repo: SurveyResponseRepositoryImpl
+
+    @BeforeTest
+    fun setupRepository() = runTest {
+        repo = SurveyResponseRepositoryImpl(
+            api = api,
+            local = store,
+            subjects = subjects,
+            surveys = surveys,
+            idGenerator = object : IdGenerator { override fun newId() = "generated" },
+            json = json,
+            now = now,
+            lifecycle = activeSessionLifecycle(),
+        )
+    }
 
     private fun jsonHeaders() = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
 

@@ -15,3 +15,8 @@ VALUES (0, ?, ?);
 
 deleteAll:
 DELETE FROM CurrentEstablishment;
+
+clearIfSelected:
+UPDATE CurrentEstablishment
+SET establishmentId = NULL, updatedAt = :updatedAt
+WHERE singleton = 0 AND establishmentId = :establishmentId;

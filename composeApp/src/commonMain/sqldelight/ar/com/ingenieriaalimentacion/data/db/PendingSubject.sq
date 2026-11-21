@@ -12,53 +12,56 @@ CREATE TABLE PendingSubject (
     errorMessage   TEXT,                         -- short Spanish reason when FAILED
     attemptCount   INTEGER NOT NULL DEFAULT 0,
     createdAt      INTEGER NOT NULL,             -- epoch millis
-    updatedAt      INTEGER NOT NULL
+    updatedAt      INTEGER NOT NULL,
+    ownerUserId    TEXT
 );
 
 CREATE INDEX PendingSubject_state ON PendingSubject(syncState);
 
+CREATE INDEX PendingSubject_owner_state ON PendingSubject(ownerUserId, syncState);
+
 insert:
 INSERT INTO PendingSubject(localId, dni, sex, name, lastName, birthDate, isRural, isIndigenous,
-    syncState, canonicalId, errorMessage, attemptCount, createdAt, updatedAt)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    syncState, canonicalId, errorMessage, attemptCount, createdAt, updatedAt, ownerUserId)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectAll:
-SELECT * FROM PendingSubject ORDER BY createdAt DESC;
+SELECT * FROM PendingSubject WHERE ownerUserId = :ownerUserId ORDER BY createdAt DESC;
 
 selectSyncable:                                  -- All PENDING rows (fresh or auto-retrying). Backoff
 SELECT * FROM PendingSubject                     -- gating (updatedAt + delay <= now) is applied in Kotlin.
-WHERE syncState = 'PENDING' ORDER BY createdAt ASC;
+WHERE ownerUserId = :ownerUserId AND syncState = 'PENDING' ORDER BY createdAt ASC;
 
 selectById:
-SELECT * FROM PendingSubject WHERE localId = ?;
+SELECT * FROM PendingSubject WHERE ownerUserId = :ownerUserId AND localId = :localId;
 
 bumpRetry:                                        -- transient 401/network: back to PENDING (from SYNCING),
 UPDATE PendingSubject SET syncState = 'PENDING', attemptCount = attemptCount + 1, errorMessage = ?,  -- count the
-    updatedAt = ? WHERE localId = ?;              -- attempt, restart the backoff window so it auto-retries.
+    updatedAt = ? WHERE ownerUserId = :ownerUserId AND localId = :localId;              -- attempt, restart the backoff window so it auto-retries.
 
 resetSyncingToPending:                            -- CRASH RECOVERY: run once on SyncCoordinator.start().
-UPDATE PendingSubject SET syncState = 'PENDING', updatedAt = ? WHERE syncState = 'SYNCING';
+UPDATE PendingSubject SET syncState = 'PENDING', updatedAt = ? WHERE ownerUserId = :ownerUserId AND syncState = 'SYNCING';
 
 pruneTerminalOlderThan:                           -- GC SYNCED rows older than a cutoff (epoch ms).
-DELETE FROM PendingSubject WHERE syncState = 'SYNCED' AND updatedAt < :cutoff;
+DELETE FROM PendingSubject WHERE ownerUserId = :ownerUserId AND syncState = 'SYNCED' AND updatedAt < :cutoff;
 
 markState:
-UPDATE PendingSubject SET syncState = ?, updatedAt = ? WHERE localId = ?;
+UPDATE PendingSubject SET syncState = ?, updatedAt = ? WHERE ownerUserId = :ownerUserId AND localId = :localId;
 
 markSynced:                                      -- 201/200 or 409
 UPDATE PendingSubject SET syncState = ?, canonicalId = ?, errorMessage = NULL, updatedAt = ?
-WHERE localId = ?;
+WHERE ownerUserId = :ownerUserId AND localId = :localId;
 
 markFailed:
 UPDATE PendingSubject SET syncState = 'FAILED', errorMessage = ?, attemptCount = attemptCount + 1,
-    updatedAt = ? WHERE localId = ?;
+    updatedAt = ? WHERE ownerUserId = :ownerUserId AND localId = :localId;
 
 resetForRetry:                                   -- manual Retry on a dead-letter FAILED row: fresh start.
 UPDATE PendingSubject SET syncState = 'PENDING', errorMessage = NULL, attemptCount = 0, updatedAt = ?
-WHERE localId = ?;
+WHERE ownerUserId = :ownerUserId AND localId = :localId;
 
 deleteById:
-DELETE FROM PendingSubject WHERE localId = ?;
+DELETE FROM PendingSubject WHERE ownerUserId = :ownerUserId AND localId = :localId;
 
-deleteAll:
-DELETE FROM PendingSubject;
+deleteForOwner:
+DELETE FROM PendingSubject WHERE ownerUserId = :ownerUserId;

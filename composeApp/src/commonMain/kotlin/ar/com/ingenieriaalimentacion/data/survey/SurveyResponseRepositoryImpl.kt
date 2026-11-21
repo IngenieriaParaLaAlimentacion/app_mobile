@@ -1,5 +1,7 @@
 package ar.com.ingenieriaalimentacion.data.survey
 
+import ar.com.ingenieriaalimentacion.data.auth.SessionLifecycle
+import ar.com.ingenieriaalimentacion.data.auth.scopedResult
 import ar.com.ingenieriaalimentacion.data.subject.local.SubjectLocalStore
 import ar.com.ingenieriaalimentacion.data.survey.local.SurveyResponseLocalStore
 import ar.com.ingenieriaalimentacion.data.survey.mapper.toAnswersJson
@@ -41,9 +43,10 @@ class SurveyResponseRepositoryImpl(
     private val idGenerator: IdGenerator,
     private val json: Json,
     private val now: () -> Long,
+    private val lifecycle: SessionLifecycle,
 ) : SurveyResponseRepository {
 
-    override suspend fun enqueue(newResponse: NewSurveyResponse): Result<Unit> = runCatching {
+    override suspend fun enqueue(newResponse: NewSurveyResponse): Result<Unit> = lifecycle.scopedResult {
         val nowMs = now()
         val eventAt = Instant.fromEpochMilliseconds(newResponse.eventAtMs).toString()
         val answersJson = json.encodeToString(
@@ -72,7 +75,9 @@ class SurveyResponseRepositoryImpl(
 
     override fun observeUploads(): Flow<List<SurveyResponseUpload>> = local.observeAll()
 
-    override suspend fun syncPending(): SyncSummary {
+    override suspend fun syncPending(): SyncSummary = lifecycle.scoped { syncOwnedPending() }
+
+    private suspend fun syncOwnedPending(): SyncSummary {
         var synced = 0
         var failed = 0
         var pending = 0
@@ -167,22 +172,20 @@ class SurveyResponseRepositoryImpl(
             true
         }
 
-    override suspend fun retry(localId: String): Result<Unit> = runCatching { local.resetForRetry(localId) }
+    override suspend fun retry(localId: String): Result<Unit> = lifecycle.scopedResult { local.resetForRetry(localId) }
 
-    override suspend fun updateResponseNumber(localId: String, responseNumber: Int): Result<Unit> = runCatching {
+    override suspend fun updateResponseNumber(localId: String, responseNumber: Int): Result<Unit> = lifecycle.scopedResult {
         local.find(localId) ?: error("No queued response $localId")
         local.updateResponseNumber(localId, responseNumber)
     }
 
     override suspend fun findQueued(localId: String): SurveyResponseUpload? = local.find(localId)
 
-    override suspend fun delete(localId: String): Result<Unit> = runCatching { local.delete(localId) }
+    override suspend fun delete(localId: String): Result<Unit> = lifecycle.scopedResult { local.delete(localId) }
 
-    override suspend fun resetStuckSyncing() {
-        local.resetStuckSyncing()
-    }
+    override suspend fun resetStuckSyncing() = lifecycle.scoped { local.resetStuckSyncing() }
 
-    override suspend fun pruneTerminal(olderThan: Duration) {
+    override suspend fun pruneTerminal(olderThan: Duration) = lifecycle.scoped {
         local.pruneTerminalOlderThan(now() - olderThan.inWholeMilliseconds)
     }
 }

@@ -1,14 +1,25 @@
 package ar.com.ingenieriaalimentacion.data.activity.local
 
+import ar.com.ingenieriaalimentacion.fake.activeSessionLifecycle
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import ar.com.ingenieriaalimentacion.data.auth.SessionEnded
+import ar.com.ingenieriaalimentacion.data.auth.SessionExit
+import ar.com.ingenieriaalimentacion.data.auth.SessionLifecycle
+import ar.com.ingenieriaalimentacion.data.auth.storage.MemorySessionManager
+import ar.com.ingenieriaalimentacion.data.db.SqlDelightDatabaseCleaner
+import ar.com.ingenieriaalimentacion.fake.FakeIdGenerator
+import ar.com.ingenieriaalimentacion.fake.signInForTest
 import ar.com.ingenieriaalimentacion.data.db.AppDatabase
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class DefaultActivityLocalStoreTest {
@@ -16,15 +27,50 @@ class DefaultActivityLocalStoreTest {
     private lateinit var store: DefaultActivityLocalStore
 
     @BeforeTest
-    fun setup() {
+    fun setup() = runTest {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         AppDatabase.Schema.create(driver)
         val queries = AppDatabase(driver).cachedActivityItemQueries
-        store = DefaultActivityLocalStore(queries, dispatcher = Dispatchers.Unconfined)
+        store = DefaultActivityLocalStore(queries, lifecycle = activeSessionLifecycle(), dispatcher = Dispatchers.Unconfined)
     }
 
     private fun row(id: String, occurredAtMillis: Long) =
         CachedActivityRow(id = id, occurredAtMillis = occurredAtMillis, payloadJson = """{"id":"$id"}""")
+
+    @Test
+    fun `cutoff clears prior cache writes and fences delayed writes across owner switch`() = runTest {
+        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+        AppDatabase.Schema.create(driver)
+        val database = AppDatabase(driver)
+        val lifecycle = SessionLifecycle(
+            MemorySessionManager(), SqlDelightDatabaseCleaner(database, Dispatchers.Unconfined), FakeIdGenerator(),
+        )
+        lifecycle.bootstrap()
+        lifecycle.signInForTest("A")
+        val cache = DefaultActivityLocalStore(database.cachedActivityItemQueries, lifecycle, Dispatchers.Unconfined)
+        cache.upsertPage(ActivityItemType.SUBJECT, listOf(row("A-before-cutoff", 1)))
+        val started = CompletableDeferred<Unit>()
+        val reply = CompletableDeferred<Unit>()
+        val late = async {
+            assertFailsWith<SessionEnded> {
+                lifecycle.scoped {
+                    started.complete(Unit)
+                    reply.await()
+                    cache.upsertPage(ActivityItemType.SUBJECT, listOf(row("A-late", 2)))
+                }
+            }
+        }
+        started.await()
+
+        lifecycle.end(lifecycle.leaseOrNull()!!, SessionExit.Blocked)
+        lifecycle.signInForTest("B")
+        assertTrue(cache.getPage(ActivityItemType.SUBJECT, 10, 0).isEmpty())
+        cache.upsertPage(ActivityItemType.SUBJECT, listOf(row("B", 3)))
+        reply.complete(Unit)
+        late.await()
+
+        assertEquals(listOf("B"), cache.getPage(ActivityItemType.SUBJECT, 10, 0).map { it.id })
+    }
 
     @Test
     fun `upserting past the cap evicts the oldest rows for that type only`() = runTest {
@@ -76,6 +122,7 @@ class DefaultActivityLocalStoreTest {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         AppDatabase.Schema.create(driver)
         val local = DefaultActivityLocalStore(AppDatabase(driver).cachedActivityItemQueries,
+            lifecycle = activeSessionLifecycle(),
             dispatcher = Dispatchers.Unconfined)
         local.upsertPage(ActivityItemType.FOOD_INTAKE, listOf(row("in:i-1", 1L)))
         local.upsertPage(ActivityItemType.FOOD_OUTFLOW, listOf(row("out:o-1", 2L)))

@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.subject.uploads
 
+import ar.com.ingenieriaalimentacion.fake.inactiveSessionLifecycle
 import app.cash.turbine.test
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.di.AppScope
@@ -61,7 +62,7 @@ class SubjectUploadsViewModelTest {
         repo: FakeSubjectRepository,
         historyRepo: FakeSubjectHistoryRepository = FakeSubjectHistoryRepository(),
     ): SubjectUploadsViewModel {
-        val coordinator = SyncCoordinator(listOf(repo), FakeConnectivityObserver(), AppScope())
+        val coordinator = SyncCoordinator(listOf(repo), FakeConnectivityObserver(), AppScope(), inactiveSessionLifecycle())
         return SubjectUploadsViewModel(
             observeUploads = ObserveSubjectUploadsUseCase(historyRepo),
             getPage = GetSubjectHistoryPageUseCase(historyRepo),

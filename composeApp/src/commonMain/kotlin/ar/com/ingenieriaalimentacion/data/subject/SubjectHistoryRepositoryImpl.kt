@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.subject
 
+import ar.com.ingenieriaalimentacion.data.auth.SessionLifecycle
 import ar.com.ingenieriaalimentacion.data.activity.ActivityApi
 import ar.com.ingenieriaalimentacion.data.activity.local.ActivityItemType
 import ar.com.ingenieriaalimentacion.data.activity.local.ActivityLocalStore
@@ -11,6 +12,7 @@ import ar.com.ingenieriaalimentacion.data.subject.mapper.toHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectHistoryPage
 import ar.com.ingenieriaalimentacion.domain.repository.SubjectHistoryRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.serialization.decodeFromString
@@ -27,16 +29,18 @@ class SubjectHistoryRepositoryImpl(
     private val cache: ActivityLocalStore,
     private val queue: SubjectLocalStore,
     private val json: Json,
+    private val lifecycle: SessionLifecycle,
 ) : SubjectHistoryRepository {
 
-    override fun observeLocalMerged(): Flow<List<SubjectHistoryEntry>> =
+    override fun observeLocalMerged(): Flow<List<SubjectHistoryEntry>> = lifecycle.observe {
         combine(queue.observeAll(), cache.observe(ActivityItemType.SUBJECT)) { queued, cached ->
             merge(queued.map { it.toHistoryEntry() }, cached.map { it.toEntry() })
         }
+    }
 
-    override suspend fun loadPage(page: Int, pageSize: Int): Result<SubjectHistoryPage> {
+    override suspend fun loadPage(page: Int, pageSize: Int): Result<SubjectHistoryPage> = lifecycle.scoped {
         val remote = runCatching { api.list(page = page, pageSize = pageSize, type = "subject") }
-        return remote.fold(
+        return@scoped remote.fold(
             onSuccess = { response ->
                 val items = response.items.mapNotNull {
                     (it.toParsedEntry() as? ParsedActivityItem.SubjectEntry)?.entry
@@ -50,6 +54,7 @@ class SubjectHistoryRepositoryImpl(
                 }
             },
             onFailure = { error ->
+                if (error is CancellationException) throw error
                 // Offline: serve queue ∪ cache as a single self-contained page (page 1) or the
                 // requested cached page (page > 1) instead of failing.
                 val fallback = if (page == 1) {

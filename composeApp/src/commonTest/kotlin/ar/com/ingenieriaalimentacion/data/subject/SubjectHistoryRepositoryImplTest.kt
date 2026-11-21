@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.subject
 
+import ar.com.ingenieriaalimentacion.fake.activeSessionLifecycle
 import ar.com.ingenieriaalimentacion.data.activity.ActivityApi
 import ar.com.ingenieriaalimentacion.data.activity.local.ActivityItemType
 import ar.com.ingenieriaalimentacion.data.activity.local.CachedActivityRow
@@ -120,7 +121,7 @@ class SubjectHistoryRepositoryImplTest {
         }
         val cache = FakeActivityLocalStore()
         val activityApi = api { respondPage(this, page(remoteSubjectItem("shared-id", 111, "Remote", "Server"))) }
-        val repo = SubjectHistoryRepositoryImpl(activityApi, cache, queue, testJson)
+        val repo = SubjectHistoryRepositoryImpl(activityApi, cache, queue, testJson, activeSessionLifecycle())
 
         val items = repo.loadPage(page = 1, pageSize = 20).getOrThrow().items
 
@@ -135,7 +136,7 @@ class SubjectHistoryRepositoryImplTest {
         }
         val cache = FakeActivityLocalStore()
         val activityApi = api { respondPage(this, page("")) }
-        val repo = SubjectHistoryRepositoryImpl(activityApi, cache, queue, testJson)
+        val repo = SubjectHistoryRepositoryImpl(activityApi, cache, queue, testJson, activeSessionLifecycle())
 
         val items = repo.loadPage(page = 1, pageSize = 20).getOrThrow().items
 
@@ -151,7 +152,7 @@ class SubjectHistoryRepositoryImplTest {
         val activityApi = api {
             respondPage(this, page(remoteSubjectItem("remote-2", 222, "Remote", "Two"), page = 2, totalPages = 2))
         }
-        val repo = SubjectHistoryRepositoryImpl(activityApi, cache, queue, testJson)
+        val repo = SubjectHistoryRepositoryImpl(activityApi, cache, queue, testJson, activeSessionLifecycle())
 
         val items = repo.loadPage(page = 2, pageSize = 20).getOrThrow().items
 
@@ -167,7 +168,7 @@ class SubjectHistoryRepositoryImplTest {
             seed(ActivityItemType.SUBJECT, listOf(cachedRow("cached-1")))
         }
         val activityApi = api { respond("boom", HttpStatusCode.InternalServerError) }
-        val repo = SubjectHistoryRepositoryImpl(activityApi, cache, queue, testJson)
+        val repo = SubjectHistoryRepositoryImpl(activityApi, cache, queue, testJson, activeSessionLifecycle())
 
         val result = repo.loadPage(page = 1, pageSize = 20)
 
@@ -185,7 +186,7 @@ class SubjectHistoryRepositoryImplTest {
             )
         }
         val activityApi = api { respond("boom", HttpStatusCode.InternalServerError) }
-        val repo = SubjectHistoryRepositoryImpl(activityApi, cache, queue, testJson)
+        val repo = SubjectHistoryRepositoryImpl(activityApi, cache, queue, testJson, activeSessionLifecycle())
 
         // pageSize=1 so page 2 (offset 1) lands on the older cached row only.
         val result = repo.loadPage(page = 2, pageSize = 1)
@@ -198,7 +199,7 @@ class SubjectHistoryRepositoryImplTest {
         val queue = FakeSubjectLocalStore()
         val cache = FakeActivityLocalStore()
         val activityApi = api { respond("boom", HttpStatusCode.InternalServerError) }
-        val repo = SubjectHistoryRepositoryImpl(activityApi, cache, queue, testJson)
+        val repo = SubjectHistoryRepositoryImpl(activityApi, cache, queue, testJson, activeSessionLifecycle())
 
         val result = repo.loadPage(page = 1, pageSize = 20)
 

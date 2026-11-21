@@ -39,6 +39,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun LoginScreenRoot(
     viewModel: LoginViewModel = koinViewModel(),
     navigate: (LoginDestination) -> Unit,
+    showBlockNotice: Boolean,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
@@ -52,6 +53,7 @@ fun LoginScreenRoot(
     LoginScreen(
         state = state,
         onAction = viewModel::onAction,
+        showBlockNotice = showBlockNotice,
     )
 }
 
@@ -59,6 +61,7 @@ fun LoginScreenRoot(
 fun LoginScreen(
     state: LoginState,
     onAction: (LoginAction) -> Unit,
+    showBlockNotice: Boolean = false,
 ) {
     val styles = MaterialTheme.styles
     val scrollState = rememberScrollState()
@@ -71,10 +74,12 @@ fun LoginScreen(
             .safeDrawingPadding()
             .imePadding(),
     ) {
-        AlBackTopAppBar(
-            onBackClick = { onAction(LoginAction.Back) },
-            enabled = !state.isSubmitting,
-        )
+        if (!showBlockNotice) {
+            AlBackTopAppBar(
+                onBackClick = { onAction(LoginAction.Back) },
+                enabled = !state.isSubmitting,
+            )
+        }
 
         Column(
             modifier = Modifier
@@ -129,7 +134,9 @@ fun LoginScreen(
                     .padding(top = 8.dp, bottom = AlTheme.spacing.lg),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                state.submitError?.let { error ->
+                val visibleError = state.submitError
+                    ?: BLOCKED_ACCOUNT_MESSAGE.takeIf { showBlockNotice && state.showEntryNotice }
+                visibleError?.let { error ->
                     Text(
                         text = error,
                         color = styles.destructive,

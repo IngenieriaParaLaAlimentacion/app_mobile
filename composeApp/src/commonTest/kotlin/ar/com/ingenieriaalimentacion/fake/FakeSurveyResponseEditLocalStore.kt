@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.map
  */
 class FakeSurveyResponseEditLocalStore(private val now: () -> Long = { 0L }) : SurveyResponseEditLocalStore {
 
+    private val sentIds = mutableSetOf<String>()
     private val rows = MutableStateFlow<List<SurveyResponseEditUpload>>(emptyList())
 
     fun current(editId: String): SurveyResponseEditUpload? = rows.value.firstOrNull { it.editId == editId }
@@ -24,34 +25,32 @@ class FakeSurveyResponseEditLocalStore(private val now: () -> Long = { 0L }) : S
         rows.value = rows.value.map { if (it.editId == editId) transform(it) else it }
     }
 
-    override suspend fun findPendingForResponse(responseId: String): SurveyResponseEditUpload? =
-        rows.value.firstOrNull { it.responseId == responseId && it.syncState == SyncState.Pending }
-
     override fun observeLatestForResponse(responseId: String): Flow<SurveyResponseEditUpload?> =
         rows.map { list ->
             list.filter { it.responseId == responseId }.maxByOrNull { it.createdAt }
         }
 
-    override suspend fun updatePending(
-        editId: String,
-        surveyName: String,
-        establishmentName: String,
-        answersJson: String,
-        eventAt: String,
-        responseNumber: Int?,
-        now: Long,
-    ) = mutate(editId) {
-        it.copy(
-            surveyName = surveyName,
-            establishmentName = establishmentName,
-            answersJson = answersJson,
-            eventAt = eventAt,
-            responseNumber = responseNumber,
-            updatedAt = now,
-        )
+    override suspend fun enqueue(edit: SurveyResponseEditUpload) {
+        val unsent = rows.value.firstOrNull {
+            it.responseId == edit.responseId && it.syncState == SyncState.Pending && it.editId !in sentIds
+        }
+        if (unsent == null) {
+            insert(edit)
+        } else {
+            mutate(unsent.editId) {
+                it.copy(
+                    surveyName = edit.surveyName,
+                    establishmentName = edit.establishmentName,
+                    answersJson = edit.answersJson,
+                    eventAt = edit.eventAt,
+                    responseNumber = edit.responseNumber,
+                    updatedAt = edit.updatedAt,
+                )
+            }
+        }
     }
 
-    override suspend fun insert(edit: SurveyResponseEditUpload) {
+    suspend fun insert(edit: SurveyResponseEditUpload) {
         rows.value = rows.value + edit
     }
 
@@ -64,8 +63,12 @@ class FakeSurveyResponseEditLocalStore(private val now: () -> Long = { 0L }) : S
                 it.errorMessage == MISSING_REQUIRED_RESPONSE_NUMBER_MESSAGE
         }
 
-    override suspend fun markSyncing(editId: String) =
-        mutate(editId) { it.copy(syncState = SyncState.Syncing, updatedAt = now()) }
+    override suspend fun claimForSync(edit: SurveyResponseEditUpload): Boolean {
+        if (current(edit.editId) != edit) return false
+        sentIds.add(edit.editId)
+        mutate(edit.editId) { it.copy(syncState = SyncState.Syncing, updatedAt = now()) }
+        return true
+    }
 
     override suspend fun markSynced(editId: String) =
         mutate(editId) { it.copy(syncState = SyncState.Synced, errorMessage = null, updatedAt = now()) }

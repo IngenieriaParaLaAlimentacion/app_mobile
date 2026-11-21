@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.auth.storage
 
+import ar.com.ingenieriaalimentacion.domain.repository.SessionStorageException
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.convert
@@ -81,10 +82,7 @@ actual class TokenStore {
                         }
                     }
                     errSecItemNotFound -> null
-                    else -> {
-                        println("TokenStore: SecItemCopyMatching returned unexpected OSStatus=$status")
-                        null
-                    }
+                    else -> throw SessionStorageException("Unable to read the stored session ($status)")
                 }
             }
         } finally {
@@ -123,10 +121,10 @@ actual class TokenStore {
                     )
                     val updateStatus = SecItemUpdate(matchQuery, attributesToUpdate)
                     if (updateStatus != errSecSuccess) {
-                        println("TokenStore: SecItemUpdate failed with OSStatus=$updateStatus")
+                        throw SessionStorageException("Unable to update the stored session ($updateStatus)")
                     }
                 }
-                else -> println("TokenStore: SecItemAdd failed with OSStatus=$addStatus")
+                else -> throw SessionStorageException("Unable to store the session ($addStatus)")
             }
         } finally {
             CFBridgingRelease(service)
@@ -145,7 +143,10 @@ actual class TokenStore {
                 kSecAttrAccount to account,
                 kSecUseDataProtectionKeychain to kCFBooleanTrue,
             )
-            SecItemDelete(query)
+            val status = SecItemDelete(query)
+            if (status != errSecSuccess && status != errSecItemNotFound) {
+                throw SessionStorageException("Unable to clear the stored session ($status)")
+            }
         } finally {
             CFBridgingRelease(service)
             CFBridgingRelease(account)

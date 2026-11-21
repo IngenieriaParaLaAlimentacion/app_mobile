@@ -19,71 +19,82 @@ CREATE TABLE PendingSurveyResponseEdit (
     attemptCount       INTEGER NOT NULL DEFAULT 0,
     createdAt          INTEGER NOT NULL,
     updatedAt          INTEGER NOT NULL,
-    -- Added in 6.sqm via ALTER TABLE ADD COLUMN, which can only append — so it must stay LAST
-    -- here or verifyMigrations fails on the ordinal mismatch. Path segment of the PUT URL:
+    -- Path segment of the PUT URL:
     -- /surveys/{surveyId}/responses/{responseId}.
     surveyId           TEXT    NOT NULL DEFAULT '',
-    responseNumber     INTEGER
+    responseNumber     INTEGER,
+    ownerUserId        TEXT,
+    hasBeenClaimed        INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE INDEX PendingSurveyResponseEdit_state ON PendingSurveyResponseEdit(syncState);
 CREATE INDEX PendingSurveyResponseEdit_responseId ON PendingSurveyResponseEdit(responseId);
 
+CREATE INDEX PendingSurveyResponseEdit_owner_state ON PendingSurveyResponseEdit(ownerUserId, syncState);
+CREATE INDEX PendingSurveyResponseEdit_owner_response ON PendingSurveyResponseEdit(ownerUserId, responseId);
+
 insert:
 INSERT INTO PendingSurveyResponseEdit(editId, responseId, surveyName, establishmentName,
-    answersJson, eventAt, syncState, errorMessage, attemptCount, createdAt, updatedAt, surveyId, responseNumber)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    answersJson, eventAt, syncState, errorMessage, attemptCount, createdAt, updatedAt, surveyId, responseNumber, ownerUserId)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectAll:
-SELECT * FROM PendingSurveyResponseEdit ORDER BY createdAt DESC;
+SELECT * FROM PendingSurveyResponseEdit WHERE ownerUserId = :ownerUserId ORDER BY createdAt DESC;
 
 selectSyncable:
-SELECT * FROM PendingSurveyResponseEdit WHERE syncState = 'PENDING' ORDER BY createdAt ASC;
+SELECT * FROM PendingSurveyResponseEdit WHERE ownerUserId = :ownerUserId AND syncState = 'PENDING' ORDER BY createdAt ASC;
 
 selectAwaitingNumberPolicy:
 SELECT * FROM PendingSurveyResponseEdit
-WHERE syncState = 'FAILED'
+WHERE ownerUserId = :ownerUserId AND syncState = 'FAILED'
   AND responseNumber IS NULL
   AND errorMessage = 'Falta el número de respuesta.';
 
-selectPendingForResponse:          -- the "coalesce into the still-unsent edit" lookup (Phase 3)
-SELECT * FROM PendingSurveyResponseEdit WHERE responseId = ? AND syncState = 'PENDING' LIMIT 1;
+selectUnsentForResponse:
+SELECT * FROM PendingSurveyResponseEdit
+WHERE ownerUserId = :ownerUserId AND responseId = :responseId
+  AND syncState = 'PENDING' AND hasBeenClaimed = 0
+LIMIT 1;
+
+selectById:
+SELECT * FROM PendingSurveyResponseEdit WHERE ownerUserId = :ownerUserId AND editId = :editId;
 
 selectLatestForResponse:
 SELECT * FROM PendingSurveyResponseEdit
-WHERE responseId = :responseId
+WHERE ownerUserId = :ownerUserId AND responseId = :responseId
 ORDER BY createdAt DESC
 LIMIT 1;
 
 updatePending:                     -- overwrite an unsent edit in place, no new idempotency key
 UPDATE PendingSurveyResponseEdit SET surveyName = ?, establishmentName = ?, answersJson = ?,
-    eventAt = ?, responseNumber = ?, updatedAt = ? WHERE editId = ?;
+    eventAt = ?, responseNumber = ?, updatedAt = ? WHERE ownerUserId = :ownerUserId AND editId = :editId;
 
 markSyncing:
-UPDATE PendingSurveyResponseEdit SET syncState = 'SYNCING', updatedAt = ? WHERE editId = ?;
+UPDATE PendingSurveyResponseEdit SET syncState = 'SYNCING', hasBeenClaimed = 1, updatedAt = ?
+WHERE ownerUserId = :ownerUserId AND editId = :editId;
 
 resetSyncingToPending:
-UPDATE PendingSurveyResponseEdit SET syncState = 'PENDING', updatedAt = ? WHERE syncState = 'SYNCING';
+UPDATE PendingSurveyResponseEdit SET syncState = 'PENDING', updatedAt = ? WHERE ownerUserId = :ownerUserId AND syncState = 'SYNCING';
 
 bumpRetry:
 UPDATE PendingSurveyResponseEdit SET syncState = 'PENDING', attemptCount = attemptCount + 1,
-    errorMessage = ?, updatedAt = ? WHERE editId = ?;
+    errorMessage = ?, updatedAt = ? WHERE ownerUserId = :ownerUserId AND editId = :editId;
 
 pruneTerminalOlderThan:
 DELETE FROM PendingSurveyResponseEdit
-WHERE (syncState = 'SYNCED' OR syncState = 'FAILED') AND updatedAt < :cutoff;
+WHERE ownerUserId = :ownerUserId AND (syncState = 'SYNCED' OR syncState = 'FAILED') AND updatedAt < :cutoff;
 
 markSynced:
 UPDATE PendingSurveyResponseEdit SET syncState = 'SYNCED', errorMessage = NULL, updatedAt = ?
-WHERE editId = ?;
+WHERE ownerUserId = :ownerUserId AND editId = :editId;
 
 markFailed:
 UPDATE PendingSurveyResponseEdit SET syncState = 'FAILED', errorMessage = ?,
-    attemptCount = attemptCount + 1, updatedAt = ? WHERE editId = ?;
+    attemptCount = attemptCount + 1, updatedAt = ? WHERE ownerUserId = :ownerUserId AND editId = :editId;
 
 resetForRetry:
 UPDATE PendingSurveyResponseEdit SET syncState = 'PENDING', errorMessage = NULL, attemptCount = 0,
-    updatedAt = ? WHERE editId = ?;
+    updatedAt = ? WHERE ownerUserId = :ownerUserId AND editId = :editId;
 
-deleteAll:
-DELETE FROM PendingSurveyResponseEdit;
+deleteForOwner:
+DELETE FROM PendingSurveyResponseEdit WHERE ownerUserId = :ownerUserId;

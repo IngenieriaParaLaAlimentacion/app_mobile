@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.survey
 
+import ar.com.ingenieriaalimentacion.data.auth.SessionLifecycle
 import ar.com.ingenieriaalimentacion.data.activity.local.ActivityItemType
 import ar.com.ingenieriaalimentacion.data.activity.local.ActivityLocalStore
 import ar.com.ingenieriaalimentacion.data.activity.local.CachedActivityRow
@@ -14,6 +15,7 @@ import ar.com.ingenieriaalimentacion.domain.model.survey.id
 import ar.com.ingenieriaalimentacion.domain.model.survey.label
 import ar.com.ingenieriaalimentacion.domain.repository.SurveyRepository
 import ar.com.ingenieriaalimentacion.domain.repository.SurveyResponseHistoryRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.serialization.decodeFromString
@@ -37,16 +39,18 @@ class SurveyResponseHistoryRepositoryImpl(
     private val cache: ActivityLocalStore,
     private val surveys: SurveyRepository,
     private val json: Json,
+    private val lifecycle: SessionLifecycle,
 ) : SurveyResponseHistoryRepository {
 
-    override fun observeLocalMerged(): Flow<List<SurveyResponseSummary>> =
+    override fun observeLocalMerged(): Flow<List<SurveyResponseSummary>> = lifecycle.observe {
         combine(local.observeAll(), cache.observe(ActivityItemType.SURVEY_RESPONSE)) { queued, cached ->
             merge(queued.map { it.toSummary() }, cached.map { it.toSummary() })
         }
+    }
 
-    override suspend fun getPage(page: Int, pageSize: Int): Result<List<SurveyResponseSummary>> {
+    override suspend fun getPage(page: Int, pageSize: Int): Result<List<SurveyResponseSummary>> = lifecycle.scoped {
         val remote = runCatching { activityApi.list(page, pageSize) }
-        return remote.fold(
+        return@scoped remote.fold(
             onSuccess = { response ->
                 val remoteSummaries = response.items.mapNotNull { it.surveyResponse?.toSummary() }
                 cache.upsertPage(ActivityItemType.SURVEY_RESPONSE, remoteSummaries.map { it.toCachedRow() })
@@ -57,6 +61,7 @@ class SurveyResponseHistoryRepositoryImpl(
                 }
             },
             onFailure = { error ->
+                if (error is CancellationException) throw error
                 // Offline: serve queue ∪ cache as a single self-contained page (page 1) or the
                 // requested cached page (page > 1) instead of failing.
                 val fallback = if (page == 1) {
@@ -89,7 +94,7 @@ class SurveyResponseHistoryRepositoryImpl(
     private fun SurveyResponseSummary.eventAtMillis(): Long =
         runCatching { Instant.parse(eventAt).toEpochMilliseconds() }.getOrDefault(0L)
 
-    override suspend fun getDetail(surveyId: String, responseId: String): Result<SurveyResponseDetail> =
+    override suspend fun getDetail(surveyId: String, responseId: String): Result<SurveyResponseDetail> = lifecycle.scoped {
         when (val outcome = api.detail(surveyId, responseId)) {
             is SurveyResponseDetailOutcome.Found -> {
                 val response = outcome.response
@@ -115,6 +120,7 @@ class SurveyResponseHistoryRepositoryImpl(
                 fallbackToLocal(responseId)
                     ?: Result.failure(SurveyFeatureFailure(SurveyFeatureError.Network, outcome.cause))
         }
+    }
 
     /** This device's own not-yet-pruned submission — the only local copy that can exist, since a
      *  response fetched from another device is never persisted here. Null if no such row exists. */

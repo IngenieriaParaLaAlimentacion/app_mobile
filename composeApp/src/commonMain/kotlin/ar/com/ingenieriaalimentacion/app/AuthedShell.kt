@@ -9,6 +9,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.LifecycleStartEffect
+import ar.com.ingenieriaalimentacion.data.auth.SessionLease
 import ar.com.ingenieriaalimentacion.data.network.connectivity.ConnectivityObserver
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.domain.usecase.activity.WarmActivityCacheUseCase
@@ -16,6 +17,7 @@ import ar.com.ingenieriaalimentacion.domain.usecase.profile.RefreshMyEstablishme
 import ar.com.ingenieriaalimentacion.domain.usecase.survey.WarmSurveyCacheUseCase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
 import kotlin.time.Duration.Companion.minutes
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -39,8 +41,8 @@ import ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_list.nav
 import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 
 @Composable
-fun AuthedShell(onSignOut: () -> Unit) {
-    SyncTriggers()
+fun AuthedShell(lease: SessionLease) {
+    SyncTriggers(lease)
 
     val outerNav = LocalOuterNavController.current
     val innerNav = rememberNavController()
@@ -120,7 +122,7 @@ fun AuthedShell(onSignOut: () -> Unit) {
             }
             composable<Route.Profile> {
                 ProfileScreenRoot(
-                    navigate = { dest -> navigateProfile(dest, outerNav, onSignOut) },
+                    navigate = { dest -> navigateProfile(dest, outerNav) },
                 )
             }
         }
@@ -133,6 +135,7 @@ fun AuthedShell(onSignOut: () -> Unit) {
  */
 @Composable
 private fun SyncTriggers(
+    lease: SessionLease,
     coordinator: SyncCoordinator = koinInject(),
     connectivity: ConnectivityObserver = koinInject(),
     refreshMyEstablishments: RefreshMyEstablishmentsUseCase = koinInject(),
@@ -140,25 +143,25 @@ private fun SyncTriggers(
     warmSurveyCache: WarmSurveyCacheUseCase = koinInject(),
 ) {
     LifecycleStartEffect(Unit) {
-        coordinator.requestSync()                    // sync each time the app returns to foreground
+        coordinator.requestSync(lease)                    // sync each time the app returns to foreground
         onStopOrDispose { }
     }
     LaunchedEffect(Unit) {
         // One-shot: warm the establishment cache so the measurement picker works offline later.
-        if (connectivity.isOnline()) refreshMyEstablishments()
+        withContext(lease) { if (connectivity.isOnline()) refreshMyEstablishments() }
     }
     LaunchedEffect(Unit) {
         // One-shot: warm the activity cache so Home/History have fresh data before first open.
-        if (connectivity.isOnline()) warmActivityCache()
+        withContext(lease) { if (connectivity.isOnline()) warmActivityCache() }
     }
     LaunchedEffect(Unit) {
         // One-shot: warm the survey snapshot + details so surveys are answerable fully offline later.
-        if (connectivity.isOnline()) warmSurveyCache()
+        withContext(lease) { if (connectivity.isOnline()) warmSurveyCache() }
     }
     LaunchedEffect(Unit) {
         while (isActive) {                           // periodic backstop while foregrounded
             delay(15.minutes)
-            coordinator.requestSync()
+            coordinator.requestSync(lease)
         }
     }
 }

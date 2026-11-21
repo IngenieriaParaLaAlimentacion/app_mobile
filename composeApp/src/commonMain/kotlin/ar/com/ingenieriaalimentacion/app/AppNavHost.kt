@@ -5,6 +5,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import ar.com.ingenieriaalimentacion.data.auth.SessionLease
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.forgot_password.forgotPasswordScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.login.loginScreen
 import ar.com.ingenieriaalimentacion.presentation.feature.auth.reset_password.resetPasswordScreen
@@ -39,48 +40,52 @@ import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 fun AppNavHost(
     navController: NavHostController,
     startScreen: Route,
+    lease: SessionLease?,
+    showBlockNotice: Boolean,
 ) {
     CompositionLocalProvider(LocalOuterNavController provides navController) {
         NavHost(
             navController = navController,
             startDestination = startScreen,
         ) {
-            getStartedScreen(navController)
-            registerScreen(navController)
-            loginScreen(navController)
-            selectEstablishmentScreen(navController)
-            createSubjectScreen(navController)
-            createMeasurementScreen(navController)
-            recipesScreen(navController)
-            foodOverviewScreen(navController)
-            createFoodIntakeScreen(navController)
-            receiptFoodIntakeScreen(navController)
-            createFoodOutflowScreen(navController)
-            foodStockScreen(navController)
-            establishmentFoodMovementHistoryScreen(navController)
-            establishmentFoodMovementDetailScreen(navController)
-            selectSubjectScreen(navController)
-            editProfileScreen(navController)
-            requestEstablishmentScreen(navController)
-            notifyEstablishmentScreen(navController)
-            myEstablishmentsScreen(navController)
-            editCharacterizationScreen(navController)
-            resetPasswordScreen(navController)
-            verifyEmailScreen(navController)
-            forgotPasswordScreen(navController)
-            surveyListScreen(navController)
-            surveyResponseFormScreen(navController)
-            surveyResponseDetailScreen(navController)
-            surveyResponseEditScreen(navController)
-            surveyResponseNumberFixScreen(navController)
-            composable<Route.AuthedShell> {
-                AuthedShell(
-                    onSignOut = {
-                        navController.navigate(Route.GetStarted) {
-                            popUpTo(0) { inclusive = true }
-                        }
-                    },
-                )
+            resetPasswordScreen(
+                navController,
+                publicContinue = when {
+                    lease != null -> null
+                    showBlockNotice -> Route.Login
+                    else -> Route.GetStarted
+                },
+            )
+            verifyEmailScreen(navController, startScreen)
+            if (lease == null) {
+                getStartedScreen(navController)
+                registerScreen(navController)
+                loginScreen(navController, showBlockNotice)
+                forgotPasswordScreen(navController)
+            } else {
+                selectEstablishmentScreen(navController)
+                createSubjectScreen(navController)
+                createMeasurementScreen(navController)
+                recipesScreen(navController)
+                foodOverviewScreen(navController)
+                createFoodIntakeScreen(navController)
+                receiptFoodIntakeScreen(navController)
+                createFoodOutflowScreen(navController)
+                foodStockScreen(navController)
+                establishmentFoodMovementHistoryScreen(navController)
+                establishmentFoodMovementDetailScreen(navController)
+                selectSubjectScreen(navController)
+                editProfileScreen(navController)
+                requestEstablishmentScreen(navController)
+                notifyEstablishmentScreen(navController)
+                myEstablishmentsScreen(navController)
+                editCharacterizationScreen(navController)
+                surveyListScreen(navController)
+                surveyResponseFormScreen(navController)
+                surveyResponseDetailScreen(navController)
+                surveyResponseEditScreen(navController)
+                surveyResponseNumberFixScreen(navController)
+                composable<Route.AuthedShell> { AuthedShell(lease) }
             }
         }
     }

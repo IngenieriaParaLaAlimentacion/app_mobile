@@ -5,7 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
 
 class SqlDelightDatabaseCleanerTest {
 
@@ -20,9 +20,10 @@ class SqlDelightDatabaseCleanerTest {
         cleaner = SqlDelightDatabaseCleaner(database, dispatcher = Dispatchers.Unconfined)
     }
 
-    private fun seedAllTables() {
+    private fun seedQueues(ownerId: String) {
         database.pendingSubjectQueries.insert(
-            localId = "s1",
+            ownerUserId = ownerId,
+            localId = "s1-$ownerId",
             dni = 42L,
             sex = "female",
             name = "Ana",
@@ -38,7 +39,8 @@ class SqlDelightDatabaseCleanerTest {
             updatedAt = 10L,
         )
         database.pendingMeasurementQueries.insert(
-            localId = "m1",
+            ownerUserId = ownerId,
+            localId = "m1-$ownerId",
             subjectId = "subj-1",
             subjectName = "Ana",
             subjectLastName = "García",
@@ -57,6 +59,45 @@ class SqlDelightDatabaseCleanerTest {
             createdAt = 10L,
             updatedAt = 10L,
         )
+        database.pendingSurveyResponseQueries.insert(
+            ownerUserId = ownerId,
+            localId = "sr-1-$ownerId",
+            surveyId = "sv-1",
+            surveyName = "Encuesta",
+            responseTarget = "ESTABLISHMENT",
+            targetId = "est-1",
+            targetLabel = "Norte",
+            answersJson = "{}",
+            eventAt = "2026-01-01T00:00:00Z",
+            syncState = "PENDING",
+            canonicalId = null,
+            errorMessage = null,
+            conflictBy = null,
+            conflictAt = null,
+            attemptCount = 0L,
+            createdAt = 10L,
+            updatedAt = 10L,
+            responseNumber = null,
+        )
+        database.pendingSurveyResponseEditQueries.insert(
+            ownerUserId = ownerId,
+            editId = "se-1-$ownerId",
+            responseId = "sr-1-$ownerId",
+            surveyId = "s-1",
+            surveyName = "Encuesta",
+            establishmentName = "Norte",
+            answersJson = "{}",
+            eventAt = "2026-01-01T00:00:00Z",
+            syncState = "PENDING",
+            errorMessage = null,
+            attemptCount = 0L,
+            createdAt = 10L,
+            updatedAt = 10L,
+            responseNumber = null,
+        )
+    }
+
+    private fun seedCaches() {
         database.cachedEstablishmentQueries.insert(
             id = "est-1",
             name = "Norte",
@@ -101,68 +142,44 @@ class SqlDelightDatabaseCleanerTest {
             updatedAt = 10L,
             requiresResponseNumber = null,
         )
-        database.pendingSurveyResponseQueries.insert(
-            localId = "sr-1",
-            surveyId = "sv-1",
-            surveyName = "Encuesta",
-            responseTarget = "ESTABLISHMENT",
-            targetId = "est-1",
-            targetLabel = "Norte",
-            answersJson = "{}",
-            eventAt = "2026-01-01T00:00:00Z",
-            syncState = "PENDING",
-            canonicalId = null,
-            errorMessage = null,
-            conflictBy = null,
-            conflictAt = null,
-            attemptCount = 0L,
-            createdAt = 10L,
-            updatedAt = 10L,
-            responseNumber = null,
-        )
-        database.pendingSurveyResponseEditQueries.insert(
-            editId = "se-1",
-            responseId = "sr-1",
-            surveyId = "s-1",
-            surveyName = "Encuesta",
-            establishmentName = "Norte",
-            answersJson = "{}",
-            eventAt = "2026-01-01T00:00:00Z",
-            syncState = "PENDING",
-            errorMessage = null,
-            attemptCount = 0L,
-            createdAt = 10L,
-            updatedAt = 10L,
-            responseNumber = null,
-        )
+    }
+
+    private fun assertCacheSize(size: Int) {
+        assertEquals(size, database.cachedEstablishmentQueries.selectAll().executeAsList().size)
+        assertEquals(size, database.cachedActivityItemQueries.selectByType("SUBJECT").executeAsList().size)
+        assertEquals(size, database.cachedActivityItemQueries.selectByType("FOOD_INTAKE").executeAsList().size)
+        assertEquals(size, database.cachedActivityItemQueries.selectByType("FOOD_OUTFLOW").executeAsList().size)
+        assertEquals(size, database.cachedSurveyQueries.selectAll().executeAsList().size)
+        assertEquals(size == 0, database.currentEstablishmentQueries.select().executeAsOneOrNull()?.establishmentId == null)
+    }
+
+    private fun assertQueueSize(ownerId: String, size: Int) {
+        assertEquals(size, database.pendingSubjectQueries.selectAll(ownerId).executeAsList().size)
+        assertEquals(size, database.pendingMeasurementQueries.selectAll(ownerId).executeAsList().size)
+        assertEquals(size, database.pendingSurveyResponseQueries.selectAll(ownerId).executeAsList().size)
+        assertEquals(size, database.pendingSurveyResponseEditQueries.selectAll(ownerId).executeAsList().size)
     }
 
     @Test
-    fun `clearAll wipes every local table`() = runTest {
-        seedAllTables()
-        // Sanity: each table has a row before the wipe.
-        assertTrue(database.pendingSubjectQueries.selectAll().executeAsList().isNotEmpty())
-        assertTrue(database.pendingMeasurementQueries.selectAll().executeAsList().isNotEmpty())
-        assertTrue(database.cachedEstablishmentQueries.selectAll().executeAsList().isNotEmpty())
-        assertTrue(database.cachedActivityItemQueries.selectByType("SUBJECT").executeAsList().isNotEmpty())
-        assertTrue(database.cachedActivityItemQueries.selectByType("FOOD_INTAKE").executeAsList().isNotEmpty())
-        assertTrue(database.cachedActivityItemQueries.selectByType("FOOD_OUTFLOW").executeAsList().isNotEmpty())
-        assertTrue(database.currentEstablishmentQueries.select().executeAsOneOrNull()?.establishmentId != null)
-        assertTrue(database.cachedSurveyQueries.selectAll().executeAsList().isNotEmpty())
-        assertTrue(database.pendingSurveyResponseQueries.selectAll().executeAsList().isNotEmpty())
-        assertTrue(database.pendingSurveyResponseEditQueries.selectAll().executeAsList().isNotEmpty())
+    fun `cache cleanup keeps all accounts' queues and sign-out deletes only the departing owner`() = runTest {
+        seedQueues("owner-a")
+        seedQueues("owner-b")
+        seedCaches()
+        assertCacheSize(1)
+        assertQueueSize("owner-a", 1)
+        assertQueueSize("owner-b", 1)
 
-        cleaner.clearAll()
+        cleaner.clearCaches()
 
-        assertTrue(database.pendingSubjectQueries.selectAll().executeAsList().isEmpty())
-        assertTrue(database.pendingMeasurementQueries.selectAll().executeAsList().isEmpty())
-        assertTrue(database.cachedEstablishmentQueries.selectAll().executeAsList().isEmpty())
-        assertTrue(database.cachedActivityItemQueries.selectByType("SUBJECT").executeAsList().isEmpty())
-        assertTrue(database.cachedActivityItemQueries.selectByType("FOOD_INTAKE").executeAsList().isEmpty())
-        assertTrue(database.cachedActivityItemQueries.selectByType("FOOD_OUTFLOW").executeAsList().isEmpty())
-        assertTrue(database.currentEstablishmentQueries.select().executeAsOneOrNull()?.establishmentId == null)
-        assertTrue(database.cachedSurveyQueries.selectAll().executeAsList().isEmpty())
-        assertTrue(database.pendingSurveyResponseQueries.selectAll().executeAsList().isEmpty())
-        assertTrue(database.pendingSurveyResponseEditQueries.selectAll().executeAsList().isEmpty())
+        assertCacheSize(0)
+        assertQueueSize("owner-a", 1)
+        assertQueueSize("owner-b", 1)
+
+        seedCaches()
+        cleaner.clearForSignOut("owner-b")
+
+        assertCacheSize(0)
+        assertQueueSize("owner-a", 1)
+        assertQueueSize("owner-b", 0)
     }
 }

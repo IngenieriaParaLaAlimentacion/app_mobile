@@ -3,9 +3,16 @@ package ar.com.ingenieriaalimentacion.fake
 import ar.com.ingenieriaalimentacion.domain.repository.DatabaseCleaner
 
 class FakeDatabaseCleaner : DatabaseCleaner {
-    var clearAllCount: Int = 0
+    var clearCachesCount = 0
+        private set
+    val clearedOwnerIds = mutableListOf<String>()
 
-    override suspend fun clearAll() {
-        clearAllCount++
+    override suspend fun clearCaches() {
+        clearCachesCount++
+    }
+
+    override suspend fun clearForSignOut(ownerId: String) {
+        clearCaches()
+        clearedOwnerIds += ownerId
     }
 }

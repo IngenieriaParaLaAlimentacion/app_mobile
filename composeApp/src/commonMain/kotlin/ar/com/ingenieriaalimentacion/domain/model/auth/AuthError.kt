@@ -1,6 +1,7 @@
 package ar.com.ingenieriaalimentacion.domain.model.auth
 
 sealed interface AuthError {
+    data object AccountBlocked : AuthError
     data object InvalidCredentials : AuthError
     data object AccountPendingValidation : AuthError
     data object InvalidOrExpiredToken : AuthError

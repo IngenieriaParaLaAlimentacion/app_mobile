@@ -5,6 +5,7 @@ import ar.com.ingenieriaalimentacion.data.db.AppDatabase
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectUpload
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
+import ar.com.ingenieriaalimentacion.fake.activeSessionLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -21,11 +22,11 @@ class DefaultSubjectLocalStoreTest {
     private var time = 100L
 
     @BeforeTest
-    fun setup() {
+    fun setup() = runTest {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         AppDatabase.Schema.create(driver)
         val queries = AppDatabase(driver).pendingSubjectQueries
-        store = DefaultSubjectLocalStore(queries, now = { time }, dispatcher = Dispatchers.Unconfined)
+        store = DefaultSubjectLocalStore(queries, lifecycle = activeSessionLifecycle(), now = { time }, dispatcher = Dispatchers.Unconfined)
     }
 
     private fun row(

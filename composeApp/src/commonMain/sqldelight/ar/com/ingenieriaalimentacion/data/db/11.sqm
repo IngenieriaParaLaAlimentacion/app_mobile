@@ -1,0 +1,11 @@
+ALTER TABLE PendingSubject ADD COLUMN ownerUserId TEXT;
+ALTER TABLE PendingMeasurement ADD COLUMN ownerUserId TEXT;
+ALTER TABLE PendingSurveyResponse ADD COLUMN ownerUserId TEXT;
+ALTER TABLE PendingSurveyResponseEdit ADD COLUMN ownerUserId TEXT;
+ALTER TABLE PendingSurveyResponseEdit ADD COLUMN hasBeenClaimed INTEGER NOT NULL DEFAULT 0;
+
+CREATE INDEX PendingSubject_owner_state ON PendingSubject(ownerUserId, syncState);
+CREATE INDEX PendingMeasurement_owner_state ON PendingMeasurement(ownerUserId, syncState);
+CREATE INDEX PendingSurveyResponse_owner_state ON PendingSurveyResponse(ownerUserId, syncState);
+CREATE INDEX PendingSurveyResponseEdit_owner_state ON PendingSurveyResponseEdit(ownerUserId, syncState);
+CREATE INDEX PendingSurveyResponseEdit_owner_response ON PendingSurveyResponseEdit(ownerUserId, responseId);

@@ -8,6 +8,7 @@ import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.domain.util.IdGenerator
 import ar.com.ingenieriaalimentacion.fake.FakeMeasurementLocalStore
 import ar.com.ingenieriaalimentacion.fake.FakeSubjectLocalStore
+import ar.com.ingenieriaalimentacion.fake.activeSessionLifecycle
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -23,6 +24,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -50,13 +52,19 @@ class MeasurementSyncEngineTest {
 
     private val subjectStore = FakeSubjectLocalStore(now)
 
-    private val repo = MeasurementRepositoryImpl(
-        api = api,
-        local = store,
-        subjects = subjectStore,
-        idGenerator = object : IdGenerator { override fun newId() = "generated" },
-        now = now,
-    )
+    private lateinit var repo: MeasurementRepositoryImpl
+
+    @BeforeTest
+    fun setupRepository() = runTest {
+        repo = MeasurementRepositoryImpl(
+            api = api,
+            local = store,
+            subjects = subjectStore,
+            idGenerator = object : IdGenerator { override fun newId() = "generated" },
+            now = now,
+            lifecycle = activeSessionLifecycle(),
+        )
+    }
 
     private fun jsonHeaders() = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
 

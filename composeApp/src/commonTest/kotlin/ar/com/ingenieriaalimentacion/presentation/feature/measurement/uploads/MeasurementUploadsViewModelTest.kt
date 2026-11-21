@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.measurement.uploads
 
+import ar.com.ingenieriaalimentacion.fake.inactiveSessionLifecycle
 import app.cash.turbine.test
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.di.AppScope
@@ -64,7 +65,7 @@ class MeasurementUploadsViewModelTest {
         repo: FakeMeasurementRepository,
         historyRepo: FakeMeasurementHistoryRepository = FakeMeasurementHistoryRepository(),
     ): MeasurementUploadsViewModel {
-        val coordinator = SyncCoordinator(listOf(repo), FakeConnectivityObserver(), AppScope())
+        val coordinator = SyncCoordinator(listOf(repo), FakeConnectivityObserver(), AppScope(), inactiveSessionLifecycle())
         return MeasurementUploadsViewModel(
             observeUploads = ObserveMeasurementsUseCase(historyRepo),
             getPage = GetMeasurementHistoryPageUseCase(historyRepo),

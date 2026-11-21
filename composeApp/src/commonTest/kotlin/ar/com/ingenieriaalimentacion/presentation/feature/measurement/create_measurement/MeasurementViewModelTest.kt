@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.measurement.create_measurement
 
+import ar.com.ingenieriaalimentacion.fake.inactiveSessionLifecycle
 import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
@@ -71,7 +72,7 @@ class MeasurementViewModelTest {
         measRepo: FakeMeasurementRepository = FakeMeasurementRepository(),
         profileRepo: FakeProfileRepository,
     ): MeasurementViewModel {
-        val coordinator = SyncCoordinator(listOf(measRepo), FakeConnectivityObserver(), AppScope())
+        val coordinator = SyncCoordinator(listOf(measRepo), FakeConnectivityObserver(), AppScope(), inactiveSessionLifecycle())
         return MeasurementViewModel(
             createMeasurement = CreateMeasurementUseCase(measRepo),
             getMyEstablishments = GetMyEstablishmentsUseCase(profileRepo),

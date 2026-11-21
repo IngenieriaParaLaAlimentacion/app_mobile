@@ -29,6 +29,7 @@ class LoginViewModel(
                 _state.update {
                     it.copy(
                         email = action.value,
+                        showEntryNotice = false,
                         fieldErrors = it.fieldErrors.copy(email = null),
                     )
                 }
@@ -37,6 +38,7 @@ class LoginViewModel(
                 _state.update {
                     it.copy(
                         password = action.value,
+                        showEntryNotice = false,
                         fieldErrors = it.fieldErrors.copy(password = null),
                     )
                 }
@@ -59,30 +61,22 @@ class LoginViewModel(
         val current = _state.value
         val errors = validate(current)
         if (errors != LoginFieldErrors()) {
-            _state.update { it.copy(fieldErrors = errors) }
+            _state.update { it.copy(fieldErrors = errors, showEntryNotice = false) }
             return
         }
 
-        _state.update { it.copy(isSubmitting = true, submitError = null) }
+        _state.update { it.copy(isSubmitting = true, submitError = null, showEntryNotice = false) }
         viewModelScope.launch {
             signIn(
                 Credentials(
                     email = current.email.trim(),
                     password = current.password,
                 ),
-            ).fold(
-                onSuccess = {
-                    // Keep isSubmitting = true so the button stays in its loading state until
-                    // navigation tears down this screen. Clearing it here would stop the spinner
-                    // a frame before navigation, flashing the idle button.
-                    _state.update { it.copy(destination = LoginDestination.Home) }
-                },
-                onFailure = { throwable ->
-                    _state.update {
-                        it.copy(isSubmitting = false, submitError = throwable.toUserMessage())
-                    }
-                },
-            )
+            ).onFailure { throwable ->
+                _state.update {
+                    it.copy(isSubmitting = false, submitError = throwable.toUserMessage())
+                }
+            }
         }
     }
 
@@ -105,6 +99,7 @@ class LoginViewModel(
                 "Email o contraseña incorrectos."
             AuthError.AccountPendingValidation ->
                 "Tu cuenta está pendiente de aprobación."
+            AuthError.AccountBlocked -> BLOCKED_ACCOUNT_MESSAGE
             AuthError.Network ->
                 "No pudimos conectarnos. Verificá tu conexión e intentá nuevamente."
             AuthError.InvalidOrExpiredToken, AuthError.WeakPassword,

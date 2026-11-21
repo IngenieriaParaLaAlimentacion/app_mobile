@@ -4,6 +4,7 @@ import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectUpload
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.fake.FakeSubjectLocalStore
+import ar.com.ingenieriaalimentacion.fake.activeSessionLifecycle
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -81,7 +82,7 @@ class SubjectQueryRepositoryImplTest {
         }
         val api = api { respondPage(this, page(remoteSubject("remote-1", 222, "Remoto", "Servidor"))) }
 
-        val result = SubjectQueryRepositoryImpl(api, store).searchSubjects(null, page = 1, pageSize = 20)
+        val result = SubjectQueryRepositoryImpl(api, store, activeSessionLifecycle()).searchSubjects(null, page = 1, pageSize = 20)
 
         val items = result.getOrThrow().items
         assertEquals(listOf("local-1", "remote-1"), items.map { it.id })
@@ -95,7 +96,7 @@ class SubjectQueryRepositoryImplTest {
         }
         val api = api { respondPage(this, page(remoteSubject("shared-id", 111, "Ana", "García"))) }
 
-        val items = SubjectQueryRepositoryImpl(api, store)
+        val items = SubjectQueryRepositoryImpl(api, store, activeSessionLifecycle())
             .searchSubjects(null, page = 1, pageSize = 20).getOrThrow().items
 
         assertEquals(1, items.count { it.id == "shared-id" })
@@ -110,7 +111,7 @@ class SubjectQueryRepositoryImplTest {
         }
         val api = api { respondPage(this, page("")) }
 
-        val items = SubjectQueryRepositoryImpl(api, store)
+        val items = SubjectQueryRepositoryImpl(api, store, activeSessionLifecycle())
             .searchSubjects(null, page = 1, pageSize = 20).getOrThrow().items
 
         assertEquals(listOf("pending-1"), items.map { it.id })
@@ -123,7 +124,7 @@ class SubjectQueryRepositoryImplTest {
             insert(upload("b", 222, "María", "Gómez", SyncState.Pending))
         }
         val api = api { respondPage(this, page("")) }
-        val repo = SubjectQueryRepositoryImpl(api, store)
+        val repo = SubjectQueryRepositoryImpl(api, store, activeSessionLifecycle())
 
         assertEquals(listOf("a"), repo.searchSubjects("juan", 1, 20).getOrThrow().items.map { it.id })
         assertEquals(listOf("b"), repo.searchSubjects("gómez", 1, 20).getOrThrow().items.map { it.id })
@@ -137,7 +138,7 @@ class SubjectQueryRepositoryImplTest {
         }
         val api = api { respond("boom", HttpStatusCode.InternalServerError) }
 
-        val result = SubjectQueryRepositoryImpl(api, store).searchSubjects(null, page = 1, pageSize = 20)
+        val result = SubjectQueryRepositoryImpl(api, store, activeSessionLifecycle()).searchSubjects(null, page = 1, pageSize = 20)
 
         val pageResult = result.getOrThrow()
         assertEquals(listOf("local-1"), pageResult.items.map { it.id })
@@ -150,7 +151,7 @@ class SubjectQueryRepositoryImplTest {
         val store = FakeSubjectLocalStore()
         val api = api { respond("boom", HttpStatusCode.InternalServerError) }
 
-        val result = SubjectQueryRepositoryImpl(api, store).searchSubjects(null, page = 1, pageSize = 20)
+        val result = SubjectQueryRepositoryImpl(api, store, activeSessionLifecycle()).searchSubjects(null, page = 1, pageSize = 20)
 
         assertTrue(result.isFailure)
     }
@@ -162,7 +163,7 @@ class SubjectQueryRepositoryImplTest {
         }
         val api = api { respondPage(this, page(remoteSubject("remote-2", 222, "Remoto", "Dos"), page = 2, totalPages = 2)) }
 
-        val items = SubjectQueryRepositoryImpl(api, store)
+        val items = SubjectQueryRepositoryImpl(api, store, activeSessionLifecycle())
             .searchSubjects(null, page = 2, pageSize = 20).getOrThrow().items
 
         assertEquals(listOf("remote-2"), items.map { it.id })

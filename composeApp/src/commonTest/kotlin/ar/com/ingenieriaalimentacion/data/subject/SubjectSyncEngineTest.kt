@@ -7,6 +7,7 @@ import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectUpload
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.domain.util.IdGenerator
 import ar.com.ingenieriaalimentacion.fake.FakeSubjectLocalStore
+import ar.com.ingenieriaalimentacion.fake.activeSessionLifecycle
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -25,6 +26,7 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.Json
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -47,12 +49,18 @@ class SubjectSyncEngineTest {
         SubjectApi(client)
     }
 
-    private val repo = SubjectRepositoryImpl(
-        api = api,
-        local = store,
-        idGenerator = object : IdGenerator { override fun newId() = "generated" },
-        now = now,
-    )
+    private lateinit var repo: SubjectRepositoryImpl
+
+    @BeforeTest
+    fun setupRepository() = runTest {
+        repo = SubjectRepositoryImpl(
+            api = api,
+            local = store,
+            idGenerator = object : IdGenerator { override fun newId() = "generated" },
+            now = now,
+            lifecycle = activeSessionLifecycle(),
+        )
+    }
 
     private fun jsonHeaders() = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
 

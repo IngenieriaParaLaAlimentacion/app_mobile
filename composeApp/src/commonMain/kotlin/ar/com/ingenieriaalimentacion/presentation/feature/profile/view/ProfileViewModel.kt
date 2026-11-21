@@ -90,7 +90,6 @@ class ProfileViewModel(
                 it.copy(
                     isSigningOut = false,
                     showSignOutConfirm = false,
-                    destination = ProfileDestination.LoggedOut,
                 )
             }
         }

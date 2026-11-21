@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_form
 
+import ar.com.ingenieriaalimentacion.fake.inactiveSessionLifecycle
 import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import ar.com.ingenieriaalimentacion.core.validation.TextFieldState
@@ -105,7 +106,7 @@ class SurveyResponseFormViewModelTest {
         },
         route: Route.SurveyResponseForm = Route.SurveyResponseForm(surveyId = "sv-1"),
     ): SurveyResponseFormViewModel {
-        val coordinator = SyncCoordinator(listOf(responseRepo), FakeConnectivityObserver(), AppScope())
+        val coordinator = SyncCoordinator(listOf(responseRepo), FakeConnectivityObserver(), AppScope(), inactiveSessionLifecycle())
         return SurveyResponseFormViewModel(
             route = route,
             getSurveyDetail = GetSurveyDetailUseCase(surveyRepo),

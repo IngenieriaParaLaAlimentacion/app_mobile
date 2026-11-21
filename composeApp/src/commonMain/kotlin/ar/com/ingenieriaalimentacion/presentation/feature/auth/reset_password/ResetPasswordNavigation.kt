@@ -11,7 +11,7 @@ import ar.com.ingenieriaalimentacion.presentation.navigation.Route
 fun NavController.navigateToResetPassword(token: String, navOptions: NavOptions? = null) =
     navigate(Route.ResetPassword(token), navOptions)
 
-fun NavGraphBuilder.resetPasswordScreen(navController: NavController) {
+fun NavGraphBuilder.resetPasswordScreen(navController: NavController, publicContinue: Route?) {
     composable<Route.ResetPassword>(
         deepLinks = listOf(
             navDeepLink { uriPattern = "ingenieriaalimentacion://reset-password?token={token}" },
@@ -20,13 +20,16 @@ fun NavGraphBuilder.resetPasswordScreen(navController: NavController) {
         val route: Route.ResetPassword = entry.toRoute()
         ResetPasswordScreenRoot(
             route = route,
-            navigate = { destination -> navigate(destination, navController) },
+            navigate = { destination ->
+                if (publicContinue != null) navigate(destination, navController)
+            },
         )
     }
+    if (publicContinue == null) return
     composable<Route.ResetPasswordSuccess> {
         ResetPasswordSuccessScreen(
             onContinue = {
-                navController.navigate(Route.GetStarted) {
+                navController.navigate(publicContinue) {
                     popUpTo(0) { inclusive = true }
                 }
             },

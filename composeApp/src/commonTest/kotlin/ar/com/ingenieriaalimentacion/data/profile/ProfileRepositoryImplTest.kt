@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.profile
 
+import ar.com.ingenieriaalimentacion.fake.activeSessionLifecycle
 import ar.com.ingenieriaalimentacion.fake.FakeCurrentEstablishmentLocalStore
 import ar.com.ingenieriaalimentacion.fake.FakeEstablishmentLocalStore
 import ar.com.ingenieriaalimentacion.domain.model.establishment.CharacterizationStatus
@@ -39,7 +40,7 @@ import kotlin.test.assertTrue
 
 class ProfileRepositoryImplTest {
 
-    private fun repository(
+    private suspend fun repository(
         local: FakeEstablishmentLocalStore = FakeEstablishmentLocalStore(),
         current: FakeCurrentEstablishmentLocalStore = FakeCurrentEstablishmentLocalStore(),
         // The production authed client leaves this off; tests of calls that opt in per request
@@ -54,7 +55,7 @@ class ProfileRepositoryImplTest {
             }
             defaultRequest { url("https://api.example.com/") }
         }
-        return ProfileRepositoryImpl(ProfileApi(client), local, current)
+        return ProfileRepositoryImpl(ProfileApi(client), local, current, activeSessionLifecycle())
     }
 
     private fun respondJson(scope: MockRequestHandleScope, body: String, status: HttpStatusCode = HttpStatusCode.OK) =

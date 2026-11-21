@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.profile
 
+import ar.com.ingenieriaalimentacion.data.auth.SessionLifecycle
 import ar.com.ingenieriaalimentacion.data.establishment.characterization.dto.ValidationProblem
 import ar.com.ingenieriaalimentacion.data.establishment.characterization.mapper.toDto
 import ar.com.ingenieriaalimentacion.data.profile.dto.EstablishmentAbsenceRequest
@@ -23,37 +24,39 @@ import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ResponseException
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.CancellationException
 
 class ProfileRepositoryImpl(
     private val api: ProfileApi,
     private val local: EstablishmentLocalStore,
     private val currentEstablishment: CurrentEstablishmentLocalStore,
+    private val lifecycle: SessionLifecycle,
 ) : ProfileRepository {
 
     override suspend fun getMe(): Result<Profile> =
         runCatching { api.getMe().toDomain() }
-            .recoverCatching { throw ProfileFailure(mapProfileError(it), it) }
+            .mapFailure { ProfileFailure(mapProfileError(it), it) }
 
     override suspend fun updateMe(update: UpdateProfile): Result<Profile> =
         runCatching {
             api.updateMe(UpdateProfileRequest(update.name, update.lastName)).toDomain()
-        }.recoverCatching { throw ProfileFailure(mapProfileError(it), it) }
+        }.mapFailure { ProfileFailure(mapProfileError(it), it) }
 
-    override suspend fun getMyEstablishments(): Result<List<EstablishmentWithStatus>> {
+    override suspend fun getMyEstablishments(): Result<List<EstablishmentWithStatus>> = lifecycle.scoped {
         // Cache-first: a warm cache wins so the picker works offline.
         val cached = local.getAll()
-        if (cached.isNotEmpty()) return Result.success(cached)
+        if (cached.isNotEmpty()) return@scoped Result.success(cached)
 
         // Cold cache → network. On success, warm the cache; on failure, propagate (the
         // cache is empty here, so there is nothing to fall back to).
-        return fetchMyEstablishments()
+        return@scoped fetchMyEstablishments()
             .onSuccess { fresh -> local.replaceAll(fresh) }
     }
 
-    override suspend fun refreshMyEstablishments(): Result<Unit> {
+    override suspend fun refreshMyEstablishments(): Result<Unit> = lifecycle.scoped {
         // Best-effort prefetch: overwrite the cache when the network succeeds; stay quiet offline.
         fetchMyEstablishments().onSuccess { fresh -> local.replaceAll(fresh) }
-        return Result.success(Unit)
+        return@scoped Result.success(Unit)
     }
 
     override suspend fun clearEstablishmentCache() {
@@ -68,15 +71,16 @@ class ProfileRepositoryImpl(
 
     private suspend fun fetchMyEstablishments(): Result<List<EstablishmentWithStatus>> =
         runCatching { api.getMyEstablishments().map { it.toDomain() } }
-            .recoverCatching { t ->
+            .fold(onSuccess = { Result.success(it) }, onFailure = { t ->
+                if (t is CancellationException) throw t
                 // Non-managers get 403 here; surface that as "no establishments" to match
                 // the previous behaviour of reading a null establishments field off the profile.
                 if (t is ClientRequestException && t.response.status == HttpStatusCode.Forbidden) {
-                    emptyList()
+                    Result.success(emptyList())
                 } else {
-                    throw ProfileFailure(mapProfileError(t), t)
+                    Result.failure(ProfileFailure(mapProfileError(t), t))
                 }
-            }
+            })
 
     override suspend fun getAvailableEstablishments(
         search: String?,
@@ -85,35 +89,39 @@ class ProfileRepositoryImpl(
     ): Result<PagedEstablishments> =
         runCatching {
             api.getAvailableEstablishments(search, page, pageSize).toDomain()
-        }.recoverCatching { throw ProfileFailure(mapProfileError(it), it) }
+        }.mapFailure { ProfileFailure(mapProfileError(it), it) }
 
     override suspend fun requestEstablishmentAccess(
         ids: List<String>,
-    ): Result<List<EstablishmentWithStatus>> =
+    ): Result<List<EstablishmentWithStatus>> = lifecycle.scoped {
         runCatching {
             api.requestEstablishmentAccess(RequestEstablishmentsRequest(ids)).map { it.toDomain() }
-        }.recoverCatching { throw EstablishmentRequestFailure(mapRequestError(it), it) }
+        }.mapFailure { EstablishmentRequestFailure(mapRequestError(it), it) }
             .onSuccess { created -> mergeIntoCache(created) }
+    }
 
     override suspend fun subscribeToEstablishments(
         ids: List<String>,
-    ): Result<List<EstablishmentWithStatus>> =
+    ): Result<List<EstablishmentWithStatus>> = lifecycle.scoped {
         runCatching {
             api.subscribeToEstablishments(RequestEstablishmentsRequest(ids)).map { it.toDomain() }
-        }.recoverCatching { throw EstablishmentRequestFailure(mapRequestError(it), it) }
+        }.mapFailure { EstablishmentRequestFailure(mapRequestError(it), it) }
             .onSuccess { subscribed -> mergeIntoCache(subscribed) }
+    }
 
-    override suspend fun withdrawFromEstablishment(establishmentId: String): Result<Unit> =
+    override suspend fun withdrawFromEstablishment(establishmentId: String): Result<Unit> = lifecycle.scoped {
         runCatching {
             api.withdrawEstablishmentAccess(WithdrawEstablishmentsRequest(listOf(establishmentId)))
-        }.recoverCatching { throw EstablishmentWithdrawalFailure(mapWithdrawalError(it), it) }
+        }.mapFailure { EstablishmentWithdrawalFailure(mapWithdrawalError(it), it) }
             .onSuccess { forgetEstablishment(establishmentId) }
             .map { }
+    }
 
-    override suspend fun unsubscribeFromEstablishments(ids: List<String>): Result<Unit> =
+    override suspend fun unsubscribeFromEstablishments(ids: List<String>): Result<Unit> = lifecycle.scoped {
         runCatching { api.unsubscribeFromEstablishments(ids) }
-            .recoverCatching { throw EstablishmentWithdrawalFailure(mapWithdrawalError(it), it) }
+            .mapFailure { EstablishmentWithdrawalFailure(mapWithdrawalError(it), it) }
             .onSuccess { ids.forEach { id -> forgetEstablishment(id) } }
+    }
 
     /**
      * Upserts freshly created links into the cache. [getMyEstablishments] is cache-first, so
@@ -121,13 +129,13 @@ class ProfileRepositoryImpl(
      */
     private suspend fun mergeIntoCache(created: List<EstablishmentWithStatus>) {
         val createdIds = created.map { it.id }.toSet()
-        local.replaceAll(local.getAll().filterNot { it.id in createdIds } + created)
+        local.update { existing -> existing.filterNot { it.id in createdIds } + created }
     }
 
     /** Drops a link the user left, and deselects it if it was the current establishment. */
     private suspend fun forgetEstablishment(establishmentId: String) {
-        local.replaceAll(local.getAll().filterNot { cached -> cached.id == establishmentId })
-        if (currentEstablishment.get() == establishmentId) currentEstablishment.set(null)
+        local.update { existing -> existing.filterNot { it.id == establishmentId } }
+        currentEstablishment.clearIfSelected(establishmentId)
     }
 
     override suspend fun notifyEstablishmentAbsence(
@@ -143,7 +151,13 @@ class ProfileRepositoryImpl(
                     characterization = notice.characterization?.toDto(),
                 ),
             )
-        }.recoverCatching { throw EstablishmentAbsenceFailure(mapAbsenceError(it), it) }
+        }.mapFailure { EstablishmentAbsenceFailure(mapAbsenceError(it), it) }
+
+    private inline fun <T> Result<T>.mapFailure(map: (Throwable) -> Exception): Result<T> {
+        val failure = exceptionOrNull() ?: return this
+        if (failure is CancellationException) throw failure
+        return Result.failure(map(failure))
+    }
 
     private fun mapProfileError(t: Throwable): ProfileError = when (t) {
         is ClientRequestException -> when (t.response.status) {

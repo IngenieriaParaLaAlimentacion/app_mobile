@@ -7,6 +7,7 @@ import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseConflict
 import ar.com.ingenieriaalimentacion.domain.model.survey.ResponseTargetRef
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseUpload
 import ar.com.ingenieriaalimentacion.domain.model.survey.isEligibleAt
+import ar.com.ingenieriaalimentacion.fake.activeSessionLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -21,11 +22,11 @@ class DefaultSurveyResponseLocalStoreTest {
     private var time = 100L
 
     @BeforeTest
-    fun setup() {
+    fun setup() = runTest {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         AppDatabase.Schema.create(driver)
         val queries = AppDatabase(driver).pendingSurveyResponseQueries
-        store = DefaultSurveyResponseLocalStore(queries, now = { time }, dispatcher = Dispatchers.Unconfined)
+        store = DefaultSurveyResponseLocalStore(queries, lifecycle = activeSessionLifecycle(), now = { time }, dispatcher = Dispatchers.Unconfined)
     }
 
     private fun row(

@@ -1,15 +1,14 @@
 package ar.com.ingenieriaalimentacion.data.auth.storage
 
-import ar.com.ingenieriaalimentacion.domain.model.auth.UserSession
 import ar.com.ingenieriaalimentacion.domain.repository.SessionManager
+import ar.com.ingenieriaalimentacion.domain.repository.StoredSession
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-class MemorySessionManager(initial: UserSession? = null) : SessionManager {
+class MemorySessionManager(initial: StoredSession = StoredSession.Empty) : SessionManager {
     private val mutex = Mutex()
-    private var session: UserSession? = initial
+    private var stored = initial
 
-    override suspend fun saveSession(session: UserSession) = mutex.withLock { this.session = session }
-    override suspend fun loadSessionOrNull(): UserSession? = mutex.withLock { session }
-    override suspend fun deleteSession() = mutex.withLock { session = null }
+    override suspend fun load(): StoredSession = mutex.withLock { stored }
+    override suspend fun replace(value: StoredSession) = mutex.withLock { stored = value }
 }

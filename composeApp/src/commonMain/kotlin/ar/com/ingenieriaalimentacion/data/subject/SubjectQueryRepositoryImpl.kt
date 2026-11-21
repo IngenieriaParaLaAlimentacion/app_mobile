@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.subject
 
+import ar.com.ingenieriaalimentacion.data.auth.SessionLifecycle
 import ar.com.ingenieriaalimentacion.data.subject.local.SubjectLocalStore
 import ar.com.ingenieriaalimentacion.data.subject.mapper.toDomain
 import ar.com.ingenieriaalimentacion.data.subject.mapper.toSummary
@@ -8,6 +9,7 @@ import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectUpload
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.domain.repository.SubjectQueryRepository
+import kotlinx.coroutines.CancellationException
 
 /**
  * Unions the remote `/subjects` page with locally-queued subjects so an offline-created subject is
@@ -18,33 +20,36 @@ import ar.com.ingenieriaalimentacion.domain.repository.SubjectQueryRepository
 class SubjectQueryRepositoryImpl(
     private val api: SubjectApi,
     private val local: SubjectLocalStore,
+    private val lifecycle: SessionLifecycle,
 ) : SubjectQueryRepository {
 
-    override suspend fun searchSubjects(query: String?, page: Int, pageSize: Int): Result<SubjectPage> {
-        val remote = runCatching { api.list(page = page, pageSize = pageSize, search = query).toDomain() }
+    override suspend fun searchSubjects(query: String?, page: Int, pageSize: Int): Result<SubjectPage> =
+        lifecycle.scoped {
+            val remote = runCatching {
+                api.list(page = page, pageSize = pageSize, search = query).toDomain()
+            }.onFailure { if (it is CancellationException) throw it }
+            lifecycle.capture()
 
-        // Local rows only join page 1; deeper pages are purely remote.
-        if (page != 1) return remote
+            // Local rows only join page 1; deeper pages are purely remote.
+            if (page != 1) return@scoped remote
 
-        val localSummaries = localSummaries(query)
-
-        return remote.fold(
-            onSuccess = { remotePage ->
-                // Prepend local-only subjects; remote wins on any id collision (the synced row).
-                val remoteIds = remotePage.items.mapTo(mutableSetOf()) { it.id }
-                val merged = localSummaries.filterNot { it.id in remoteIds } + remotePage.items
-                Result.success(remotePage.copy(items = merged))
-            },
-            onFailure = { error ->
-                // Offline: serve the local queue as a single self-contained page instead of failing.
-                if (localSummaries.isNotEmpty()) {
-                    Result.success(SubjectPage(items = localSummaries, page = 1, totalPages = 1))
-                } else {
-                    Result.failure(error)
-                }
-            },
-        )
-    }
+            val localSummaries = localSummaries(query)
+            remote.fold(
+                onSuccess = { remotePage ->
+                    // Prepend local-only subjects; remote wins on any id collision (the synced row).
+                    val remoteIds = remotePage.items.mapTo(mutableSetOf()) { it.id }
+                    val merged = localSummaries.filterNot { it.id in remoteIds } + remotePage.items
+                    Result.success(remotePage.copy(items = merged))
+                },
+                onFailure = { error ->
+                    if (localSummaries.isNotEmpty()) {
+                        Result.success(SubjectPage(items = localSummaries, page = 1, totalPages = 1))
+                    } else {
+                        Result.failure(error)
+                    }
+                },
+            )
+        }
 
     /** Picker-visible local rows (PENDING/SYNCING/SYNCED), filtered client-side by [query]. */
     private suspend fun localSummaries(query: String?): List<SubjectSummary> =

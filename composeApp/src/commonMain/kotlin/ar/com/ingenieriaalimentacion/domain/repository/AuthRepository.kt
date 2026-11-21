@@ -9,8 +9,12 @@ interface AuthRepository {
     val sessionStatus: StateFlow<SessionStatus>
     suspend fun bootstrap()
     suspend fun signIn(credentials: Credentials): Result<UserSession>
-    suspend fun signOut()
-    suspend fun resetPassword(token: String, newPassword: String): Result<Unit>
+    suspend fun signOut(beforeLogout: suspend () -> Unit = {})
+    suspend fun resetPassword(
+        token: String,
+        newPassword: String,
+        beforeLogout: suspend () -> Unit = {},
+    ): Result<Unit>
     suspend fun requestPasswordRecovery(email: String): Result<Unit>
 
     /** Fails with `EmailVerificationFailure`. Never reads or changes the session. */

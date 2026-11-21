@@ -2,74 +2,87 @@ package ar.com.ingenieriaalimentacion.app
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import ar.com.ingenieriaalimentacion.data.auth.SessionEnded
+import ar.com.ingenieriaalimentacion.data.auth.SessionLifecycle
 import ar.com.ingenieriaalimentacion.data.notification.PushOpenBridge
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.domain.model.auth.SessionStatus
-import ar.com.ingenieriaalimentacion.domain.usecase.auth.ClearLocalDataUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.auth.InitializeAuthUseCase
-import ar.com.ingenieriaalimentacion.domain.usecase.auth.ObserveSessionStatusUseCase
-import ar.com.ingenieriaalimentacion.domain.usecase.profile.ClearEstablishmentCacheUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.notification.RegisterPushDeviceUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.notification.SelectEstablishmentFromPushUseCase
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class AppViewModel(
     initializeAuth: InitializeAuthUseCase,
-    observeSessionStatus: ObserveSessionStatusUseCase,
+    lifecycle: SessionLifecycle,
     syncCoordinator: SyncCoordinator,
-    clearEstablishmentCache: ClearEstablishmentCacheUseCase,
-    clearLocalData: ClearLocalDataUseCase,
     registerPushDevice: RegisterPushDeviceUseCase,
     selectEstablishmentFromPush: SelectEstablishmentFromPushUseCase,
 ) : ViewModel() {
 
-    val sessionStatus: StateFlow<SessionStatus> = observeSessionStatus()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.Eagerly,
-            initialValue = SessionStatus.Initializing,
-        )
+    val sessionStatus = lifecycle.status
 
     private val _pushDestinations = Channel<AppPushDestination>(Channel.BUFFERED)
     val pushDestinations = _pushDestinations.receiveAsFlow()
 
     init {
+        PushOpenBridge.bind(sessionStatus)
         viewModelScope.launch { initializeAuth() }
-        // Start the offline-first sync engine: crash recovery, connectivity collector, cleanup loop.
         syncCoordinator.start()
-        // Explicit sign-out wipes ALL local data so the next user starts clean; a forced
-        // (refresh-failure) logout only drops the establishment cache, preserving un-synced uploads.
         viewModelScope.launch {
             sessionStatus
-                .filterIsInstance<SessionStatus.NotAuthenticated>()
-                .collect { status ->
-                    if (status.isSignOut) clearLocalData() else clearEstablishmentCache()
+                .map { (it as? SessionStatus.Authenticated)?.generation }
+                .distinctUntilChanged()
+                .collectLatest { generation ->
+                    val lease = lifecycle.leaseOrNull()?.takeIf { it.generation == generation }
+                        ?: return@collectLatest
+                    withContext(lease) { registerPushDevice() }
                 }
         }
         viewModelScope.launch {
-            sessionStatus
-                .map { it is SessionStatus.Authenticated }
-                .distinctUntilChanged()
-                .filter { it }
-                .collect { registerPushDevice() }
-        }
-        viewModelScope.launch {
-            combine(sessionStatus, PushOpenBridge.pushes) { session, push -> session to push }
-                .collect { (session, push) ->
-                    if (session !is SessionStatus.Authenticated || push == null) return@collect
-                    selectEstablishmentFromPush(push.establishmentId)
-                    PushOpenBridge.consume(push)
-                    _pushDestinations.send(AppPushDestination.FoodStock)
+            val pushSession = sessionStatus.distinctUntilChanged { previous, next ->
+                previous::class == next::class &&
+                    (previous as? SessionStatus.Authenticated)?.generation ==
+                    (next as? SessionStatus.Authenticated)?.generation
+            }
+            combine(pushSession, PushOpenBridge.pushes) { status, request -> status to request }
+                .collectLatest { (status, request) ->
+                    if (request == null) return@collectLatest
+                    val lease = lifecycle.leaseOrNull()
+                    if (lease == null) {
+                        if (request.generation != null || status == SessionStatus.Closing ||
+                            status == SessionStatus.AccountBlocked
+                        ) {
+                            PushOpenBridge.consume(request)
+                        }
+                        return@collectLatest
+                    }
+                    if (request.generation != null && request.generation != lease.generation) {
+                        PushOpenBridge.consume(request)
+                        return@collectLatest
+                    }
+                    try {
+                        val selected = withContext(lease) {
+                            selectEstablishmentFromPush(
+                                request.push.establishmentId,
+                                requireMembership = request.generation == null,
+                            )
+                        }
+                        if (selected && lifecycle.sessionFor(lease) != null) {
+                            _pushDestinations.send(AppPushDestination.FoodStock(lease.generation))
+                        }
+                    } catch (_: SessionEnded) {
+                        // The graph and data stores already stopped accepting this lease.
+                    } finally {
+                        PushOpenBridge.consume(request)
+                    }
                 }
         }
     }

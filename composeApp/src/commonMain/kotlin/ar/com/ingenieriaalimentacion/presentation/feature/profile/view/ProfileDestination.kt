@@ -9,5 +9,4 @@ sealed class ProfileDestination {
     ) : ProfileDestination()
 
     data class MyEstablishments(val role: String) : ProfileDestination()
-    data object LoggedOut : ProfileDestination()
 }

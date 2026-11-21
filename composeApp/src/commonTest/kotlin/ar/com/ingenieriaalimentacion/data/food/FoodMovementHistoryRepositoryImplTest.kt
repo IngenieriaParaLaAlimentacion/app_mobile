@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.food
 
+import ar.com.ingenieriaalimentacion.fake.activeSessionLifecycle
 import ar.com.ingenieriaalimentacion.data.activity.local.ActivityItemType
 import ar.com.ingenieriaalimentacion.data.activity.local.CachedActivityRow
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodIntakeOrigin
@@ -33,7 +34,7 @@ class FoodMovementHistoryRepositoryImplTest {
     private val requests = mutableListOf<HttpRequestData>()
 
     /** `null` means the single request fails, exercising the offline-fallback branches. */
-    private fun repository(body: String?): FoodMovementHistoryRepositoryImpl {
+    private suspend fun repository(body: String?): FoodMovementHistoryRepositoryImpl {
         val engine = MockEngine { request ->
             requests += request
             if (body == null) {
@@ -50,7 +51,7 @@ class FoodMovementHistoryRepositoryImplTest {
             install(ContentNegotiation) { json(json) }
             defaultRequest { url("https://api.example.com/") }
         }
-        return FoodMovementHistoryRepositoryImpl(FoodMovementActivityApi(client), cache, json)
+        return FoodMovementHistoryRepositoryImpl(FoodMovementActivityApi(client), cache, json, activeSessionLifecycle())
     }
 
     private fun movementJson(direction: String, id: String, occurredAt: String) = """

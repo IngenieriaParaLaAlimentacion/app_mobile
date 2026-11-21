@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.survey.survey_response_history
 
+import ar.com.ingenieriaalimentacion.fake.inactiveSessionLifecycle
 import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
@@ -66,7 +67,7 @@ class SurveyResponseHistoryViewModelTest {
         historyRepo: FakeSurveyResponseHistoryRepository,
         responseRepo: FakeSurveyResponseRepository = FakeSurveyResponseRepository(),
     ): SurveyResponseHistoryViewModel {
-        val coordinator = SyncCoordinator(listOf(responseRepo), FakeConnectivityObserver(), AppScope())
+        val coordinator = SyncCoordinator(listOf(responseRepo), FakeConnectivityObserver(), AppScope(), inactiveSessionLifecycle())
         return SurveyResponseHistoryViewModel(
             observeUploads = ObserveSurveyResponseUploadsUseCase(historyRepo),
             getHistoryPage = GetSurveyResponseHistoryPageUseCase(historyRepo),

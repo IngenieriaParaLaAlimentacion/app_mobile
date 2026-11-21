@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.auth.storage
 
+import ar.com.ingenieriaalimentacion.domain.repository.SessionStorageException
 import android.content.Context
 import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
@@ -37,47 +38,65 @@ actual class TokenStore(context: Context) {
             Base64.decode(combined, Base64.NO_WRAP)
         } catch (e: IllegalArgumentException) {
             Log.w(TAG, "Stored session blob is not valid Base64 — clearing", e)
-            prefs.edit().remove(PREF_KEY).apply()
+            clearRecord()
             return@withContext null
         }
         if (bytes.size < IV_BYTES + 1) {
             Log.w(TAG, "Stored session blob too short — clearing")
-            prefs.edit().remove(PREF_KEY).apply()
+            clearRecord()
             return@withContext null
         }
         val iv = bytes.copyOfRange(0, IV_BYTES)
         val ciphertext = bytes.copyOfRange(IV_BYTES, bytes.size)
         try {
+            val key = loadKey()
+            if (key == null) {
+                clearRecord()
+                return@withContext null
+            }
             val cipher = Cipher.getInstance(TRANSFORMATION).apply {
-                init(Cipher.DECRYPT_MODE, loadKey(), GCMParameterSpec(GCM_TAG_BITS, iv))
+                init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(GCM_TAG_BITS, iv))
             }
             cipher.doFinal(ciphertext).decodeToString()
         } catch (e: GeneralSecurityException) {
             Log.w(TAG, "Stored session blob failed AES/GCM decryption — clearing", e)
-            prefs.edit().remove(PREF_KEY).apply()
+            clearRecord()
             null
+        } catch (failure: java.io.IOException) {
+            throw SessionStorageException("Unable to open the session key store", failure)
         }
     }
 
     actual suspend fun set(value: String): Unit = withContext(Dispatchers.IO) {
-        val cipher = Cipher.getInstance(TRANSFORMATION).apply {
-            init(Cipher.ENCRYPT_MODE, loadOrCreateKey())
+        val combined = try {
+            val cipher = Cipher.getInstance(TRANSFORMATION).apply {
+                init(Cipher.ENCRYPT_MODE, loadOrCreateKey())
+            }
+            cipher.iv + cipher.doFinal(value.encodeToByteArray())
+        } catch (failure: GeneralSecurityException) {
+            throw SessionStorageException("Unable to encrypt the stored session", failure)
+        } catch (failure: java.io.IOException) {
+            throw SessionStorageException("Unable to open the session key store", failure)
         }
-        val iv = cipher.iv
-        val ciphertext = cipher.doFinal(value.encodeToByteArray())
-        val combined = iv + ciphertext
-        prefs.edit()
+        val written = prefs.edit()
             .putString(PREF_KEY, Base64.encodeToString(combined, Base64.NO_WRAP))
-            .apply()
+            .commit()
+        if (!written) throw SessionStorageException("Unable to write the stored session")
     }
 
     actual suspend fun clear(): Unit = withContext(Dispatchers.IO) {
-        prefs.edit().remove(PREF_KEY).apply()
+        clearRecord()
     }
 
-    private fun loadKey(): SecretKey {
+    private fun clearRecord() {
+        if (!prefs.edit().remove(PREF_KEY).commit()) {
+            throw SessionStorageException("Unable to clear the stored session")
+        }
+    }
+
+    private fun loadKey(): SecretKey? {
         val ks = KeyStore.getInstance(KEYSTORE_PROVIDER).apply { load(null) }
-        return ks.getKey(KEY_ALIAS, null) as SecretKey
+        return ks.getKey(KEY_ALIAS, null) as? SecretKey
     }
 
     private fun loadOrCreateKey(): SecretKey {

@@ -1,5 +1,7 @@
 package ar.com.ingenieriaalimentacion.data.survey
 
+import ar.com.ingenieriaalimentacion.data.auth.SessionLifecycle
+import ar.com.ingenieriaalimentacion.data.auth.scopedResult
 import ar.com.ingenieriaalimentacion.data.survey.local.SurveyResponseEditLocalStore
 import ar.com.ingenieriaalimentacion.data.survey.local.SurveyResponseLocalStore
 import ar.com.ingenieriaalimentacion.data.survey.mapper.toAnswersJson
@@ -38,6 +40,7 @@ class SurveyResponseEditRepositoryImpl(
     private val idGenerator: IdGenerator,
     private val json: Json,
     private val now: () -> Long,
+    private val lifecycle: SessionLifecycle,
 ) : SurveyResponseEditRepository {
 
     override suspend fun enqueueEdit(
@@ -48,40 +51,35 @@ class SurveyResponseEditRepositoryImpl(
         responseNumber: Int?,
         answers: Map<String, SurveyAnswerValue>,
         eventAtMs: Long,
-    ): Result<Unit> = runCatching {
+    ): Result<Unit> = lifecycle.scopedResult {
         val nowMs = now()
         val eventAt = Instant.fromEpochMilliseconds(eventAtMs).toString()
         val answersJson = json.encodeToString(
             MapSerializer(String.serializer(), JsonElement.serializer()),
             answers.toAnswersJson(),
         )
-        val existing = local.findPendingForResponse(responseId)
-        if (existing != null) {
-            // Not-yet-transmitted edit for this response: overwrite in place. Safe — this id was
-            // never sent, so there's no already-applied server-side attempt to collide with.
-            local.updatePending(existing.editId, surveyName, establishmentName, answersJson, eventAt, responseNumber, nowMs)
-        } else {
-            local.insert(
-                SurveyResponseEditUpload(
-                    editId = idGenerator.newId(),
-                    responseId = responseId,
-                    surveyId = surveyId,
-                    surveyName = surveyName,
-                    establishmentName = establishmentName,
-                    answersJson = answersJson,
-                    eventAt = eventAt,
-                    syncState = SyncState.Pending,
-                    errorMessage = null,
-                    attemptCount = 0,
-                    createdAt = nowMs,
-                    updatedAt = nowMs,
-                    responseNumber = responseNumber,
-                ),
-            )
-        }
+        local.enqueue(
+            SurveyResponseEditUpload(
+                editId = idGenerator.newId(),
+                responseId = responseId,
+                surveyId = surveyId,
+                surveyName = surveyName,
+                establishmentName = establishmentName,
+                answersJson = answersJson,
+                eventAt = eventAt,
+                syncState = SyncState.Pending,
+                errorMessage = null,
+                attemptCount = 0,
+                createdAt = nowMs,
+                updatedAt = nowMs,
+                responseNumber = responseNumber,
+            ),
+        )
     }
 
-    override suspend fun syncPending(): SyncSummary {
+    override suspend fun syncPending(): SyncSummary = lifecycle.scoped { syncOwnedPending() }
+
+    private suspend fun syncOwnedPending(): SyncSummary {
         var synced = 0
         var failed = 0
         var pending = 0
@@ -117,7 +115,10 @@ class SurveyResponseEditRepositoryImpl(
                     return@forEach
                 }
             }
-            local.markSyncing(edit.editId)
+            if (!local.claimForSync(edit)) {
+                pending++
+                return@forEach
+            }
             when (val outcome = api.edit(edit.surveyId, edit.responseId, edit.toRequest(json))) {
                 is SurveyResponseEditOutcome.Applied -> {
                     local.markSynced(edit.editId)
@@ -153,18 +154,16 @@ class SurveyResponseEditRepositoryImpl(
             true
         }
 
-    override suspend fun retry(editId: String): Result<Unit> = runCatching { local.resetForRetry(editId) }
+    override suspend fun retry(editId: String): Result<Unit> = lifecycle.scopedResult { local.resetForRetry(editId) }
 
     override fun observeEditStatus(responseId: String): Flow<SurveyResponseEditStatus?> =
         local.observeLatestForResponse(responseId).map { edit ->
             edit?.let { SurveyResponseEditStatus(it.editId, it.syncState, it.errorMessage) }
         }
 
-    override suspend fun resetStuckSyncing() {
-        local.resetStuckSyncing()
-    }
+    override suspend fun resetStuckSyncing() = lifecycle.scoped { local.resetStuckSyncing() }
 
-    override suspend fun pruneTerminal(olderThan: Duration) {
+    override suspend fun pruneTerminal(olderThan: Duration) = lifecycle.scoped {
         local.pruneTerminalOlderThan(now() - olderThan.inWholeMilliseconds)
     }
 }

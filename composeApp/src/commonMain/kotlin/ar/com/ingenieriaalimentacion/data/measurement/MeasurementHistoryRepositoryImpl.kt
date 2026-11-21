@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.measurement
 
+import ar.com.ingenieriaalimentacion.data.auth.SessionLifecycle
 import ar.com.ingenieriaalimentacion.data.activity.ActivityApi
 import ar.com.ingenieriaalimentacion.data.activity.local.ActivityItemType
 import ar.com.ingenieriaalimentacion.data.activity.local.ActivityLocalStore
@@ -11,6 +12,7 @@ import ar.com.ingenieriaalimentacion.data.measurement.mapper.toHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementHistoryPage
 import ar.com.ingenieriaalimentacion.domain.repository.MeasurementHistoryRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.serialization.decodeFromString
@@ -28,16 +30,18 @@ class MeasurementHistoryRepositoryImpl(
     private val cache: ActivityLocalStore,
     private val queue: MeasurementLocalStore,
     private val json: Json,
+    private val lifecycle: SessionLifecycle,
 ) : MeasurementHistoryRepository {
 
-    override fun observeLocalMerged(): Flow<List<MeasurementHistoryEntry>> =
+    override fun observeLocalMerged(): Flow<List<MeasurementHistoryEntry>> = lifecycle.observe {
         combine(queue.observeAll(), cache.observe(ActivityItemType.MEASUREMENT)) { queued, cached ->
             merge(queued.map { it.toHistoryEntry() }, cached.map { it.toEntry() })
         }
+    }
 
-    override suspend fun loadPage(page: Int, pageSize: Int): Result<MeasurementHistoryPage> {
+    override suspend fun loadPage(page: Int, pageSize: Int): Result<MeasurementHistoryPage> = lifecycle.scoped {
         val remote = runCatching { api.list(page = page, pageSize = pageSize, type = "measurement") }
-        return remote.fold(
+        return@scoped remote.fold(
             onSuccess = { response ->
                 val items = response.items.mapNotNull {
                     (it.toParsedEntry() as? ParsedActivityItem.MeasurementEntry)?.entry
@@ -50,6 +54,7 @@ class MeasurementHistoryRepositoryImpl(
                 }
             },
             onFailure = { error ->
+                if (error is CancellationException) throw error
                 // Offline: serve queue ∪ cache as a single self-contained page (page 1) or the
                 // requested cached page (page > 1) instead of failing.
                 val fallback = if (page == 1) {

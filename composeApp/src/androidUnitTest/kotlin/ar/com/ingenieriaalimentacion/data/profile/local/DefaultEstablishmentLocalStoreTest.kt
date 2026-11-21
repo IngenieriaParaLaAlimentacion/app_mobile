@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.data.profile.local
 
+import ar.com.ingenieriaalimentacion.fake.activeSessionLifecycle
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import ar.com.ingenieriaalimentacion.data.db.AppDatabase
 import ar.com.ingenieriaalimentacion.domain.model.establishment.CharacterizationStatus
@@ -16,12 +17,13 @@ class DefaultEstablishmentLocalStoreTest {
     private lateinit var store: DefaultEstablishmentLocalStore
 
     @BeforeTest
-    fun setup() {
+    fun setup() = runTest {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         AppDatabase.Schema.create(driver)
         store = DefaultEstablishmentLocalStore(
             AppDatabase(driver).cachedEstablishmentQueries,
             now = { 10L },
+            lifecycle = activeSessionLifecycle(),
             dispatcher = Dispatchers.Unconfined,
         )
     }

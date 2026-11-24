@@ -1,7 +1,11 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.measurement.uploads
 
 import ar.com.ingenieriaalimentacion.core.design_system.components.pill.AlPillTone
+import ar.com.ingenieriaalimentacion.domain.model.measurement.AssessmentAlert
+import ar.com.ingenieriaalimentacion.domain.model.measurement.AssessmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.measurement.ClinicalAlert
+import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementAssessment
+import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementIndicator
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import kotlin.test.Test
@@ -39,6 +43,23 @@ class MeasurementUploadUiTest {
         createdAt = 0L,
         updatedAt = 0L,
     )
+
+    @Test
+    fun `infant history displays available and insufficient assessment independently`() {
+        val row = upload(SyncState.Synced, bmi = 22.0).copy(
+            assessments = listOf(
+                MeasurementAssessment(MeasurementIndicator.LengthForAge, AssessmentStatus.InsufficientData, null, null, "sap", null),
+                MeasurementAssessment(MeasurementIndicator.WeightForAge, AssessmentStatus.Evaluated, "low_weight", -2.5,
+                    "sap", AssessmentAlert("high", "detail")),
+                MeasurementAssessment(MeasurementIndicator.BmiForAge, AssessmentStatus.NotApplicable, null, null, null, null),
+            ),
+        ).toUi()
+        assertEquals(listOf("Sin datos suficientes", "Bajo peso"), row.assessmentRows.map { it.result })
+        assertEquals("Z -2,5", row.assessmentRows.last().z)
+        assertEquals(AlPillTone.Danger, row.assessmentRows.last().tone)
+        assertNull(row.bmiValue)
+        assertNull(row.bmiCategory)
+    }
 
     @Test
     fun `pending maps to warning pill with no actions but delete`() {

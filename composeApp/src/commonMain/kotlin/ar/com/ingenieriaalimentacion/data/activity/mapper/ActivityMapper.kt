@@ -1,7 +1,8 @@
 package ar.com.ingenieriaalimentacion.data.activity.mapper
 
 import ar.com.ingenieriaalimentacion.data.activity.dto.ActivityItemResponse
-import ar.com.ingenieriaalimentacion.data.measurement.mapper.toDomain as alertToDomain
+import ar.com.ingenieriaalimentacion.data.measurement.mapper.toDomain as measurementToDomain
+import ar.com.ingenieriaalimentacion.data.measurement.mapper.toStatureMethodOrNull
 import ar.com.ingenieriaalimentacion.data.subject.mapper.toDomain as sexDtoToDomain
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectHistoryEntry
@@ -59,7 +60,9 @@ internal fun ActivityItemResponse.toParsedEntry(): ParsedActivityItem? {
                     syncState = SyncState.Synced,
                     errorMessage = null,
                     bmi = m.bmi,
-                    alerts = m.alerts.map { it.alertToDomain() },
+                    alerts = m.alerts.map { it.measurementToDomain() },
+                    statureMethod = m.statureMethod.toStatureMethodOrNull(),
+                    assessments = m.assessments?.map { it.measurementToDomain() },
                     isLocal = false,
                     createdAt = occurredAtMillis,
                     updatedAt = occurredAtMillis,

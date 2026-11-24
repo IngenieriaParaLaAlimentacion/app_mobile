@@ -5,13 +5,16 @@ import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovement
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementDirection
 import ar.com.ingenieriaalimentacion.domain.model.food.lineCountLabel
 import ar.com.ingenieriaalimentacion.domain.model.food.movementTitle
-import ar.com.ingenieriaalimentacion.domain.model.measurement.ClinicalAlert
+import ar.com.ingenieriaalimentacion.domain.model.measurement.AssessmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementHistoryEntry
+import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementIndicator
 import ar.com.ingenieriaalimentacion.domain.model.profile.Profile
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseSummary
-import ar.com.ingenieriaalimentacion.presentation.feature.measurement.uploads.alertTypeLabel
+import ar.com.ingenieriaalimentacion.presentation.feature.measurement.assessmentIndicatorLabel
+import ar.com.ingenieriaalimentacion.presentation.feature.measurement.hasApplicableBmi
+import ar.com.ingenieriaalimentacion.presentation.feature.measurement.alertTypeLabel
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
@@ -95,19 +98,31 @@ private fun SubjectHistoryEntry.toRecentUi(): RecentActivityUi {
 }
 
 private fun MeasurementHistoryEntry.toRecentUi(): RecentActivityUi {
-    val topAlert = alerts.maxByOrNull { tonePriority(it.tone()) }
-    val (label, tone) = if (topAlert != null) {
-        alertTypeLabel(topAlert.alertType) to topAlert.tone()
-    } else {
-        measurementSyncBadge(syncState)
-    }
     val synced = syncState == SyncState.Synced
+    val results = assessments.takeIf { synced }
+    val flagged = results.orEmpty().filter { it.alert != null }
+    val topLegacyAlert = alerts.maxByOrNull { tonePriority(it.severity.toAlertTone()) }
+    val (label, tone) = when {
+        flagged.isNotEmpty() -> {
+            val tone = flagged.mapNotNull { it.alert?.severity?.toAlertTone() }.maxBy(::tonePriority)
+            "Con alerta" to tone
+        }
+        synced && results == null && topLegacyAlert != null ->
+            alertTypeLabel(topLegacyAlert.alertType) to topLegacyAlert.severity.toAlertTone()
+        else -> measurementSyncBadge(syncState)
+    }
+    val alertIndicatorNames = flagged.map { assessmentIndicatorLabel(it.indicator) }.distinct().joinToString()
+    val statureLabel = if (results.orEmpty().any {
+        it.indicator == MeasurementIndicator.LengthForAge &&
+            it.status != AssessmentStatus.NotApplicable
+    }) "Longitud" else "Talla"
     return RecentActivityUi(
         id = id,
         kind = RecentActivityUi.Kind.Measurement,
         title = "$subjectName $subjectLastName",
-        subtitle = "Talla: ${formatMeasure(heightCm)} cm, Peso: ${formatMeasure(weightKg)} kg",
-        value = bmi?.takeIf { synced }?.let { "IMC ${formatBmi(it)}" },
+        subtitle = "$statureLabel: ${formatMeasure(heightCm)} cm, Peso: ${formatMeasure(weightKg)} kg",
+        value = bmi?.takeIf { synced && (results == null || results.hasApplicableBmi()) }?.let { "IMC ${formatBmi(it)}" },
+        badgeDescription = alertIndicatorNames.takeIf { it.isNotEmpty() }?.let { "Con alerta: $it" },
         badgeText = label,
         badgeTone = tone,
         createdAt = createdAt,
@@ -177,7 +192,7 @@ private fun eventAtMillis(iso: String): Long =
     runCatching { Instant.parse(iso).toEpochMilliseconds() }.getOrDefault(0L)
 
 /** Severity → tone, mirroring the history rows (`MeasurementUploadUi`). */
-private fun ClinicalAlert.tone(): AlBadgeTone = when (severity.trim().lowercase()) {
+private fun String.toAlertTone(): AlBadgeTone = when (trim().lowercase()) {
     "critical", "severe", "high", "alta", "critica", "crítica" -> AlBadgeTone.Danger
     "moderate", "medium", "warning", "media", "moderada" -> AlBadgeTone.Warning
     else -> AlBadgeTone.Neutral

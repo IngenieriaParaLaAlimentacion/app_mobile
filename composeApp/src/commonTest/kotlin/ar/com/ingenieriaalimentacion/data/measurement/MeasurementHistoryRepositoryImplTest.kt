@@ -130,12 +130,32 @@ class MeasurementHistoryRepositoryImplTest {
         }
         val cache = FakeActivityLocalStore()
         val activityApi = api { respondPage(this, page(remoteMeasurementItem("shared-id"))) }
-        val repo = MeasurementHistoryRepositoryImpl(activityApi, cache, queue, testJson)
+        val repo = MeasurementHistoryRepositoryImpl(activityApi, cache, queue, testJson, now = { 0L })
 
         val items = repo.loadPage(page = 1, pageSize = 20).getOrThrow().items
 
         assertEquals(1, items.count { it.id == "shared-id" })
         assertEquals("Local", items.single { it.id == "shared-id" }.subjectName)
+    }
+
+    @Test
+    fun `later observed feed replaces synced queue result without losing local identity`() = runTest {
+        val queue = FakeMeasurementLocalStore().apply {
+            insert(queuedUpload("shared-id", state = SyncState.Synced, updatedAt = 10L).copy(bmi = 19.1))
+        }
+        val cache = FakeActivityLocalStore()
+        val activityApi = api { respondPage(this, page(remoteMeasurementItem("shared-id"))) }
+        var observedAt = 10L
+        val repo = MeasurementHistoryRepositoryImpl(activityApi, cache, queue, testJson, now = { observedAt })
+        val sameTime = repo.loadPage(page = 1, pageSize = 20).getOrThrow().items.single()
+        assertEquals(19.1, sameTime.bmi)
+
+        observedAt = 11L
+        val corrected = repo.loadPage(page = 1, pageSize = 20).getOrThrow().items.single()
+        assertEquals(24.2, corrected.bmi)
+        assertTrue(corrected.isLocal)
+        assertEquals(10L, corrected.updatedAt)
+        assertEquals(corrected, repo.observeLocalMerged().first().single())
     }
 
     @Test
@@ -145,7 +165,7 @@ class MeasurementHistoryRepositoryImplTest {
         }
         val cache = FakeActivityLocalStore()
         val activityApi = api { respondPage(this, page("")) }
-        val repo = MeasurementHistoryRepositoryImpl(activityApi, cache, queue, testJson)
+        val repo = MeasurementHistoryRepositoryImpl(activityApi, cache, queue, testJson, now = { 0L })
 
         val items = repo.loadPage(page = 1, pageSize = 20).getOrThrow().items
 
@@ -161,7 +181,7 @@ class MeasurementHistoryRepositoryImplTest {
         val activityApi = api {
             respondPage(this, page(remoteMeasurementItem("remote-2"), page = 2, totalPages = 2))
         }
-        val repo = MeasurementHistoryRepositoryImpl(activityApi, cache, queue, testJson)
+        val repo = MeasurementHistoryRepositoryImpl(activityApi, cache, queue, testJson, now = { 0L })
 
         val items = repo.loadPage(page = 2, pageSize = 20).getOrThrow().items
 
@@ -177,7 +197,7 @@ class MeasurementHistoryRepositoryImplTest {
             seed(ActivityItemType.MEASUREMENT, listOf(cachedRow("cached-1")))
         }
         val activityApi = api { respond("boom", HttpStatusCode.InternalServerError) }
-        val repo = MeasurementHistoryRepositoryImpl(activityApi, cache, queue, testJson)
+        val repo = MeasurementHistoryRepositoryImpl(activityApi, cache, queue, testJson, now = { 0L })
 
         val result = repo.loadPage(page = 1, pageSize = 20)
 
@@ -195,7 +215,7 @@ class MeasurementHistoryRepositoryImplTest {
             )
         }
         val activityApi = api { respond("boom", HttpStatusCode.InternalServerError) }
-        val repo = MeasurementHistoryRepositoryImpl(activityApi, cache, queue, testJson)
+        val repo = MeasurementHistoryRepositoryImpl(activityApi, cache, queue, testJson, now = { 0L })
 
         // pageSize=1 so page 2 (offset 1) lands on the older cached row only.
         val result = repo.loadPage(page = 2, pageSize = 1)
@@ -208,7 +228,7 @@ class MeasurementHistoryRepositoryImplTest {
         val queue = FakeMeasurementLocalStore()
         val cache = FakeActivityLocalStore()
         val activityApi = api { respond("boom", HttpStatusCode.InternalServerError) }
-        val repo = MeasurementHistoryRepositoryImpl(activityApi, cache, queue, testJson)
+        val repo = MeasurementHistoryRepositoryImpl(activityApi, cache, queue, testJson, now = { 0L })
 
         val result = repo.loadPage(page = 1, pageSize = 20)
 
@@ -226,7 +246,7 @@ class MeasurementHistoryRepositoryImplTest {
         }
         val cache = FakeActivityLocalStore()
         val activityApi = api { respondPage(this, page(remoteMeasurementItem("past"))) }
-        val repo = MeasurementHistoryRepositoryImpl(activityApi, cache, queue, testJson)
+        val repo = MeasurementHistoryRepositoryImpl(activityApi, cache, queue, testJson, now = { 0L })
         repo.loadPage(page = 1, pageSize = 20).getOrThrow()
         val entries = repo.observeLocalMerged().first()
         assertEquals(listOf("recent", "past"), entries.map { it.id })

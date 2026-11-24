@@ -22,7 +22,13 @@ interface MeasurementLocalStore {
     suspend fun markSyncing(localId: String)
 
     /** Success (201/200): persist the server-computed [bmi] + serialized [alertsJson], clear error. */
-    suspend fun markSynced(localId: String, bmi: Double?, alertsJson: String?)
+    suspend fun markSynced(
+        localId: String,
+        bmi: Double?,
+        alertsJson: String?,
+        assessmentsJson: String? = null,
+        serverStatureMethod: String? = null,
+    )
 
     /** Terminal failure: bumps attemptCount and sets a user-facing reason. */
     suspend fun markFailed(localId: String, reason: String)

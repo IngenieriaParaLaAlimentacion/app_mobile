@@ -50,6 +50,8 @@ class DefaultMeasurementLocalStore(
             createdAt = upload.createdAt,
             updatedAt = upload.updatedAt,
             observation = upload.observation,
+            statureMethod = upload.statureMethod?.wire,
+            assessmentsJson = null,
         )
     }
 
@@ -61,9 +63,22 @@ class DefaultMeasurementLocalStore(
         queries.markState(syncState = SyncState.Syncing.toDbString(), updatedAt = now(), localId = localId)
     }
 
-    override suspend fun markSynced(localId: String, bmi: Double?, alertsJson: String?): Unit =
+    override suspend fun markSynced(
+        localId: String,
+        bmi: Double?,
+        alertsJson: String?,
+        assessmentsJson: String?,
+        serverStatureMethod: String?,
+    ): Unit =
         withContext(dispatcher) {
-            queries.markSynced(bmi = bmi, alertsJson = alertsJson, updatedAt = now(), localId = localId)
+            queries.markSynced(
+                bmi = bmi,
+                alertsJson = alertsJson,
+                assessmentsJson = assessmentsJson,
+                serverStatureMethod = serverStatureMethod,
+                updatedAt = now(),
+                localId = localId,
+            )
         }
 
     override suspend fun markFailed(localId: String, reason: String): Unit = withContext(dispatcher) {

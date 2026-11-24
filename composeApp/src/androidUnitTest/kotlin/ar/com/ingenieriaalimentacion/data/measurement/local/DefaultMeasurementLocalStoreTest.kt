@@ -3,6 +3,7 @@ package ar.com.ingenieriaalimentacion.data.measurement.local
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import ar.com.ingenieriaalimentacion.data.db.AppDatabase
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementUpload
+import ar.com.ingenieriaalimentacion.domain.model.measurement.StatureMethod
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -127,7 +128,7 @@ class DefaultMeasurementLocalStoreTest {
     }
 
     @Test
-    fun `v10 queue upgrade preserves existing queued rows with null observation`() = runTest {
+    fun `queue upgrade preserves rows through v10 and v11 migrations`() = runTest {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         driver.execute(null, """
             CREATE TABLE PendingMeasurement (
@@ -144,14 +145,22 @@ class DefaultMeasurementLocalStoreTest {
                 72.5, 170.0, '2026-06-21T18:30:00Z', 'PENDING', NULL, 0, NULL, NULL, 10, 10)
         """.trimIndent(), 0)
         AppDatabase.Schema.migrate(driver, 10L, 11L)
+        driver.execute(null, "UPDATE PendingMeasurement SET observation = 'Medición previa' WHERE localId = 'old'", 0)
+        AppDatabase.Schema.migrate(driver, 11L, AppDatabase.Schema.version)
         val upgraded = DefaultMeasurementLocalStore(AppDatabase(driver).pendingMeasurementQueries,
             now = { time }, dispatcher = Dispatchers.Unconfined)
         val old = upgraded.syncable().single()
         assertEquals("old", old.localId)
         assertEquals(72.5, old.weightKg)
-        assertEquals(null, old.observation)
-        upgraded.insert(row("new").copy(observation = "Observación nueva"))
-        assertEquals("Observación nueva", upgraded.all().first { it.localId == "new" }.observation)
+        assertEquals("Medición previa", old.observation)
+        assertEquals(null, old.statureMethod)
+        assertEquals(null, old.assessments)
+        upgraded.insert(row("new").copy(observation = "Observación nueva", statureMethod = StatureMethod.Recumbent))
+        upgraded.markSynced("new", bmi = 25.0, alertsJson = "[]", assessmentsJson = "[]")
+        val new = upgraded.all().first { it.localId == "new" }
+        assertEquals("Observación nueva", new.observation)
+        assertEquals(StatureMethod.Recumbent, new.statureMethod)
+        assertEquals(emptyList(), new.assessments)
         driver.close()
     }
 

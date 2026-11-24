@@ -1,13 +1,24 @@
 package ar.com.ingenieriaalimentacion.domain.usecase.measurement
 
+import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementAssessment
+import ar.com.ingenieriaalimentacion.domain.model.measurement.NewMeasurement
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
 import kotlinx.datetime.LocalDate
 import kotlin.math.abs
 import kotlin.math.ln
 import kotlin.math.pow
 
-/** Evaluates whether a measurement matches an existing nutritional alert threshold. */
-class MeasurementAlertEvaluator {
+private val bundledSapEvaluator by lazy {
+    BundledSapReference.rulesetJson?.let { SapAssessmentEvaluator(sapReferenceJson.decodeFromString<SapRuleSet>(it)) }
+}
+
+/** Evaluates the bundled reference while retaining the legacy preview on older bundles. */
+class MeasurementAlertEvaluator internal constructor(private val sap: SapAssessmentEvaluator?) {
+    constructor() : this(bundledSapEvaluator)
+
+    internal fun evaluate(measurement: NewMeasurement, measuredDate: LocalDate): List<MeasurementAssessment>? =
+        sap?.evaluate(measurement, measuredDate)
+
     fun requiresConfirmation(
         bmi: Double,
         sex: Sex,
@@ -22,10 +33,7 @@ class MeasurementAlertEvaluator {
     }
 
     internal fun completedMonths(birthDate: LocalDate, measuredDate: LocalDate): Int {
-        val months = (measuredDate.year - birthDate.year) * 12 +
-            measuredDate.monthNumber - birthDate.monthNumber -
-            if (measuredDate.dayOfMonth < birthDate.dayOfMonth) 1 else 0
-        return months.coerceAtLeast(0)
+        return completedMonthsAt(birthDate, measuredDate) ?: 0
     }
 }
 

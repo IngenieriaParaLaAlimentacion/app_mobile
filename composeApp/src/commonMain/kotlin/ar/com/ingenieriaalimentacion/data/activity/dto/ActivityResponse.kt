@@ -1,6 +1,7 @@
 package ar.com.ingenieriaalimentacion.data.activity.dto
 
 import ar.com.ingenieriaalimentacion.data.measurement.dto.AlertDto
+import ar.com.ingenieriaalimentacion.data.measurement.dto.AssessmentDto
 import ar.com.ingenieriaalimentacion.data.subject.dto.SexDto
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -43,6 +44,8 @@ data class ActivityMeasurementResponse(
     val subject: ActivityMeasurementSubjectResponse,
     val establishment: ActivityEstablishmentResponse,
     val alerts: List<AlertDto> = emptyList(),
+    @SerialName("stature_method") val statureMethod: String? = null,
+    val assessments: List<AssessmentDto>? = null,
     // `responsible` intentionally omitted — always the caller for /me/activity, never displayed.
 )
 

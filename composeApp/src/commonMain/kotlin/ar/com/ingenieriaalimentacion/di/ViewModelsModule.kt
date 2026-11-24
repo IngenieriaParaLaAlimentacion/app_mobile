@@ -57,6 +57,7 @@ val viewModelsModule = module {
             observeSurveyResponseUploads = get(),
             observeFoodMovements = get(),
             getFoodMovementHistory = get(),
+            getMeasurementHistory = get(),
             getMyProfile = get(),
             getMyEstablishments = get(),
             getCurrentEstablishment = get(),

@@ -1,6 +1,9 @@
 package ar.com.ingenieriaalimentacion.data.measurement
 
+import ar.com.ingenieriaalimentacion.data.measurement.mapper.toRequest
+import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementIndicator
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementUpload
+import ar.com.ingenieriaalimentacion.domain.model.measurement.StatureMethod
 import ar.com.ingenieriaalimentacion.domain.model.subject.MAX_SYNC_ATTEMPTS
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectUpload
@@ -25,6 +28,7 @@ import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
@@ -120,6 +124,35 @@ class MeasurementSyncEngineTest {
         repo.syncPending()
 
         assertEquals(SyncState.Synced, store.current("r1")?.syncState)
+    }
+
+    @Test
+    fun `versioned replay persists posture and each result`() = runTest {
+        store.insert(row("r1"))
+        responder = {
+            val body = successBody("r1").dropLast(1) + """,
+                "stature_method":"recumbent",
+                "assessments":[{"indicator":"weight_for_age","status":"evaluated","classification":"normal"},
+                               {"indicator":"length_for_age","status":"insufficient_data"}]}
+            """.trimIndent()
+            respond(body, HttpStatusCode.OK, jsonHeaders())
+        }
+
+        assertEquals(1, repo.syncPending().synced)
+        val upload = store.current("r1")
+        assertEquals(StatureMethod.Recumbent, upload?.statureMethod)
+        assertEquals(
+            listOf(MeasurementIndicator.WeightForAge, MeasurementIndicator.LengthForAge),
+            upload?.assessments?.map { it.indicator },
+        )
+    }
+
+    @Test
+    fun `legacy queue rows omit method even when the client encodes defaults`() {
+        val clientJson = Json { encodeDefaults = true }
+        assertFalse(clientJson.encodeToString(row("r1").toRequest()).contains("stature_method"))
+        val explicit = row("r1").copy(statureMethod = StatureMethod.Standing)
+        assertTrue(clientJson.encodeToString(explicit.toRequest()).contains("\"stature_method\":\"standing\""))
     }
 
     @Test

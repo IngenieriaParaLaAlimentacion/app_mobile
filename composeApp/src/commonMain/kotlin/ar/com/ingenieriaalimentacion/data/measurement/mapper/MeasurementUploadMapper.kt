@@ -2,6 +2,7 @@ package ar.com.ingenieriaalimentacion.data.measurement.mapper
 
 import ar.com.ingenieriaalimentacion.data.db.PendingMeasurement
 import ar.com.ingenieriaalimentacion.domain.model.measurement.ClinicalAlert
+import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementAssessment
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementUpload
 import ar.com.ingenieriaalimentacion.domain.model.measurement.NewMeasurement
@@ -10,8 +11,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-/** Lenient JSON used to (de)serialize the `alertsJson` column. */
-private val alertsCodec = Json { ignoreUnknownKeys = true }
+private val resultJson = Json { ignoreUnknownKeys = true }
 
 /** DB row → domain. Decodes the persisted alerts (absent/blank → empty). */
 internal fun PendingMeasurement.toDomain(): MeasurementUpload = MeasurementUpload(
@@ -29,10 +29,14 @@ internal fun PendingMeasurement.toDomain(): MeasurementUpload = MeasurementUploa
     errorMessage = errorMessage,
     attemptCount = attemptCount.toInt(),
     bmi = bmi,
-    alerts = alertsCodec.decodeAlerts(alertsJson),
+    alerts = resultJson.decodeAlerts(alertsJson),
     createdAt = createdAt,
     updatedAt = updatedAt,
     observation = observation,
+    statureMethod = statureMethod.toStatureMethodOrNull(),
+    assessments = assessmentsJson?.let { raw ->
+        runCatching { resultJson.decodeFromString<List<MeasurementAssessment>>(raw) }.getOrNull()
+    },
 )
 
 /** Form input → a fresh PENDING upload row with the client-generated [id]. */
@@ -56,10 +60,14 @@ internal fun NewMeasurement.toPendingUpload(id: String, measuredAt: String, now:
         createdAt = now,
         updatedAt = now,
         observation = observation,
+        statureMethod = statureMethod,
     )
 
 /** Serialize alerts for the `alertsJson` column. */
-internal fun encodeAlerts(alerts: List<ClinicalAlert>): String = alertsCodec.encodeToString(alerts)
+internal fun encodeAlerts(alerts: List<ClinicalAlert>): String = resultJson.encodeToString(alerts)
+
+internal fun encodeAssessments(assessments: List<MeasurementAssessment>): String =
+    resultJson.encodeToString(assessments)
 
 internal fun MeasurementUpload.toHistoryEntry(): MeasurementHistoryEntry = MeasurementHistoryEntry(
     id = localId,
@@ -74,6 +82,8 @@ internal fun MeasurementUpload.toHistoryEntry(): MeasurementHistoryEntry = Measu
     errorMessage = errorMessage,
     bmi = bmi,
     alerts = alerts,
+    statureMethod = statureMethod,
+    assessments = assessments,
     isLocal = true,
     createdAt = createdAt,
     updatedAt = updatedAt,

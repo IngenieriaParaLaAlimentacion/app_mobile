@@ -10,37 +10,43 @@ import ar.com.ingenieriaalimentacion.data.measurement.local.MeasurementLocalStor
 import ar.com.ingenieriaalimentacion.data.measurement.mapper.toHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementHistoryPage
+import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import ar.com.ingenieriaalimentacion.domain.repository.MeasurementHistoryRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.time.Instant
 
 /**
- * Union-reads the local measurement queue with `/me/activity` history. Mirrors
- * [ar.com.ingenieriaalimentacion.data.subject.SubjectHistoryRepositoryImpl] exactly, on the
- * measurement queue/type instead.
+ * Merges the upload queue with authoritative measurement results from the owner's activity feed.
  */
 class MeasurementHistoryRepositoryImpl(
     private val api: ActivityApi,
     private val cache: ActivityLocalStore,
     private val queue: MeasurementLocalStore,
     private val json: Json,
+    private val now: () -> Long,
 ) : MeasurementHistoryRepository {
+    private val pageLock = Mutex()
 
     override fun observeLocalMerged(): Flow<List<MeasurementHistoryEntry>> =
         combine(queue.observeAll(), cache.observe(ActivityItemType.MEASUREMENT)) { queued, cached ->
             merge(queued.map { it.toHistoryEntry() }, cached.map { it.toEntry() })
         }
 
-    override suspend fun loadPage(page: Int, pageSize: Int): Result<MeasurementHistoryPage> {
+    override suspend fun loadPage(page: Int, pageSize: Int): Result<MeasurementHistoryPage> = pageLock.withLock {
+        val observedAt = now()
         val remote = runCatching { api.list(page = page, pageSize = pageSize, type = "measurement") }
-        return remote.fold(
+        remote.fold(
             onSuccess = { response ->
                 val items = response.items.mapNotNull {
                     (it.toParsedEntry() as? ParsedActivityItem.MeasurementEntry)?.entry
+                        ?.copy(serverObservedAtMillis = observedAt)
                 }
                 cache.upsertPage(ActivityItemType.MEASUREMENT, items.map { it.toCachedRow() })
                 if (page != 1) {
@@ -50,6 +56,7 @@ class MeasurementHistoryRepositoryImpl(
                 }
             },
             onFailure = { error ->
+                if (error is CancellationException) throw error
                 // Offline: serve queue ∪ cache as a single self-contained page (page 1) or the
                 // requested cached page (page > 1) instead of failing.
                 val fallback = if (page == 1) {
@@ -64,19 +71,27 @@ class MeasurementHistoryRepositoryImpl(
     }
 
     /**
-     * Local wins on id collision (ADR-009): queue rows first, remote/cache fills the rest.
-     *
-     * Ordered by `measured_at` — the clinical event time, and the very field the backend feeds into
-     * the activity feed's `occurred_at`. Not `updatedAt`: that is a local queue-bookkeeping stamp,
-     * so a days-old measurement retried today would jump to the top of the list while the History
-     * screen's day header still dated it to when it was taken.
+     * Active uploads keep their queue state. After sync, a feed request that started later carries
+     * the authoritative clinical values. Keep the queue timestamps for local sync bookkeeping.
      */
     private fun merge(
         local: List<MeasurementHistoryEntry>,
         remote: List<MeasurementHistoryEntry>,
     ): List<MeasurementHistoryEntry> {
         val localIds = local.mapTo(mutableSetOf()) { it.id }
-        return (local + remote.filterNot { it.id in localIds }).sortedByDescending { it.measuredAtMillis() }
+        val remoteById = remote.associateBy { it.id }
+        val merged = local.map { queued ->
+            val server = remoteById[queued.id]
+            val observedAt = server?.serverObservedAtMillis
+            if (server != null && observedAt != null && queued.syncState == SyncState.Synced &&
+                observedAt > queued.updatedAt
+            ) {
+                server.copy(isLocal = true, createdAt = queued.createdAt, updatedAt = queued.updatedAt)
+            } else {
+                queued
+            }
+        }
+        return (merged + remote.filterNot { it.id in localIds }).sortedByDescending { it.measuredAtMillis() }
     }
 
     /** 0 for an unparseable timestamp, which sorts the row last — where "Sin fecha" renders. */

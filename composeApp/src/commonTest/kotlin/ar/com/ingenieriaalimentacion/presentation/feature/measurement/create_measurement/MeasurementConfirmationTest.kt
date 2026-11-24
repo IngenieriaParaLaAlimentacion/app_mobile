@@ -11,7 +11,7 @@ import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
 
 class MeasurementConfirmationTest {
-    private val prepare = PrepareMeasurementUseCase(MeasurementAlertEvaluator()) {
+    private val prepare = PrepareMeasurementUseCase(MeasurementAlertEvaluator(null)) {
         Instant.parse("2026-10-17T00:30:00Z")
     }
     private val subject = SubjectSummary("s", 42, "Ana", "García", Sex.Female,
@@ -33,7 +33,7 @@ class MeasurementConfirmationTest {
         val prepared = prepare(subject.copy(birthDate = null), "e", "Escuela", 72.5, 170.0)
         val text = MeasurementConfirmation(1, prepared, "72.5", "170").description
         assertContains(text, "Peso: 72,5 kg")
-        assertContains(text, "Talla: 170 cm")
+        assertContains(text, "Longitud o talla: 170 cm")
         assertFalse(text.contains("generarían una alerta"))
     }
 }

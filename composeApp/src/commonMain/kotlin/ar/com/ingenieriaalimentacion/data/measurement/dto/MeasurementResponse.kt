@@ -24,4 +24,19 @@ data class MeasurementResponse(
     @SerialName("measured_at") val measuredAt: String,
     val bmi: Double? = null,
     val alerts: List<AlertDto> = emptyList(),
+    @SerialName("stature_method") val statureMethod: String? = null,
+    val assessments: List<AssessmentDto>? = null,
 )
+
+@Serializable
+data class AssessmentDto(
+    val indicator: String,
+    val status: String,
+    val classification: String? = null,
+    @SerialName("z_score") val zScore: Double? = null,
+    @SerialName("reference_version") val referenceVersion: String? = null,
+    val alert: AssessmentAlertDto? = null,
+)
+
+@Serializable
+data class AssessmentAlertDto(val severity: String, val detail: String)

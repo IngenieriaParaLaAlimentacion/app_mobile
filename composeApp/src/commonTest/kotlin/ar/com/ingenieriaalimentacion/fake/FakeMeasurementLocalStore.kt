@@ -1,10 +1,13 @@
 package ar.com.ingenieriaalimentacion.fake
 
 import ar.com.ingenieriaalimentacion.data.measurement.local.MeasurementLocalStore
+import ar.com.ingenieriaalimentacion.data.measurement.mapper.toStatureMethodOrNull
+import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementAssessment
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementUpload
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.serialization.json.Json
 
 /**
  * In-memory [MeasurementLocalStore] mirroring the SQL semantics of [DefaultMeasurementLocalStore], so
@@ -34,7 +37,13 @@ class FakeMeasurementLocalStore(private val now: () -> Long = { 0L }) : Measurem
     override suspend fun markSyncing(localId: String) =
         mutate(localId) { it.copy(syncState = SyncState.Syncing, updatedAt = now()) }
 
-    override suspend fun markSynced(localId: String, bmi: Double?, alertsJson: String?) =
+    override suspend fun markSynced(
+        localId: String,
+        bmi: Double?,
+        alertsJson: String?,
+        assessmentsJson: String?,
+        serverStatureMethod: String?,
+    ) =
         mutate(localId) {
             it.copy(
                 syncState = SyncState.Synced,
@@ -43,6 +52,8 @@ class FakeMeasurementLocalStore(private val now: () -> Long = { 0L }) : Measurem
                 errorMessage = null,
                 updatedAt = now(),
                 alerts = it.alerts, // alerts decoding is exercised by the local-store/mapper tests
+                assessments = assessmentsJson?.let { raw -> Json.decodeFromString<List<MeasurementAssessment>>(raw) },
+                statureMethod = serverStatureMethod.toStatureMethodOrNull() ?: it.statureMethod,
             )
         }.also { lastSyncedAlertsJson = alertsJson }
 

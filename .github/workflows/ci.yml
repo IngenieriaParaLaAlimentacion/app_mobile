@@ -32,6 +32,9 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Verify generated SAP reference
+        run: python3 scripts/generate_anthropometry_reference.py --check
+
       - name: Run shared and Android unit tests
         # commonTest runs on the Android JVM target together with androidUnitTest.
         # Bound memory and workers for the hosted runner instead of the local defaults.

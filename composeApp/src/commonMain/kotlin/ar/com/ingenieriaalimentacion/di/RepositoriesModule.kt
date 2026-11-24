@@ -132,7 +132,13 @@ val repositoriesModule = module {
         SubjectHistoryRepositoryImpl(api = get(), cache = get(), queue = get(), json = get(named("auth")))
     }
     single<MeasurementHistoryRepository> {
-        MeasurementHistoryRepositoryImpl(api = get(), cache = get(), queue = get(), json = get(named("auth")))
+        MeasurementHistoryRepositoryImpl(
+            api = get(),
+            cache = get(),
+            queue = get(),
+            json = get(named("auth")),
+            now = { Clock.System.now().toEpochMilliseconds() },
+        )
     }
     single<SurveyLocalStore> {
         DefaultSurveyLocalStore(

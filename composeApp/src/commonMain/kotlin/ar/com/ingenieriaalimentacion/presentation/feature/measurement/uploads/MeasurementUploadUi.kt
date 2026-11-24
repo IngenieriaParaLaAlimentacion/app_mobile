@@ -1,7 +1,12 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.measurement.uploads
 
 import ar.com.ingenieriaalimentacion.core.design_system.components.pill.AlPillTone
+import ar.com.ingenieriaalimentacion.domain.model.measurement.AssessmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementHistoryEntry
+import ar.com.ingenieriaalimentacion.presentation.feature.measurement.alertTypeLabel
+import ar.com.ingenieriaalimentacion.presentation.feature.measurement.assessmentIndicatorLabel
+import ar.com.ingenieriaalimentacion.presentation.feature.measurement.hasApplicableBmi
+import ar.com.ingenieriaalimentacion.presentation.feature.measurement.resultLabel
 import ar.com.ingenieriaalimentacion.domain.model.subject.SyncState
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -29,7 +34,10 @@ data class MeasurementUploadUi(
     val bmiCategoryTone: AlPillTone?,  // severity tone for the category pill (Success when "Normal")
     val canRetry: Boolean,
     val canDelete: Boolean,
+    val assessmentRows: List<MeasurementAssessmentUi> = emptyList(),
 )
+
+data class MeasurementAssessmentUi(val indicator: String, val result: String, val z: String?, val tone: AlPillTone)
 
 internal fun MeasurementHistoryEntry.toUi(): MeasurementUploadUi {
     val (label, tone) = when (syncState) {
@@ -40,8 +48,10 @@ internal fun MeasurementHistoryEntry.toUi(): MeasurementUploadUi {
         SyncState.Merged -> "Sincronizado" to AlPillTone.Success // unreachable for measurements
     }
     val synced = syncState == SyncState.Synced
-    val bmiValue = bmi?.takeIf { synced }?.let { formatBmi(it) }
+    val results = assessments.takeIf { synced }
+    val bmiValue = bmi?.takeIf { synced && (results == null || results.hasApplicableBmi()) }?.let { formatBmi(it) }
     val primaryAlert = alerts.firstOrNull()
+    val showLegacyBmiCategory = bmiValue != null && results == null
     return MeasurementUploadUi(
         localId = id,
         title = "$subjectName $subjectLastName",
@@ -57,33 +67,30 @@ internal fun MeasurementHistoryEntry.toUi(): MeasurementUploadUi {
         bmiValue = bmiValue,
         // "Normal" is derived when the server flags no alert on a present BMI — a reassuring
         // positive state for the field worker; documented as derived, not server-sent.
-        bmiCategory = if (bmiValue != null) {
+        bmiCategory = if (showLegacyBmiCategory) {
             primaryAlert?.let { alertTypeLabel(it.alertType) } ?: "Normal"
         } else {
             null
         },
         // No alert on a present BMI is the healthy "Normal" case → green; otherwise the
         // alert's severity drives the tone (Danger/Warning).
-        bmiCategoryTone = if (bmiValue != null) {
+        bmiCategoryTone = if (showLegacyBmiCategory) {
             primaryAlert?.let { severityTone(it.severity) } ?: AlPillTone.Success
         } else {
             null
         },
+        assessmentRows = results.orEmpty().filterNot { it.status == AssessmentStatus.NotApplicable }.map { result ->
+            MeasurementAssessmentUi(
+                indicator = assessmentIndicatorLabel(result.indicator),
+                result = result.resultLabel(),
+                z = result.zScore?.let { "Z ${formatDecimal(it, 2)}" },
+                tone = result.alert?.let { severityTone(it.severity) }
+                    ?: if (result.classification == "normal") AlPillTone.Success else AlPillTone.Neutral,
+            )
+        },
         canRetry = isLocal && syncState == SyncState.Failed,
         canDelete = isLocal && (syncState == SyncState.Pending || syncState == SyncState.Failed || synced),
     )
-}
-
-/** Canonical backend `alert_type` (lowercase enum .value) → Spanish clinical label. */
-internal fun alertTypeLabel(raw: String): String = when (raw.trim().lowercase()) {
-    "severely_wasted" -> "Emaciación grave"
-    "wasted" -> "Emaciación"
-    "underweight" -> "Bajo peso"
-    "severe_underweight" -> "Bajo peso grave"
-    "overweight" -> "Sobrepeso"
-    "obese" -> "Obesidad"
-    // Defensive: future/unknown codes render readably instead of leaking raw enums.
-    else -> raw.trim().replace('_', ' ').replaceFirstChar { it.uppercase() }
 }
 
 /** Canonical backend `severity` (critical|high|medium) → pill tone; tone encodes severity. */

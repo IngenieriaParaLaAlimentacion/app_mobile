@@ -247,6 +247,21 @@ private fun MeasurementUploadRow(
                 )
             }
 
+            for (assessment in upload.assessmentRows) {
+                Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
+                    Text(assessment.indicator, style = AlTheme.typography.label, color = AlTheme.colors.textBase)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm),
+                    ) {
+                        AlPill(text = assessment.result, tone = assessment.tone)
+                        assessment.z?.let {
+                            Text(it, style = AlTheme.typography.dataSmall, color = AlTheme.colors.textMuted)
+                        }
+                    }
+                }
+            }
+
             upload.errorMessage?.let {
                 Text(
                     text = it,

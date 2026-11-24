@@ -4,4 +4,5 @@ data class PreparedMeasurement(
     val measurement: NewMeasurement,
     val requiresConfirmation: Boolean,
     val demographicsKnown: Boolean,
+    val reviewIndicators: List<MeasurementIndicator> = emptyList(),
 )

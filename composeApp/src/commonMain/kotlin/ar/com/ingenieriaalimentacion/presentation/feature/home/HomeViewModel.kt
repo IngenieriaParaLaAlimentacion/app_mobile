@@ -7,6 +7,7 @@ import ar.com.ingenieriaalimentacion.data.subject.sync.SyncCoordinator
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentStatus
 import ar.com.ingenieriaalimentacion.domain.usecase.food.GetFoodMovementHistoryPageUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.ObserveFoodMovementsUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.measurement.GetMeasurementHistoryPageUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.ObserveMeasurementsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -32,6 +34,7 @@ class HomeViewModel(
     observeSurveyResponseUploads: ObserveSurveyResponseUploadsUseCase,
     observeFoodMovements: ObserveFoodMovementsUseCase,
     private val getFoodMovementHistory: GetFoodMovementHistoryPageUseCase,
+    getMeasurementHistory: GetMeasurementHistoryPageUseCase,
     private val getMyProfile: GetMyProfileUseCase,
     private val getMyEstablishments: GetMyEstablishmentsUseCase,
     private val getCurrentEstablishment: GetCurrentEstablishmentUseCase,
@@ -83,6 +86,11 @@ class HomeViewModel(
                         role = it.role,
                     )
                 }
+            }
+        }
+        viewModelScope.launch {
+            connectivity.isOnline.distinctUntilChanged().collect { online ->
+                if (online) getMeasurementHistory(page = 1, pageSize = 20)
             }
         }
         loadEstablishments()

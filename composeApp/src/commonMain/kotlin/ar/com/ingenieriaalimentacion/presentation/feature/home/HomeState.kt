@@ -77,6 +77,7 @@ data class RecentActivityUi(
     val badgeText: String?,         // alert label or sync label
     val badgeTone: AlBadgeTone,
     val createdAt: Long,
+    val badgeDescription: String? = null,
 ) {
     /** Ingreso and salida are separate kinds, not one `Food` kind: this enum is the only carrier
      *  for the row's leading icon, and direction is the row's headline fact. */

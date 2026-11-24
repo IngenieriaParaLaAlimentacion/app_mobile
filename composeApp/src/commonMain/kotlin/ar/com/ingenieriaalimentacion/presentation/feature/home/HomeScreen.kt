@@ -21,6 +21,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -415,7 +417,14 @@ private fun RecentActivity(recent: List<RecentActivityUi>, onAction: (HomeAction
                         horizontalPadding = 0.dp,
                         trailing = {
                             item.badgeText?.let {
-                                AlStatusBadge(text = it, tone = item.badgeTone)
+                                val description = item.badgeDescription
+                                AlStatusBadge(
+                                    text = it,
+                                    tone = item.badgeTone,
+                                    modifier = if (description == null) Modifier else Modifier.semantics {
+                                        contentDescription = description
+                                    },
+                                )
                             }
                         },
                     )

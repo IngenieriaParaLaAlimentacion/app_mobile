@@ -16,7 +16,9 @@ CREATE TABLE PendingMeasurement (
     alertsJson        TEXT,                          -- serialized List<ClinicalAlert>, set on SYNCED
     createdAt         INTEGER NOT NULL,              -- epoch millis
     updatedAt         INTEGER NOT NULL,
-    observation       TEXT
+    observation       TEXT,
+    statureMethod     TEXT,
+    assessmentsJson   TEXT
 );
 
 CREATE INDEX PendingMeasurement_state ON PendingMeasurement(syncState);
@@ -24,8 +26,8 @@ CREATE INDEX PendingMeasurement_state ON PendingMeasurement(syncState);
 insert:
 INSERT INTO PendingMeasurement(localId, subjectId, subjectName, subjectLastName, subjectDni,
     establishmentId, establishmentName, weightKg, heightCm, measuredAt, syncState, errorMessage,
-    attemptCount, bmi, alertsJson, createdAt, updatedAt, observation)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    attemptCount, bmi, alertsJson, createdAt, updatedAt, observation, statureMethod, assessmentsJson)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectAll:
 SELECT * FROM PendingMeasurement ORDER BY createdAt DESC;
@@ -40,8 +42,10 @@ markState:
 UPDATE PendingMeasurement SET syncState = ?, updatedAt = ? WHERE localId = ?;
 
 markSynced:                                          -- 201/200: persist bmi + alerts, clear error
-UPDATE PendingMeasurement SET syncState = 'SYNCED', bmi = ?, alertsJson = ?, errorMessage = NULL,
-    updatedAt = ? WHERE localId = ?;
+UPDATE PendingMeasurement
+SET syncState = 'SYNCED', bmi = :bmi, alertsJson = :alertsJson, assessmentsJson = :assessmentsJson,
+    statureMethod = COALESCE(:serverStatureMethod, statureMethod), errorMessage = NULL, updatedAt = :updatedAt
+WHERE localId = :localId;
 
 bumpRetry:                                           -- transient 401/network: stay PENDING, count attempt
 UPDATE PendingMeasurement SET syncState = 'PENDING', attemptCount = attemptCount + 1,

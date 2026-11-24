@@ -84,6 +84,7 @@ class MeasurementViewModel(
             is MeasurementAction.ObservationChanged,
             is MeasurementAction.WeightChanged,
             is MeasurementAction.HeightChanged,
+            is MeasurementAction.StatureMethodChanged,
             is MeasurementAction.SubjectSelected,
             is MeasurementAction.EstablishmentSelected,
             MeasurementAction.ChangeSubjectClick,
@@ -107,6 +108,7 @@ class MeasurementViewModel(
                 val maximum = currentMeasurementDateTime().date
                 _state.update { it.copy(
                     measuredDateTime = LocalDateTime(action.date, current.time),
+                    statureMethodError = null,
                     latestAllowedMeasurementDate = maximum,
                     measurementDateError = if (action.date > maximum) "La fecha no puede ser futura." else null,
                     showMeasurementDatePicker = false,
@@ -149,6 +151,9 @@ class MeasurementViewModel(
                     )
                 }
 
+            is MeasurementAction.StatureMethodChanged ->
+                _state.update { it.copy(statureMethod = action.method, statureMethodError = null, successMessage = null) }
+
             is MeasurementAction.HeightFocusChanged ->
                 _state.update { it.copy(height = it.height.onFocus(action.focused, heightValidator)) }
 
@@ -161,7 +166,10 @@ class MeasurementViewModel(
                 _state.update { it.copy(observation = it.observation.onFocus(action.focused, observationValidator)) }
 
             is MeasurementAction.SubjectSelected ->
-                _state.update { it.copy(subject = action.subject, successMessage = null) }
+                _state.update {
+                    val existingMethod = it.statureMethod.takeIf { _ -> it.subject?.id == action.subject.id }
+                    it.copy(subject = action.subject, statureMethod = existingMethod, statureMethodError = null, successMessage = null)
+                }
 
             MeasurementAction.ChangeSubjectClick ->
                 _state.update { it.copy(destination = MeasurementDestination.NavigateToSelectSubject) }
@@ -254,6 +262,9 @@ class MeasurementViewModel(
             weight = current.weight.showError(weightValidator),
             height = current.height.showError(heightValidator),
             observation = current.observation.showError(observationValidator),
+            statureMethodError = if (current.requiresStatureMethod && current.statureMethod == null) {
+                "Elegí cómo se tomó la medida."
+            } else null,
             establishmentError = if (current.selectedEstablishment == null) "Elegí el establecimiento." else null,
             latestAllowedMeasurementDate = maximum,
             measurementDateError = if (selected.date > maximum) "La fecha no puede ser futura." else null,
@@ -264,7 +275,7 @@ class MeasurementViewModel(
         if (!validated.weight.isValid || !validated.height.isValid || !validated.observation.isValid) return
         val weight = validated.weight.value.toDoubleOrNull() ?: return
         val height = validated.height.value.toDoubleOrNull() ?: return
-        if (validated.measurementDateError != null) return
+        if (validated.measurementDateError != null || validated.statureMethodError != null) return
         val selectedInstant = selected.toInstant(PrepareMeasurementUseCase.ARGENTINA_TIME_ZONE)
         if (selectedInstant.toLocalDateTime(PrepareMeasurementUseCase.ARGENTINA_TIME_ZONE) != selected) {
             _state.update { it.copy(submitError = "La hora elegida no existe en esa fecha en Argentina. Elegí otra hora.") }
@@ -277,6 +288,7 @@ class MeasurementViewModel(
                     subject, establishment.id, establishment.name, weight, height,
                     observation = validated.observation.value,
                     measuredAt = selectedInstant,
+                    statureMethod = validated.statureMethod,
                 ),
                 weightText = validated.weight.value,
                 heightText = validated.height.value,
@@ -307,6 +319,7 @@ class MeasurementViewModel(
             measurement.establishmentId == state.selectedEstablishment?.id &&
             measurement.establishmentName == state.selectedEstablishment?.name &&
             draft.weightText == state.weight.value && draft.heightText == state.height.value &&
+            measurement.statureMethod == state.statureMethod &&
             measurement.observation == state.observation.value.trim().takeIf { it.isNotEmpty() } &&
             measurement.measuredAt == state.measuredDateTime?.toInstant(PrepareMeasurementUseCase.ARGENTINA_TIME_ZONE)
     }
@@ -325,6 +338,8 @@ class MeasurementViewModel(
                         it.copy(
                             weight = TextFieldState(),
                             height = TextFieldState(),
+                            statureMethod = null,
+                            statureMethodError = null,
                             observation = TextFieldState(),
                             confirmation = null,
                             isSubmitting = false,
@@ -357,8 +372,8 @@ class MeasurementViewModel(
     )
 
     private val heightValidator: Validator = Rules.of(
-        Rules.required("Ingresá la talla."),
-        Rules.decimalInRange(20.0, 250.0, "Talla entre 20 y 250 cm."),
+        Rules.required("Ingresá la medida en centímetros."),
+        Rules.decimalInRange(20.0, 250.0, "La medida debe estar entre 20 y 250 cm."),
     )
 
 }

@@ -2,6 +2,8 @@ package ar.com.ingenieriaalimentacion.data.measurement
 
 import ar.com.ingenieriaalimentacion.data.measurement.local.MeasurementLocalStore
 import ar.com.ingenieriaalimentacion.data.measurement.mapper.encodeAlerts
+import ar.com.ingenieriaalimentacion.data.measurement.mapper.encodeAssessments
+import ar.com.ingenieriaalimentacion.data.measurement.mapper.toStatureMethodOrNull
 import ar.com.ingenieriaalimentacion.data.measurement.mapper.toDomain
 import ar.com.ingenieriaalimentacion.data.measurement.mapper.toPendingUpload
 import ar.com.ingenieriaalimentacion.data.measurement.mapper.toRequest
@@ -71,7 +73,14 @@ class MeasurementRepositoryImpl(
             when (val outcome = api.create(upload.copy(subjectId = resolvedSubjectId).toRequest())) {
                 is MeasurementUploadOutcome.Created -> {
                     val alertsJson = encodeAlerts(outcome.response.alerts.map { it.toDomain() })
-                    local.markSynced(upload.localId, outcome.response.bmi, alertsJson)
+                    val assessments = outcome.response.assessments?.map { it.toDomain() }
+                    local.markSynced(
+                        localId = upload.localId,
+                        bmi = outcome.response.bmi,
+                        alertsJson = alertsJson,
+                        assessmentsJson = assessments?.let(::encodeAssessments),
+                        serverStatureMethod = outcome.response.statureMethod.toStatureMethodOrNull()?.wire,
+                    )
                     synced++
                 }
                 MeasurementUploadOutcome.NotFound -> {

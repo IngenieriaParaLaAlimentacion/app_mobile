@@ -1,6 +1,9 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.measurement.create_measurement
 
 import ar.com.ingenieriaalimentacion.core.validation.TextFieldState
+import ar.com.ingenieriaalimentacion.domain.model.measurement.StatureMethod
+import ar.com.ingenieriaalimentacion.domain.usecase.measurement.INFANT_AGE_LIMIT_MONTHS
+import ar.com.ingenieriaalimentacion.domain.usecase.measurement.completedMonthsAt
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
 import kotlinx.datetime.LocalDate
@@ -17,6 +20,8 @@ data class MeasurementState(
     val showEstablishmentPicker: Boolean = false,
     val weight: TextFieldState = TextFieldState(),
     val height: TextFieldState = TextFieldState(),
+    val statureMethod: StatureMethod? = null,
+    val statureMethodError: String? = null,
     val observation: TextFieldState = TextFieldState(),
     val measuredDateTime: LocalDateTime? = null,
     val measurementDateError: String? = null,
@@ -28,6 +33,22 @@ data class MeasurementState(
     val submitError: String? = null,
     val successMessage: String? = null,
 ) {
+    private val ageMonths: Int?
+        get() {
+            val birthDate = subject?.birthDate ?: return null
+            return measuredDateTime?.date?.let { completedMonthsAt(birthDate, it) }
+        }
+
+    val requiresStatureMethod: Boolean
+        get() = ageMonths?.let { it < INFANT_AGE_LIMIT_MONTHS } == true
+
+    val statureLabel: String
+        get() = when {
+            requiresStatureMethod -> "Longitud"
+            ageMonths == null -> "Longitud o talla"
+            else -> "Talla"
+        }
+
     val canSubmit: Boolean
         get() = subject != null && selectedEstablishment != null &&
             measuredDateTime != null && measurementDateError == null &&

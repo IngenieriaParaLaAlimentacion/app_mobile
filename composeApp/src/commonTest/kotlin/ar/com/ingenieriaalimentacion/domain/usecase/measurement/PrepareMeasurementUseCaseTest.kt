@@ -14,7 +14,7 @@ import kotlinx.datetime.toLocalDateTime
 
 class PrepareMeasurementUseCaseTest {
     private val captured = Instant.parse("2026-10-17T00:30:00Z")
-    private val prepare = PrepareMeasurementUseCase(MeasurementAlertEvaluator()) { captured }
+    private val prepare = PrepareMeasurementUseCase(MeasurementAlertEvaluator(null)) { captured }
     private val adult = SubjectSummary(
         id = "subject", dni = 42, name = "Ana", lastName = "García",
         sex = Sex.Female, birthDate = LocalDate(1990, 1, 1),
@@ -57,7 +57,7 @@ class PrepareMeasurementUseCaseTest {
 
     @Test
     fun evaluationUsesCapturedUtcDayRatherThanDeviceCalendar() {
-        val evaluator = MeasurementAlertEvaluator()
+        val evaluator = MeasurementAlertEvaluator(null)
         val boundary = adult.copy(birthDate = LocalDate(2007, 9, 17))
         val previousDate = captured.toLocalDateTime(TimeZone.of("America/Argentina/Buenos_Aires")).date
         assertEquals(LocalDate(2026, 10, 16), previousDate)
@@ -110,7 +110,7 @@ class PrepareMeasurementUseCaseTest {
     @Test
     fun explicitSelectedInstantControlsAgeRatherThanCurrentClockOrArgentinaDay() {
         val current = Instant.parse("2026-10-18T12:00:00Z")
-        val evaluator = MeasurementAlertEvaluator()
+        val evaluator = MeasurementAlertEvaluator(null)
         val useCase = PrepareMeasurementUseCase(evaluator) { current }
         val boundary = adult.copy(birthDate = LocalDate(2007, 9, 17))
         val childDate = Instant.parse("2026-10-16T23:00:00Z")
@@ -126,7 +126,7 @@ class PrepareMeasurementUseCaseTest {
     @Test
     fun readsClockOnceForDefaultAndExplicitMeasurement() {
         var clockReads = 0
-        val useCase = PrepareMeasurementUseCase(MeasurementAlertEvaluator()) { clockReads++; captured }
+        val useCase = PrepareMeasurementUseCase(MeasurementAlertEvaluator(null)) { clockReads++; captured }
         assertEquals(captured, useCase(adult, "e", "Escuela", 70.0, 170.0).measurement.measuredAt)
         assertEquals(1, clockReads)
         val selected = Instant.parse("2024-05-02T13:45:00Z")

@@ -1,0 +1,2 @@
+ALTER TABLE PendingMeasurement ADD COLUMN statureMethod TEXT;
+ALTER TABLE PendingMeasurement ADD COLUMN assessmentsJson TEXT;

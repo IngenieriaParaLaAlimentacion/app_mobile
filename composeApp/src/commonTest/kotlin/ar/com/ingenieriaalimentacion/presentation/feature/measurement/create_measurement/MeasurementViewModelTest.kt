@@ -77,7 +77,7 @@ class MeasurementViewModelTest {
             getMyEstablishments = GetMyEstablishmentsUseCase(profileRepo),
             getCurrentEstablishment = GetCurrentEstablishmentUseCase(profileRepo),
             syncCoordinator = coordinator,
-            prepareMeasurement = PrepareMeasurementUseCase(MeasurementAlertEvaluator()) { clock },
+            prepareMeasurement = PrepareMeasurementUseCase(MeasurementAlertEvaluator(null)) { clock },
             now = { clock },
         )
     }

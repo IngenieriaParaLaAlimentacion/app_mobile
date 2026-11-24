@@ -54,6 +54,8 @@ class SqlDelightDatabaseCleanerTest {
             bmi = null,
             alertsJson = null,
             observation = null,
+            statureMethod = null,
+            assessmentsJson = null,
             createdAt = 10L,
             updatedAt = 10L,
         )

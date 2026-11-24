@@ -42,6 +42,8 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButton
 import ar.com.ingenieriaalimentacion.core.design_system.components.button.AlButtonVariant
+import ar.com.ingenieriaalimentacion.core.design_system.components.segmented.AlSegmentedControl
+import ar.com.ingenieriaalimentacion.domain.model.measurement.StatureMethod
 import ar.com.ingenieriaalimentacion.core.design_system.components.card.AlCard
 import ar.com.ingenieriaalimentacion.core.design_system.components.dialog.AlConfirmDialog
 import ar.com.ingenieriaalimentacion.core.design_system.components.dialog.AlConfirmTone
@@ -263,7 +265,7 @@ private fun MeasurementForm(
                 )
 
                 AlInput(
-                    label = "Talla (cm)",
+                    label = "${state.statureLabel} (cm)",
                     value = state.height.value,
                     onValueChange = { onAction(MeasurementAction.HeightChanged(it)) },
                     onFocusChange = { onAction(MeasurementAction.HeightFocusChanged(it)) },
@@ -271,9 +273,28 @@ private fun MeasurementForm(
                     enabled = !state.isSubmitting,
                     scrollState = scrollState,
                     isImeVisible = isImeVisible,
-                    placeholder = "Ej. 170",
+                    placeholder = if (state.requiresStatureMethod) "Ej. 72" else "Ej. 170",
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 )
+
+                if (state.subject != null) {
+                    Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.xs)) {
+                        Text(
+                            text = if (state.requiresStatureMethod) "Posición de la medición" else "Posición de la medición (opcional)",
+                            style = AlTheme.typography.label,
+                            color = AlTheme.colors.textBase,
+                        )
+                        AlSegmentedControl(
+                            segments = listOf("Acostado/a", "De pie"),
+                            selectedIndex = state.statureMethod?.ordinal ?: -1,
+                            emphasizeSelected = true,
+                            onSelect = { onAction(MeasurementAction.StatureMethodChanged(StatureMethod.entries[it])) },
+                        )
+                        state.statureMethodError?.let { error ->
+                            Text(error, style = AlTheme.typography.caption, color = AlTheme.colors.danger)
+                        }
+                    }
+                }
 
                 Column(verticalArrangement = Arrangement.spacedBy(AlTheme.spacing.sm)) {
                     AlInput(

@@ -21,6 +21,9 @@ data class MeasurementHistoryEntry(
     val isLocal: Boolean,
     val createdAt: Long,
     val updatedAt: Long,
+    val statureMethod: StatureMethod? = null,
+    val assessments: List<MeasurementAssessment>? = null,
+    val serverObservedAtMillis: Long? = null,
 )
 
 data class MeasurementHistoryPage(

@@ -1,5 +1,6 @@
 package ar.com.ingenieriaalimentacion.presentation.feature.measurement.create_measurement
 
+import ar.com.ingenieriaalimentacion.domain.model.measurement.StatureMethod
 import ar.com.ingenieriaalimentacion.domain.model.profile.EstablishmentWithStatus
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectSummary
 import kotlinx.datetime.LocalDate
@@ -17,6 +18,7 @@ sealed interface MeasurementAction {
     data class WeightChanged(val value: String) : MeasurementAction
     data class WeightFocusChanged(val focused: Boolean) : MeasurementAction
     data class HeightChanged(val value: String) : MeasurementAction
+    data class StatureMethodChanged(val method: StatureMethod) : MeasurementAction
     data class HeightFocusChanged(val focused: Boolean) : MeasurementAction
     data class SubjectSelected(val subject: SubjectSummary) : MeasurementAction
     data object ChangeSubjectClick : MeasurementAction

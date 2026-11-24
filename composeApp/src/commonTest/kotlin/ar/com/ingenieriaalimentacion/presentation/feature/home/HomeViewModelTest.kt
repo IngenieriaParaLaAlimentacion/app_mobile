@@ -17,6 +17,7 @@ import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseSummary
 import ar.com.ingenieriaalimentacion.domain.model.survey.SurveyResponseTarget
 import ar.com.ingenieriaalimentacion.domain.usecase.food.GetFoodMovementHistoryPageUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.food.ObserveFoodMovementsUseCase
+import ar.com.ingenieriaalimentacion.domain.usecase.measurement.GetMeasurementHistoryPageUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.measurement.ObserveMeasurementsUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetCurrentEstablishmentUseCase
 import ar.com.ingenieriaalimentacion.domain.usecase.profile.GetMyEstablishmentsUseCase
@@ -97,6 +98,7 @@ class HomeViewModelTest {
     ): HomeViewModel {
         val coordinator = SyncCoordinator(emptyList(), connectivity, AppScope())
         return HomeViewModel(
+            getMeasurementHistory = GetMeasurementHistoryPageUseCase(measurementRepo),
             getFoodMovementHistory = GetFoodMovementHistoryPageUseCase(foodMovementRepo),
             observeSubjectUploads = ObserveSubjectUploadsUseCase(subjectRepo),
             observeMeasurements = ObserveMeasurementsUseCase(measurementRepo),

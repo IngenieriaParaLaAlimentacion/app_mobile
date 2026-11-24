@@ -26,6 +26,8 @@ data class MeasurementUpload(
     val createdAt: Long,
     val updatedAt: Long,
     val observation: String? = null,
+    val statureMethod: StatureMethod? = null,
+    val assessments: List<MeasurementAssessment>? = null,
 )
 
 /**

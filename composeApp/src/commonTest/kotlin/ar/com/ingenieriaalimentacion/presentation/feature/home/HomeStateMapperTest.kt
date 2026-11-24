@@ -5,7 +5,11 @@ import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovement
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementDirection
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodMovementLine
 import ar.com.ingenieriaalimentacion.domain.model.food.FoodUnit
+import ar.com.ingenieriaalimentacion.domain.model.measurement.AssessmentAlert
+import ar.com.ingenieriaalimentacion.domain.model.measurement.AssessmentStatus
 import ar.com.ingenieriaalimentacion.domain.model.measurement.ClinicalAlert
+import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementAssessment
+import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementIndicator
 import ar.com.ingenieriaalimentacion.domain.model.measurement.MeasurementHistoryEntry
 import ar.com.ingenieriaalimentacion.domain.model.subject.Sex
 import ar.com.ingenieriaalimentacion.domain.model.subject.SubjectHistoryEntry
@@ -92,6 +96,26 @@ class HomeStateMapperTest {
         syncState = syncState,
         isLocal = true,
     )
+
+    @Test
+    fun `one SAP alert flags the measurement even if the other indicator is normal`() {
+        val measurement = measurement(syncState = SyncState.Synced, bmi = 22.0).copy(
+            assessments = listOf(
+                MeasurementAssessment(MeasurementIndicator.LengthForAge, AssessmentStatus.Evaluated,
+                    "normal", 0.0, "sap", null),
+                MeasurementAssessment(MeasurementIndicator.WeightForAge, AssessmentStatus.Evaluated,
+                    "low_weight", -2.5, "sap", AssessmentAlert("critical", "detail")),
+                MeasurementAssessment(MeasurementIndicator.BmiForAge, AssessmentStatus.NotApplicable,
+                    null, null, null, null),
+            ),
+        )
+
+        val item = deriveState(emptyList(), listOf(measurement), online = true, now = now).recent.single()
+        assertEquals("Con alerta", item.badgeText)
+        assertEquals("Con alerta: Peso para la edad", item.badgeDescription)
+        assertEquals(AlBadgeTone.Danger, item.badgeTone)
+        assertNull(item.value)
+    }
 
     @Test
     fun `all synced online yields AllSynced with a formatted last-synced label`() {
